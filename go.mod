@@ -2,7 +2,7 @@ module ez2boot
 
 go 1.25.1
 
-require github.com/mattn/go-sqlite3 v1.14.32
+require github.com/mattn/go-sqlite3 v1.14.32 // Requires C compiler gcc.exe on path
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.39.2
