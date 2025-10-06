@@ -2,7 +2,7 @@ package handler
 
 import (
 	"encoding/json"
-	"ez2boot/internal/models"
+	"ez2boot/internal/model"
 	"ez2boot/internal/repository"
 	"ez2boot/internal/utils"
 	"log/slog"
@@ -46,7 +46,7 @@ func GetSessions(repo *repository.Repository, logger *slog.Logger) http.HandlerF
 func NewSession(repo *repository.Repository, logger *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Receive server_group and email
-		var session models.Session
+		var session model.Session
 		json.NewDecoder(r.Body).Decode(&session)
 
 		// Validate TODO: MOVE THIS SOMEWHERE ELSE

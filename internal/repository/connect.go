@@ -20,11 +20,11 @@ func Connect() (*sql.DB, error) {
 		return nil, err
 	}
 
-	// Enable foreign keys
+/* 	// Enable foreign keys
 	_, err = db.Exec("PRAGMA foreign_keys = ON;")
 	if err != nil {
 		return nil, err
-	}
+	} */
 
 	return db, nil
 }

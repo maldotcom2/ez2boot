@@ -1,14 +1,14 @@
 package repository
 
 import (
-	"ez2boot/internal/models"
+	"ez2boot/internal/model"
 	"ez2boot/internal/utils"
 	"log/slog"
 	"time"
 )
 
 // Return all servers from catalogue - names and groups
-func (r *Repository) GetServers(logger *slog.Logger) ([]models.Server, error) {
+func (r *Repository) GetServers(logger *slog.Logger) ([]model.Server, error) {
 	rows, err := r.DB.Query("SELECT name, server_group FROM servers")
 	if err != nil {
 		return nil, err
@@ -16,9 +16,9 @@ func (r *Repository) GetServers(logger *slog.Logger) ([]models.Server, error) {
 
 	defer rows.Close()
 
-	servers := []models.Server{}
+	servers := []model.Server{}
 	for rows.Next() {
-		var s models.Server
+		var s model.Server
 		err = rows.Scan(&s.Name, &s.ServerGroup)
 		if err != nil {
 			return nil, err
@@ -30,7 +30,7 @@ func (r *Repository) GetServers(logger *slog.Logger) ([]models.Server, error) {
 }
 
 // Return currently active sessions
-func (r *Repository) GetSessions(logger *slog.Logger) ([]models.Session, error) {
+func (r *Repository) GetSessions(logger *slog.Logger) ([]model.Session, error) {
 	rows, err := r.DB.Query("SELECT email, server_group, expiry FROM sessions")
 	if err != nil {
 		return nil, err
@@ -38,9 +38,9 @@ func (r *Repository) GetSessions(logger *slog.Logger) ([]models.Session, error) 
 
 	defer rows.Close()
 
-	sessions := []models.Session{}
+	sessions := []model.Session{}
 	for rows.Next() {
-		var s models.Session
+		var s model.Session
 		err = rows.Scan(&s.Email, &s.ServerGroup, &s.Expiry)
 		if err != nil {
 			return nil, err
@@ -52,7 +52,7 @@ func (r *Repository) GetSessions(logger *slog.Logger) ([]models.Session, error) 
 }
 
 // Create a new session
-func (r *Repository) NewSession(session models.Session, logger *slog.Logger) (models.Session, error) {
+func (r *Repository) NewSession(session model.Session, logger *slog.Logger) (model.Session, error) {
 	newExpiry, err := utils.GetExpiry(0, session.Duration)
 	if err != nil {
 		return session, err
