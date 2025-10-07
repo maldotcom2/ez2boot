@@ -1,6 +1,7 @@
 package main
 
 import (
+	"ez2boot/internal/config"
 	"ez2boot/internal/handler"
 	"ez2boot/internal/middleware"
 	"ez2boot/internal/repository"
@@ -21,6 +22,12 @@ func main() {
 	// create logger
 	logger := slog.New(logHandler)
 	logger.Info("Start app")
+
+	// Load env vars
+	cfg, err := config.GetEnvVars()
+	if err != nil {
+		logger.Info("No .env file present")
+	}
 
 	// connect to DB
 	db, err := repository.Connect()
@@ -53,8 +60,8 @@ func main() {
 	router.Use(middleware.CORSMiddleware)
 
 	// start server
-	logger.Info("Server is ready and listening", "port", 8000)
-	err = http.ListenAndServe(":8000", router)
+	logger.Info("Server is ready and listening", "port", cfg.Port)
+	err = http.ListenAndServe(":"+cfg.Port, router)
 	if err != nil {
 		logger.Error("Failed to start http server", "error", err)
 		os.Exit(1)

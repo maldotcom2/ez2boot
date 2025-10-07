@@ -8,7 +8,7 @@ import (
 
 // Connect to DB and return pointer to connection pool
 func Connect() (*sql.DB, error) {
-	dbPath := "../../data/ez2boot.sqlite"
+	dbPath := "data/ez2boot.sqlite"
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		return nil, err

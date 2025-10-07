@@ -2,6 +2,13 @@ package model
 
 import "time"
 
+type Config struct {
+	CloudProvider  string
+	Port           string
+	ScrapeInterval string
+	// Add more fields as needed
+}
+
 type Server struct {
 	Name        string `json:"name"`
 	ServerGroup string `json:"server_group"`

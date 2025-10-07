@@ -18,7 +18,7 @@ func GenerateToken(n int) (string, error) {
 }
 
 // Take in Unix epoch for converting to time, and new duration for parsing and adding
-func GetExpiry(currentExpiry int64, duration string) (int64, error) {
+func GetExpiryFromDuration(currentExpiry int64, duration string) (int64, error) {
 
 	dur, err := time.ParseDuration(duration) // Parse string (eg, 4h) to time type
 	if err != nil {
