@@ -26,3 +26,5 @@ func (r *Repository) GetServers(logger *slog.Logger) ([]model.Server, error) {
 
 	return servers, nil
 }
+
+// Add or update servers

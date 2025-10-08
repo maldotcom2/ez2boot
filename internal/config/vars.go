@@ -2,6 +2,7 @@ package config
 
 import (
 	"ez2boot/internal/model"
+	"ez2boot/internal/utils"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -15,22 +16,33 @@ func GetEnvVars() (model.Config, error) {
 
 	cloudProvider := os.Getenv("CLOUD_PROVIDER")
 	if cloudProvider == "" {
-		cloudProvider = "aws"
+		cloudProvider = "aws" // default
 	}
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8000"
+		port = "8000" //default
 	}
 
-	scrapeInterval := os.Getenv("SCRAPE_INTERVAL")
-	if scrapeInterval == "" {
-		scrapeInterval = "30"
+	scrapeIntervalStr := os.Getenv("SCRAPE_INTERVAL")
+	if scrapeIntervalStr == "" {
+		scrapeIntervalStr = "30s" //default
+	}
+
+	scrapeInterval, err := utils.GetDurationFromString(scrapeIntervalStr)
+	if err != nil {
+		return model.Config{}, err
+	}
+
+	tagKey := os.Getenv("TAG_KEY")
+	if tagKey == "" {
+		tagKey = "ez2boot" //default
 	}
 
 	return model.Config{
 		CloudProvider:  cloudProvider,
 		Port:           port,
 		ScrapeInterval: scrapeInterval,
+		TagKey:         tagKey,
 	}, nil
 }

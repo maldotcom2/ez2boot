@@ -5,7 +5,8 @@ import "time"
 type Config struct {
 	CloudProvider  string
 	Port           string
-	ScrapeInterval string
+	ScrapeInterval time.Duration
+	TagKey         string
 	// Add more fields as needed
 }
 

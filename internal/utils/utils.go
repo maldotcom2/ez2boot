@@ -40,3 +40,12 @@ func GetExpiryFromDuration(currentExpiry int64, duration string) (int64, error) 
 		return newExpiry, nil
 	}
 }
+
+func GetDurationFromString(strValue string) (time.Duration, error) {
+	scrapeInterval, err := time.ParseDuration(strValue)
+	if err != nil {
+		return 0, err
+	}
+
+	return scrapeInterval, nil
+}

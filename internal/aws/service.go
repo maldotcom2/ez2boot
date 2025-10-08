@@ -8,23 +8,22 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 )
 
-func GetEC2Instances() ([]Instance, error) {
-	var filterTag string = "ez2boot" // TODO: Allow way to customise this tag key
+func GetEC2Instances(tagKey string) error {
 	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("ap-southeast-2"))
 	if err != nil {
 		// TODO Logger
-		return nil, err
+		return err
 	}
 
 	ec2Client := getEC2Client(cfg)
 
-	input := getDescribeInstancesInput(filterTag)
+	input := getDescribeInstancesInput(tagKey)
 
 	// Max 1000 responses without pagination
 	result, err := ec2Client.DescribeInstances(context.TODO(), input)
 	if err != nil {
 		// TODO Logger
-		return nil, err
+		return err
 	}
 
 	instances := []Instance{}
@@ -34,8 +33,8 @@ func GetEC2Instances() ([]Instance, error) {
 			// Add to struct
 			var i = Instance{
 				InstanceId:  aws.ToString(inst.InstanceId),
-				Name:        getTagValue(inst, filterTag),
-				ServerGroup: getTagValue(inst, filterTag),
+				Name:        getTagValue(inst, tagKey),
+				ServerGroup: getTagValue(inst, tagKey),
 				TimeAdded:   time.Now().Unix(),
 			}
 
@@ -43,5 +42,7 @@ func GetEC2Instances() ([]Instance, error) {
 		}
 	}
 
-	return instances, nil
+	// TODO insert into DB
+
+	return nil
 }

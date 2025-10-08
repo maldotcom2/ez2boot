@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"ez2boot/internal/config"
 	"ez2boot/internal/handler"
 	"ez2boot/internal/middleware"
 	"ez2boot/internal/repository"
+	"ez2boot/internal/service"
 	"log/slog"
 	"net/http"
 	"os"
@@ -59,11 +61,16 @@ func main() {
 	router.Use(middleware.JsonContentTypeMiddleware)
 	router.Use(middleware.CORSMiddleware)
 
-	// start server
+	//Start server
 	logger.Info("Server is ready and listening", "port", cfg.Port)
 	err = http.ListenAndServe(":"+cfg.Port, router)
 	if err != nil {
 		logger.Error("Failed to start http server", "error", err)
 		os.Exit(1)
 	}
+
+	// Start scraper
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go service.ScrapeAndPopulate(ctx, cfg.CloudProvider, cfg.ScrapeInterval, cfg.TagKey)
 }
