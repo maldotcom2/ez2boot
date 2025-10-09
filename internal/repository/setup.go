@@ -6,7 +6,7 @@ import (
 
 func (r *Repository) SetupDB() error {
 	// Create servers table
-	_, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS servers (id INTEGER PRIMARY KEY AUTOINCREMENT, unique_id TEXT UNIQUE, name TEXT UNIQUE, state TEXT, server_group TEXT, time_added INTEGER, time_last_on INTEGER, time_last_off INTEGER, last_user TEXT)")
+	_, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS servers (id INTEGER PRIMARY KEY AUTOINCREMENT, unique_id TEXT UNIQUE, name TEXT UNIQUE, state TEXT, server_group TEXT, time_added INTEGER, time_last_on INTEGER, time_last_off INTEGER, last_user TEXT, UNIQUE (unique_id, name))")
 	if err != nil {
 		return err
 	}
