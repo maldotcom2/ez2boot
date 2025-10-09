@@ -28,3 +28,16 @@ func (r *Repository) GetServers(logger *slog.Logger) ([]model.Server, error) {
 }
 
 // Add or update servers
+func (r *Repository) AddOrUpdateServers(servers []model.Server, logger *slog.Logger) {
+	query := `INSERT INTO servers (unique_id, name, state, server_group, time_added) VALUES ($1, $2, $3, $4, $5) 
+			ON CONFLICT (unique_id, name) DO UPDATE 
+			SET state = EXCLUDED.state
+			WHERE servers.state IS DISTINCT FROM EXCLUDED.state`
+
+	for _, server := range servers {
+		_, err := r.DB.Exec(query, server.UniqueID, server.Name, server.State, server.ServerGroup, server.TimeAdded)
+		if err != nil {
+			logger.Error("Failed to insert or update status for server:", "name", server.Name, "err", err)
+		}
+	}
+}

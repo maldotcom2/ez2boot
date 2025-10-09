@@ -11,8 +11,11 @@ type Config struct {
 }
 
 type Server struct {
+	UniqueID    string `json:"unique_id"`
 	Name        string `json:"name"`
+	State       string `json:"state"`
 	ServerGroup string `json:"server_group"`
+	TimeAdded   int64  `json:"time_added"`
 }
 
 type Session struct {
