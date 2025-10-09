@@ -9,6 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.31.12
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.254.1
 	github.com/gorilla/mux v1.8.1
+	github.com/joho/godotenv v1.5.1
 )
 
 require (
@@ -23,5 +24,4 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.38.6 // indirect
 	github.com/aws/smithy-go v1.23.0 // indirect
-	github.com/joho/godotenv v1.5.1 // indirect
 )

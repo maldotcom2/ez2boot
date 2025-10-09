@@ -72,5 +72,6 @@ func main() {
 	// Start scraper
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	go service.ScrapeAndPopulate(ctx, cfg.CloudProvider, cfg.ScrapeInterval, cfg.TagKey)
+	isRoutine := true
+	service.ScrapeAndPopulate(ctx, cfg.CloudProvider, cfg.ScrapeInterval, cfg.TagKey, isRoutine, logger)
 }
