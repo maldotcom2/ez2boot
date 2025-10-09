@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"ez2boot/internal/aws"
-	"fmt"
 	"log/slog"
 	"time"
 )
@@ -15,7 +14,7 @@ func ScrapeAndPopulate(ctx context.Context, provider string, interval time.Durat
 	case "aws":
 		scrapeFunc = aws.GetEC2Instances
 	default:
-		return fmt.Errorf("Provider %s is not supported", provider)
+		logger.Error("Unsupported provider", "provider", provider)
 	}
 
 	if isRoutine {
