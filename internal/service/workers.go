@@ -19,6 +19,8 @@ func ScrapeAndPopulate(repo *repository.Repository, ctx context.Context, cfg mod
 		logger.Error("Unsupported provider", "provider", cfg.CloudProvider)
 	}
 
+	logger.Info("Scraping targets", "provider", cfg.CloudProvider)
+
 	if isRoutine {
 		startScrapeRoutine(repo, ctx, cfg, scrapeFunc, logger) // Go Routine path does not return an error
 		return nil

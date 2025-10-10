@@ -3,12 +3,11 @@ package repository
 import (
 	"ez2boot/internal/model"
 	"fmt"
-	"log/slog"
 	"strings"
 )
 
 // Return all servers from catalogue - names and groups
-func (r *Repository) GetServers(logger *slog.Logger) ([]model.Server, error) {
+func (r *Repository) GetServers() ([]model.Server, error) {
 	rows, err := r.DB.Query("SELECT name, server_group FROM servers")
 	if err != nil {
 		return nil, err
@@ -30,15 +29,15 @@ func (r *Repository) GetServers(logger *slog.Logger) ([]model.Server, error) {
 }
 
 // Add or update servers. Errors are not returned here due to GO routine
-func (r *Repository) UpdateServers(servers []model.Server, logger *slog.Logger) {
+func (r *Repository) UpdateServers(servers []model.Server) {
 
 	err := r.deleteObsolete(servers)
 	if err != nil {
-		logger.Error("Failed to delete obsolete servers from local DB", "error", err)
+		r.Logger.Error("Failed to delete obsolete servers from local DB", "error", err)
 		// Continue
 	}
 
-	r.addOrUpdate(servers, logger)
+	r.addOrUpdate(servers)
 }
 
 func (r *Repository) deleteObsolete(servers []model.Server) error {
@@ -66,7 +65,7 @@ func (r *Repository) deleteObsolete(servers []model.Server) error {
 	return nil
 }
 
-func (r *Repository) addOrUpdate(servers []model.Server, logger *slog.Logger) {
+func (r *Repository) addOrUpdate(servers []model.Server) {
 	const updateQuery = `INSERT INTO servers (unique_id, name, state, server_group, time_added) VALUES ($1, $2, $3, $4, $5) 
 						ON CONFLICT (unique_id, name) DO UPDATE 
 						SET state = EXCLUDED.state, server_group = EXCLUDED.server_group
@@ -75,7 +74,7 @@ func (r *Repository) addOrUpdate(servers []model.Server, logger *slog.Logger) {
 	for _, server := range servers {
 		_, err := r.DB.Exec(updateQuery, server.UniqueID, server.Name, server.State, server.ServerGroup, server.TimeAdded)
 		if err != nil {
-			logger.Error("Failed to add or update server from scrap", "server", server, "error", err) // Log here to show error and continue
+			r.Logger.Error("Failed to add or update server from scrap", "server", server, "error", err) // Log here to show error and continue
 		}
 	}
 }

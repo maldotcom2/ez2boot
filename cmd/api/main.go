@@ -7,6 +7,7 @@ import (
 	"ez2boot/internal/middleware"
 	"ez2boot/internal/repository"
 	"ez2boot/internal/service"
+	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -15,21 +16,22 @@ import (
 )
 
 func main() {
+	// Load env vars
+	cfg, err := config.GetEnvVars()
+	if err != nil {
+		log.Print("No .env file present")
+	}
+
 	// Create log handler
 	logHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level:     slog.LevelInfo,
+		Level:     cfg.LogLevel,
 		AddSource: true,
 	})
 
 	// create logger
 	logger := slog.New(logHandler)
 	logger.Info("Start app")
-
-	// Load env vars
-	cfg, err := config.GetEnvVars()
-	if err != nil {
-		logger.Info("No .env file present")
-	}
+	logger.Info("Log Level", "level", cfg.LogLevel)
 
 	// connect to DB
 	db, err := repository.Connect()
@@ -61,6 +63,12 @@ func main() {
 	router.Use(middleware.JsonContentTypeMiddleware)
 	router.Use(middleware.CORSMiddleware)
 
+	// Start scraper
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	isRoutine := true
+	service.ScrapeAndPopulate(repo, ctx, cfg, isRoutine, logger)
+
 	//Start server
 	logger.Info("Server is ready and listening", "port", cfg.Port)
 	err = http.ListenAndServe(":"+cfg.Port, router)
@@ -68,10 +76,4 @@ func main() {
 		logger.Error("Failed to start http server", "error", err)
 		os.Exit(1)
 	}
-
-	// Start scraper
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	isRoutine := true
-	service.ScrapeAndPopulate(repo, ctx, cfg, isRoutine, logger)
 }

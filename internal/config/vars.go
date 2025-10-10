@@ -2,7 +2,6 @@ package config
 
 import (
 	"ez2boot/internal/model"
-	"ez2boot/internal/utils"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -29,7 +28,7 @@ func GetEnvVars() (model.Config, error) {
 		scrapeIntervalStr = "30s" //default
 	}
 
-	scrapeInterval, err := utils.GetDurationFromString(scrapeIntervalStr)
+	scrapeInterval, err := GetDurationFromString(scrapeIntervalStr)
 	if err != nil {
 		return model.Config{}, err
 	}
@@ -44,11 +43,19 @@ func GetEnvVars() (model.Config, error) {
 		awsRegion = "ap-southeast-2" //default
 	}
 
+	logLevelStr := os.Getenv("LOG_LEVEL")
+	if logLevelStr == "" {
+		logLevelStr = "info" //default
+	}
+
+	logLevel := ParseLogLevel(logLevelStr)
+
 	return model.Config{
 		CloudProvider:  cloudProvider,
 		Port:           port,
 		ScrapeInterval: scrapeInterval,
 		TagKey:         tagKey,
 		AWSRegion:      awsRegion,
+		LogLevel:       logLevel,
 	}, nil
 }

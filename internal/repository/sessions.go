@@ -2,13 +2,11 @@ package repository
 
 import (
 	"ez2boot/internal/model"
-	"ez2boot/internal/utils"
-	"log/slog"
 	"time"
 )
 
 // Return currently active sessions
-func (r *Repository) GetSessions(logger *slog.Logger) ([]model.Session, error) {
+func (r *Repository) GetSessions() ([]model.Session, error) {
 	rows, err := r.DB.Query("SELECT email, server_group, expiry FROM sessions")
 	if err != nil {
 		return nil, err
@@ -40,8 +38,8 @@ func (r *Repository) GetSessions(logger *slog.Logger) ([]model.Session, error) {
 }
 
 // Create a new session
-func (r *Repository) NewSession(session model.Session, logger *slog.Logger) (model.Session, error) {
-	newExpiry, err := utils.GetExpiryFromDuration(0, session.Duration)
+func (r *Repository) NewSession(session model.Session) (model.Session, error) {
+	newExpiry, err := GetExpiryFromDuration(0, session.Duration)
 	if err != nil {
 		return session, err
 	}
@@ -59,8 +57,8 @@ func (r *Repository) NewSession(session model.Session, logger *slog.Logger) (mod
 }
 
 // Update existing session
-func (r *Repository) UpdateSession(session model.Session, logger *slog.Logger) (bool, model.Session, error) {
-	newExpiry, err := utils.GetExpiryFromDuration(0, session.Duration)
+func (r *Repository) UpdateSession(session model.Session) (bool, model.Session, error) {
+	newExpiry, err := GetExpiryFromDuration(0, session.Duration)
 	if err != nil {
 		return false, session, err
 	}

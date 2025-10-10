@@ -1,6 +1,9 @@
 package model
 
-import "time"
+import (
+	"log/slog"
+	"time"
+)
 
 type Config struct {
 	CloudProvider  string
@@ -8,6 +11,7 @@ type Config struct {
 	ScrapeInterval time.Duration
 	TagKey         string
 	AWSRegion      string
+	LogLevel       slog.Level
 	// Add more fields as needed
 }
 

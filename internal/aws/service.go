@@ -50,7 +50,7 @@ func GetEC2Instances(repo *repository.Repository, cfg model.Config, logger *slog
 	// Check number of servers returned from scrape
 	if len(servers) > 0 {
 		logger.Info("Scraper found matching servers", "count", len(servers))
-		repo.UpdateServers(servers, logger)
+		repo.UpdateServers(servers)
 	} else {
 		logger.Info("Scraper found no matching servers")
 	}

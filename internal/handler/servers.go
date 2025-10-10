@@ -9,7 +9,7 @@ import (
 
 func GetServers(repo *repository.Repository, logger *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		servers, err := repo.GetServers(logger)
+		servers, err := repo.GetServers()
 		if err != nil {
 			logger.Error("Failed to get servers", "error", err)
 			http.Error(w, "Failed to get servers", http.StatusInternalServerError)
