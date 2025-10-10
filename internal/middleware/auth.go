@@ -17,7 +17,7 @@ func AuthMiddleware(logger *slog.Logger) mux.MiddlewareFunc {
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
-			// TEST REMOVE FROM PROD
+			// TODO implement actual auth check
 			logger.Info("Basic auth passed", "username", username, "password", password)
 			// Pass down request to the next middleware
 			next.ServeHTTP(w, r)
