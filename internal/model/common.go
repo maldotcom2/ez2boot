@@ -7,6 +7,7 @@ type Config struct {
 	Port           string
 	ScrapeInterval time.Duration
 	TagKey         string
+	AWSRegion      string
 	// Add more fields as needed
 }
 

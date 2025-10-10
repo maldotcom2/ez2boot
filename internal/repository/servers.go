@@ -2,7 +2,9 @@ package repository
 
 import (
 	"ez2boot/internal/model"
+	"fmt"
 	"log/slog"
+	"strings"
 )
 
 // Return all servers from catalogue - names and groups
@@ -27,18 +29,53 @@ func (r *Repository) GetServers(logger *slog.Logger) ([]model.Server, error) {
 	return servers, nil
 }
 
-// Add or update servers
-func (r *Repository) AddOrUpdateServers(servers []model.Server, logger *slog.Logger) {
-	query := `INSERT INTO servers (unique_id, name, state, server_group, time_added) VALUES ($1, $2, $3, $4, $5) 
-			ON CONFLICT (unique_id, name) DO UPDATE 
-			SET state = EXCLUDED.state, server_group = EXCLUDED.server_group
-			WHERE servers.state IS NOT EXCLUDED.state OR servers.server_group IS NOT EXCLUDED.state`
+// Add or update servers. Errors are not returned here due to GO routine
+func (r *Repository) UpdateServers(servers []model.Server, logger *slog.Logger) {
 
-	// TODO remove from DB any servers which did not appear in the scrape
+	err := r.deleteObsolete(servers)
+	if err != nil {
+		logger.Error("Failed to delete obsolete servers from local DB", "error", err)
+		// Continue
+	}
+
+	r.addOrUpdate(servers, logger)
+}
+
+func (r *Repository) deleteObsolete(servers []model.Server) error {
+	// Extract UniqueIDs into a slice of interface{}
+	ids := make([]interface{}, len(servers))
+	for i, s := range servers {
+		ids[i] = s.UniqueID
+	}
+
+	// Build placeholders
+	placeholders := make([]string, len(servers))
+	for i := range servers {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+	}
+	placeholderStr := strings.Join(placeholders, ", ")
+
+	// Build the full query with expanded placeholders
+	query := fmt.Sprintf(`DELETE FROM servers WHERE unique_id NOT IN (%s)`, placeholderStr)
+
+	_, err := r.DB.Exec(query, ids...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Repository) addOrUpdate(servers []model.Server, logger *slog.Logger) {
+	const updateQuery = `INSERT INTO servers (unique_id, name, state, server_group, time_added) VALUES ($1, $2, $3, $4, $5) 
+						ON CONFLICT (unique_id, name) DO UPDATE 
+						SET state = EXCLUDED.state, server_group = EXCLUDED.server_group
+						WHERE servers.state IS NOT EXCLUDED.state OR servers.server_group IS NOT EXCLUDED.state`
+
 	for _, server := range servers {
-		_, err := r.DB.Exec(query, server.UniqueID, server.Name, server.State, server.ServerGroup, server.TimeAdded)
+		_, err := r.DB.Exec(updateQuery, server.UniqueID, server.Name, server.State, server.ServerGroup, server.TimeAdded)
 		if err != nil {
-			logger.Error("Failed to insert or update status for server:", "name", server.Name, "err", err)
+			logger.Error("Failed to add or update server from scrap", "server", server, "error", err) // Log here to show error and continue
 		}
 	}
 }

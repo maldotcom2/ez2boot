@@ -39,10 +39,16 @@ func GetEnvVars() (model.Config, error) {
 		tagKey = "ez2boot" //default
 	}
 
+	awsRegion := os.Getenv("AWS_REGION")
+	if awsRegion == "" {
+		awsRegion = "ap-southeast-2" //default
+	}
+
 	return model.Config{
 		CloudProvider:  cloudProvider,
 		Port:           port,
 		ScrapeInterval: scrapeInterval,
 		TagKey:         tagKey,
+		AWSRegion:      awsRegion,
 	}, nil
 }
