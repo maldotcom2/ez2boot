@@ -37,7 +37,7 @@ func GetEC2Instances(repo *repository.Repository, cfg model.Config, logger *slog
 			// Add to struct
 			var i = model.Server{
 				UniqueID:    aws.ToString(inst.InstanceId),
-				Name:        getTagValue(inst, cfg.TagKey),
+				Name:        getTagValue(inst, "Name"),
 				State:       string(inst.State.Name),
 				ServerGroup: getTagValue(inst, cfg.TagKey),
 				TimeAdded:   time.Now().Unix(),

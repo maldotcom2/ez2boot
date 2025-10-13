@@ -2,6 +2,7 @@ package repository
 
 import (
 	"ez2boot/internal/model"
+	"fmt"
 	"time"
 )
 
@@ -39,18 +40,41 @@ func (r *Repository) GetSessions() ([]model.Session, error) {
 
 // Create a new session
 func (r *Repository) NewSession(session model.Session) (model.Session, error) {
+	tx, err := r.DB.Begin()
+	if err != nil {
+		return model.Session{}, err
+	}
+
+	// Check server group exists
+	var count int
+	err = tx.QueryRow("SELECT COUNT(*) FROM servers WHERE server_group = $1", session.ServerGroup).Scan(&count)
+	if err != nil {
+		tx.Rollback()
+		return model.Session{}, err
+	}
+
+	if count == 0 {
+		tx.Rollback()
+		return model.Session{}, fmt.Errorf("No servers found in server_group: %s", session.ServerGroup) // TODO Make this detectable by handler
+	}
+
 	newExpiry, err := GetExpiryFromDuration(0, session.Duration)
 	if err != nil {
-		return session, err
+		return model.Session{}, err
 	}
 
 	// Convert epoch to time and add to struct
 	session.Expiry = time.Unix(newExpiry, 0).UTC()
 
-	_, err = r.DB.Exec("INSERT INTO sessions (token, email, server_group, expiry) VALUES ($1, $2, $3, $4)", session.Token, session.Email, session.ServerGroup, newExpiry)
+	_, err = tx.Exec("INSERT INTO sessions (token, email, server_group, expiry) VALUES ($1, $2, $3, $4)", session.Token, session.Email, session.ServerGroup, newExpiry)
 	if err != nil {
-		// TO DO: Add error for non-unique where server group already has a session
-		return session, err
+		tx.Rollback()
+		return model.Session{}, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return model.Session{}, err
 	}
 
 	return session, nil

@@ -7,22 +7,22 @@ import (
 )
 
 // Return all servers from catalogue - names and groups
-func (r *Repository) GetServers() ([]model.Server, error) {
-	rows, err := r.DB.Query("SELECT name, server_group FROM servers")
+func (r *Repository) GetServers() (map[string][]model.Server, error) {
+	rows, err := r.DB.Query("SELECT unique_id, name, state, server_group FROM servers")
 	if err != nil {
 		return nil, err
 	}
 
 	defer rows.Close()
 
-	servers := []model.Server{}
+	servers := make(map[string][]model.Server)
 	for rows.Next() {
 		var s model.Server
-		err = rows.Scan(&s.Name, &s.ServerGroup)
+		err = rows.Scan(&s.UniqueID, &s.Name, &s.State, &s.ServerGroup)
 		if err != nil {
 			return nil, err
 		}
-		servers = append(servers, s)
+		servers[s.ServerGroup] = append(servers[s.ServerGroup], s)
 	}
 
 	return servers, nil
