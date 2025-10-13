@@ -45,35 +45,40 @@ func (r *Repository) NewSession(session model.Session) (model.Session, error) {
 		return model.Session{}, err
 	}
 
-	// Check server group exists
-	var count int
-	err = tx.QueryRow("SELECT COUNT(*) FROM servers WHERE server_group = $1", session.ServerGroup).Scan(&count)
+	// Set server table for state worker
+	result, err := tx.Exec("UPDATE servers SET next_state = $1, time_last_on = $2, last_user = $3 WHERE server_group = $4", "on", time.Now().Unix(), session.Email, session.ServerGroup)
 	if err != nil {
 		tx.Rollback()
 		return model.Session{}, err
 	}
 
-	if count == 0 {
+	// Impact check
+	rows, err := result.RowsAffected()
+	if err != nil {
 		tx.Rollback()
-		return model.Session{}, fmt.Errorf("No servers found in server_group: %s", session.ServerGroup) // TODO Make this detectable by handler
+		return model.Session{}, err
 	}
 
-	newExpiry, err := GetExpiryFromDuration(0, session.Duration)
+	if rows == 0 {
+		tx.Rollback()
+		return model.Session{}, fmt.Errorf("No servers found for server_group: %s", session.ServerGroup)
+	}
+
+	sessionExpiry, err := GetExpiryFromDuration(0, session.Duration)
 	if err != nil {
+		tx.Rollback()
 		return model.Session{}, err
 	}
 
 	// Convert epoch to time and add to struct
-	session.Expiry = time.Unix(newExpiry, 0).UTC()
+	session.Expiry = time.Unix(sessionExpiry, 0).UTC()
 
-	_, err = tx.Exec("INSERT INTO sessions (token, email, server_group, expiry) VALUES ($1, $2, $3, $4)", session.Token, session.Email, session.ServerGroup, newExpiry)
-	if err != nil {
+	if _, err = tx.Exec("INSERT INTO sessions (token, email, server_group, expiry, to_notify) VALUES ($1, $2, $3, $4, $5)", session.Token, session.Email, session.ServerGroup, sessionExpiry, 1); err != nil {
 		tx.Rollback()
 		return model.Session{}, err
 	}
 
-	err = tx.Commit()
-	if err != nil {
+	if err = tx.Commit(); err != nil {
 		return model.Session{}, err
 	}
 
@@ -96,7 +101,7 @@ func (r *Repository) UpdateSession(session model.Session) (bool, model.Session, 
 		return false, session, err
 	}
 
-	// Check number of rows affected
+	// Impact check
 	rows, err := result.RowsAffected()
 	if err != nil {
 		return false, model.Session{}, err
@@ -109,4 +114,36 @@ func (r *Repository) UpdateSession(session model.Session) (bool, model.Session, 
 
 	session.Message = "Successfully updated session"
 	return true, session, nil
+}
+
+// Full tx for end of session to maintain ref integrity
+func (r *Repository) EndSession(serverGroup string) error {
+	tx, err := r.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	// Set server next state
+	if _, err = tx.Exec("UPDATE servers SET next_state = $1, time_last_off = $2 WHERE server_group = $3", "off", time.Now().Unix(), serverGroup); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Set notify flag on session
+	if _, err = tx.Exec("UPDATE sessions SET to_notify = $1 WHERE server_group = $2", 1, serverGroup); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Delete token to invalidate session and prevent changes
+	if _, err = tx.Exec("UPDATE sessions SET token = NULL WHERE server_group = $1", serverGroup); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
 }

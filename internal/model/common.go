@@ -9,6 +9,7 @@ type Config struct {
 	CloudProvider  string
 	Port           string
 	ScrapeInterval time.Duration
+	InternalClock  time.Duration
 	TagKey         string
 	AWSRegion      string
 	LogLevel       slog.Level

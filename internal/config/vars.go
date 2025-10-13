@@ -33,6 +33,16 @@ func GetEnvVars() (model.Config, error) {
 		return model.Config{}, err
 	}
 
+	internalClockStr := os.Getenv("INTERNAL_CLOCK")
+	if scrapeIntervalStr == "" {
+		scrapeIntervalStr = "10s" //default
+	}
+
+	internalClock, err := GetDurationFromString(internalClockStr)
+	if err != nil {
+		return model.Config{}, err
+	}
+
 	tagKey := os.Getenv("TAG_KEY")
 	if tagKey == "" {
 		tagKey = "ez2boot" //default
@@ -54,6 +64,7 @@ func GetEnvVars() (model.Config, error) {
 		CloudProvider:  cloudProvider,
 		Port:           port,
 		ScrapeInterval: scrapeInterval,
+		InternalClock:  internalClock,
 		TagKey:         tagKey,
 		AWSRegion:      awsRegion,
 		LogLevel:       logLevel,

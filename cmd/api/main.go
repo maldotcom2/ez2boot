@@ -63,11 +63,16 @@ func main() {
 	router.Use(middleware.JsonContentTypeMiddleware)
 	router.Use(middleware.CORSMiddleware)
 
-	// Start scraper
+	// Set Go routine context
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	// Start scraper
 	isRoutine := true
 	service.ScrapeAndPopulate(repo, ctx, cfg, isRoutine, logger)
+
+	// Start session worker
+	service.StartSessionWorker(repo, ctx, cfg, logger)
 
 	//Start server
 	logger.Info("Server is ready and listening", "port", cfg.Port)
