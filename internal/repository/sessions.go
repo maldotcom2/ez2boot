@@ -147,3 +147,85 @@ func (r *Repository) EndSession(serverGroup string) error {
 
 	return nil
 }
+
+// Remove stale session
+func (r *Repository) CleanupSessions() ([]model.Session, error) {
+	// Find sessions pending action
+	serverState := "off"
+	sessionsForNotify, err := r.findSessionsForNotify(serverState)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, session := range sessionsForNotify {
+		tx, err := r.DB.Begin()
+		if err != nil {
+			r.Logger.Error("Failed to begin transaction", "email", session.Email, "server_group", session.ServerGroup, "error", err)
+			continue
+		}
+
+		// Delete session
+		_, err = tx.Exec("DELETE from sessions where server_group = $1", session.ServerGroup)
+		if err != nil {
+			tx.Rollback()
+			r.Logger.Error("Failed to cleanup expired session", "email", session.Email, "server_group", session.ServerGroup, "error", err)
+			continue
+		}
+
+		// Null next_state for all servers in group
+		_, err = tx.Exec("UPDATE servers SET next_state = NULL where server_group = $1", session.ServerGroup)
+		if err != nil {
+			tx.Rollback()
+			r.Logger.Error("Failed to null server next_state", "server_group", session.ServerGroup, "error", err)
+			continue
+		}
+
+		if err = tx.Commit(); err != nil {
+			r.Logger.Error("Failed to commit transaction", "server_group", session.ServerGroup, "error", err)
+			continue
+		}
+	}
+
+	return sessionsForNotify, nil
+}
+
+// Find sessions where all the servers are in requested state and with notify pending
+func (r *Repository) findSessionsForNotify(serverState string) ([]model.Session, error) {
+	query := `SELECT s.*
+			FROM sessions s
+			WHERE s.to_notify = 1
+			AND NOT EXISTS (
+			SELECT 1
+			FROM servers srv
+			WHERE srv.server_group = s.server_group
+			AND (srv.state != $1 OR srv.next_state != $1))`
+
+	rows, err := r.DB.Query(query, serverState)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	sessionsForNotify := []model.Session{}
+
+	for rows.Next() {
+		var email string
+		var serverGroup string
+		var expiryInt int64
+
+		if err = rows.Scan(&email, &serverGroup, &expiryInt); err != nil {
+			return nil, err
+		}
+
+		s := model.Session{
+			Email:       email,
+			ServerGroup: serverGroup,
+			Expiry:      time.Unix(expiryInt, 0).UTC(),
+		}
+
+		sessionsForNotify = append(sessionsForNotify, s)
+	}
+
+	return sessionsForNotify, nil
+}

@@ -6,13 +6,14 @@ import (
 )
 
 type Config struct {
-	CloudProvider  string
-	Port           string
-	ScrapeInterval time.Duration
-	InternalClock  time.Duration
-	TagKey         string
-	AWSRegion      string
-	LogLevel       slog.Level
+	CloudProvider     string
+	Port              string
+	ScrapeInterval    time.Duration
+	InternalClock     time.Duration
+	TagKey            string
+	AWSRegion         string
+	UserNotifications string
+	LogLevel          slog.Level
 	// Add more fields as needed
 }
 

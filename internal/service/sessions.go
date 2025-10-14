@@ -34,8 +34,6 @@ func StartSessionWorker(repo *repository.Repository, ctx context.Context, cfg mo
 				for _, session := range expiredSessions {
 					if err := repo.EndSession(session.ServerGroup); err != nil {
 						logger.Error("Failed to cleanup expired session", "error", err)
-					} else {
-						logger.Info("Ended session, notify pending", "email", session.Email)
 					}
 				}
 			}

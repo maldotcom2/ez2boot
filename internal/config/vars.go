@@ -53,6 +53,11 @@ func GetEnvVars() (model.Config, error) {
 		awsRegion = "ap-southeast-2" //default
 	}
 
+	userNotifications := os.Getenv("USER_NOTIFICATIONS")
+	if userNotifications == "" {
+		userNotifications = "disabled" //default
+	}
+
 	logLevelStr := os.Getenv("LOG_LEVEL")
 	if logLevelStr == "" {
 		logLevelStr = "info" //default
@@ -61,12 +66,13 @@ func GetEnvVars() (model.Config, error) {
 	logLevel := ParseLogLevel(logLevelStr)
 
 	return model.Config{
-		CloudProvider:  cloudProvider,
-		Port:           port,
-		ScrapeInterval: scrapeInterval,
-		InternalClock:  internalClock,
-		TagKey:         tagKey,
-		AWSRegion:      awsRegion,
-		LogLevel:       logLevel,
+		CloudProvider:     cloudProvider,
+		Port:              port,
+		ScrapeInterval:    scrapeInterval,
+		InternalClock:     internalClock,
+		TagKey:            tagKey,
+		AWSRegion:         awsRegion,
+		UserNotifications: userNotifications,
+		LogLevel:          logLevel,
 	}, nil
 }
