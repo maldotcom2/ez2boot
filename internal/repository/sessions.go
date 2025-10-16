@@ -73,7 +73,7 @@ func (r *Repository) NewSession(session model.Session) (model.Session, error) {
 	// Convert epoch to time and add to struct
 	session.Expiry = time.Unix(sessionExpiry, 0).UTC()
 
-	if _, err = tx.Exec("INSERT INTO sessions (token, email, server_group, expiry, to_notify) VALUES ($1, $2, $3, $4, $5)", session.Token, session.Email, session.ServerGroup, sessionExpiry, 1); err != nil {
+	if _, err = tx.Exec("INSERT INTO sessions (token, email, server_group, expiry, to_notify, warning_notified, on_notified) VALUES ($1, $2, $3, $4, $5, $6, $7)", session.Token, session.Email, session.ServerGroup, sessionExpiry, 1, 0, 0); err != nil {
 		tx.Rollback()
 		return model.Session{}, err
 	}
@@ -89,16 +89,12 @@ func (r *Repository) NewSession(session model.Session) (model.Session, error) {
 func (r *Repository) UpdateSession(session model.Session) (bool, model.Session, error) {
 	newExpiry, err := GetExpiryFromDuration(0, session.Duration)
 	if err != nil {
-		return false, session, err
+		return false, model.Session{}, err
 	}
 
-	// Convert epoch to time and add to struct
-	session.Expiry = time.Unix(newExpiry, 0).UTC()
-
-	result, err := r.DB.Exec("UPDATE sessions SET expiry = $1 WHERE token = $2", newExpiry, session.Token)
+	result, err := r.DB.Exec("UPDATE sessions SET expiry = $1, warning_notified = $2 WHERE token = $3 AND expiry > $4", newExpiry, 0, session.Token, time.Now().Unix())
 	if err != nil {
-		// TO DO: Add error for non-unique where server group already has a session
-		return false, session, err
+		return false, model.Session{}, err
 	}
 
 	// Impact check
@@ -112,11 +108,14 @@ func (r *Repository) UpdateSession(session model.Session) (bool, model.Session, 
 		return false, model.Session{}, nil
 	}
 
+	// Convert epoch to time and add to struct
+	session.Expiry = time.Unix(newExpiry, 0).UTC()
+
 	session.Message = "Successfully updated session"
 	return true, session, nil
 }
 
-// Full tx for end of session to maintain ref integrity
+// Set servers next_state off and mark session for cleanup
 func (r *Repository) EndSession(serverGroup string) error {
 	tx, err := r.DB.Begin()
 	if err != nil {
@@ -129,14 +128,8 @@ func (r *Repository) EndSession(serverGroup string) error {
 		return err
 	}
 
-	// Set notify flag on session
-	if _, err = tx.Exec("UPDATE sessions SET to_notify = $1 WHERE server_group = $2", 1, serverGroup); err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// Delete token to invalidate session and prevent changes
-	if _, err = tx.Exec("UPDATE sessions SET token = NULL WHERE server_group = $1", serverGroup); err != nil {
+	// Set cleanup flag on session
+	if _, err = tx.Exec("UPDATE sessions SET to_cleanup = $1 WHERE server_group = $2", 1, serverGroup); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -148,16 +141,9 @@ func (r *Repository) EndSession(serverGroup string) error {
 	return nil
 }
 
-// Remove stale session
-func (r *Repository) CleanupSessions() ([]model.Session, error) {
-	// Find sessions pending action
-	serverState := "off"
-	sessionsForNotify, err := r.findSessionsForNotify(serverState)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, session := range sessionsForNotify {
+// Cleanup worker task
+func (r *Repository) CleanupSessions(sessionsForCleanup []model.Session) {
+	for _, session := range sessionsForCleanup {
 		tx, err := r.DB.Begin()
 		if err != nil {
 			r.Logger.Error("Failed to begin transaction", "email", session.Email, "server_group", session.ServerGroup, "error", err)
@@ -173,6 +159,7 @@ func (r *Repository) CleanupSessions() ([]model.Session, error) {
 		}
 
 		// Null next_state for all servers in group
+		r.Logger.Debug(session.ServerGroup)
 		_, err = tx.Exec("UPDATE servers SET next_state = NULL where server_group = $1", session.ServerGroup)
 		if err != nil {
 			tx.Rollback()
@@ -184,30 +171,30 @@ func (r *Repository) CleanupSessions() ([]model.Session, error) {
 			r.Logger.Error("Failed to commit transaction", "server_group", session.ServerGroup, "error", err)
 			continue
 		}
-	}
 
-	return sessionsForNotify, nil
+		r.Logger.Info("Session ended normally", "email", session.Email, "server_group", session.ServerGroup)
+	}
 }
 
-// Find sessions where all the servers are in requested state and with notify pending
-func (r *Repository) findSessionsForNotify(serverState string) ([]model.Session, error) {
-	query := `SELECT s.*
+// Find sessions where all relevant servers are in requested state (on or off)
+func (r *Repository) FindSessionsForAction(toCleanup int, onNotified int, serverState string) ([]model.Session, error) {
+	query := `SELECT s.email, s.server_group, s.expiry
 			FROM sessions s
-			WHERE s.to_notify = 1
+			WHERE s.to_cleanup = $1 AND s.on_notified = $2
 			AND NOT EXISTS (
 			SELECT 1
 			FROM servers srv
 			WHERE srv.server_group = s.server_group
-			AND (srv.state != $1 OR srv.next_state != $1))`
+			AND (srv.state != $3 OR srv.next_state != $3))`
 
-	rows, err := r.DB.Query(query, serverState)
+	rows, err := r.DB.Query(query, toCleanup, onNotified, serverState)
 	if err != nil {
 		return nil, err
 	}
 
 	defer rows.Close()
 
-	sessionsForNotify := []model.Session{}
+	sessionsForAction := []model.Session{}
 
 	for rows.Next() {
 		var email string
@@ -224,8 +211,26 @@ func (r *Repository) findSessionsForNotify(serverState string) ([]model.Session,
 			Expiry:      time.Unix(expiryInt, 0).UTC(),
 		}
 
-		sessionsForNotify = append(sessionsForNotify, s)
+		sessionsForAction = append(sessionsForAction, s)
 	}
 
-	return sessionsForNotify, nil
+	return sessionsForAction, nil
+}
+
+func (r *Repository) SetWarningNotifiedFlag(value int, serverGroup string) error {
+	_, err := r.DB.Exec("UPDATE sessions SET warning_notified = $1 WHERE server_group = $2", value, serverGroup)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Repository) SetOnNotifiedFlag(value int, serverGroup string) error {
+	_, err := r.DB.Exec("UPDATE sessions SET on_notified = $1 WHERE server_group = $2", value, serverGroup)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -74,9 +74,6 @@ func main() {
 	// Start session worker
 	service.StartSessionWorker(repo, ctx, cfg, logger)
 
-	// Start cleanup and notification worker
-	service.CleanupAndNotify(repo, ctx, cfg, logger)
-
 	//Start server
 	logger.Info("Server is ready and listening", "port", cfg.Port)
 	err = http.ListenAndServe(":"+cfg.Port, router)

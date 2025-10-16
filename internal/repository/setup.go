@@ -12,7 +12,7 @@ func (r *Repository) SetupDB() error {
 	}
 
 	// Create sessions table
-	_, err = r.DB.Exec("CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, email TEXT, server_group TEXT UNIQUE, expiry INTEGER, to_notify INTEGER NOT NULL DEFAULT 0 CHECK (to_notify IN (0, 1)))")
+	_, err = r.DB.Exec("CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, email TEXT, server_group TEXT UNIQUE, expiry INTEGER, to_cleanup INTEGER NOT NULL DEFAULT 0 CHECK (to_cleanup IN (0, 1)), to_notify INTEGER NOT NULL DEFAULT 0 CHECK (to_notify IN (0, 1)), warning_notified INTEGER NOT NULL DEFAULT 0 CHECK (warning_notified IN (0, 1)), on_notified INTEGER NOT NULL DEFAULT 0 CHECK (on_notified IN (0, 1)))")
 	if err != nil {
 		return err
 	}
