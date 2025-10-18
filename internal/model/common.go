@@ -33,3 +33,8 @@ type Session struct {
 	Expiry      time.Time `json:"expiry"`
 	Message     string    `json:"message"`
 }
+
+type User struct {
+	Username string `json:"user_name"`
+	Password string `json:"password"`
+}
