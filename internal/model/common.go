@@ -38,3 +38,9 @@ type User struct {
 	Username string `json:"user_name"`
 	Password string `json:"password"`
 }
+
+type ChangePasswordRequest struct {
+	Username    string `json:"user_name"`
+	OldPassword string `json:"old_password"`
+	NewPassword string `json:"new_password"`
+}

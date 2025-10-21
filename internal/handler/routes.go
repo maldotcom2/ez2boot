@@ -14,4 +14,5 @@ func SetupRoutes(router *mux.Router, repo *repository.Repository, logger *slog.L
 	router.HandleFunc("/sessions", UpdateSession(repo, logger)).Methods("PUT")
 
 	router.HandleFunc("/register", RegisterUser(repo, logger)).Methods("POST")
+	router.HandleFunc("/changepassword", ChangePassword(repo, logger)).Methods("PUT")
 }
