@@ -44,3 +44,9 @@ type ChangePasswordRequest struct {
 	OldPassword string `json:"old_password"`
 	NewPassword string `json:"new_password"`
 }
+
+type UserSession struct {
+	SessionExpiry int64
+	UserID        string
+	Username      string
+}

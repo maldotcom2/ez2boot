@@ -10,7 +10,7 @@ import (
 // Change a password for authenticated user
 func ChangePassword(repo *repository.Repository, req model.ChangePasswordRequest, logger *slog.Logger) error {
 	// Check current password
-	isCurrentPassword, err := comparePassword(repo, req.Username, req.OldPassword, logger)
+	isCurrentPassword, err := ComparePassword(repo, req.Username, req.OldPassword)
 	if err != nil {
 		return err
 	}

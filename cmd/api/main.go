@@ -4,7 +4,6 @@ import (
 	"context"
 	"ez2boot/internal/config"
 	"ez2boot/internal/handler"
-	"ez2boot/internal/middleware"
 	"ez2boot/internal/repository"
 	"ez2boot/internal/service"
 	"log"
@@ -57,11 +56,6 @@ func main() {
 
 	// Setup routes
 	handler.SetupRoutes(router, repo, logger)
-
-	// Chain middleware
-	router.Use(middleware.AuthMiddleware(logger))
-	router.Use(middleware.JsonContentTypeMiddleware)
-	router.Use(middleware.CORSMiddleware)
 
 	// Set Go routine context
 	ctx, cancel := context.WithCancel(context.Background())

@@ -23,5 +23,11 @@ func (r *Repository) SetupDB() error {
 		return err
 	}
 
+	// create table for user sessions
+	_, err = r.DB.Exec("CREATE TABLE IF NOT EXISTS user_sessions (session_token TEXT PRIMARY KEY, session_expiry INTEGER, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE)")
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
