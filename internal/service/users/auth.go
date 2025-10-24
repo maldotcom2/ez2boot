@@ -2,6 +2,7 @@ package users
 
 import (
 	"database/sql"
+	"errors"
 	"ez2boot/internal/model"
 	"ez2boot/internal/repository"
 	"time"
@@ -12,6 +13,9 @@ import (
 func ComparePassword(repo *repository.Repository, username string, password string) (bool, error) {
 	hash, err := repo.FindHashByUsername(username)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, ErrUserNotFound
+		}
 		return false, err
 	}
 

@@ -24,8 +24,13 @@ func BasicAuthMiddleware(repo *repository.Repository, logger *slog.Logger) mux.M
 
 			ok, err := users.ComparePassword(repo, username, password)
 			if err != nil {
+				if errors.Is(err, users.ErrUserNotFound) {
+					logger.Warn("Attempted login for user which does not exist", "username", username, "error", err)
+					w.WriteHeader(http.StatusUnauthorized) // Keep vague to avoid enumeration
+					return
+				}
 				logger.Error("Could not compare password for supplied user", "username", username, "error", err)
-				w.WriteHeader(http.StatusInternalServerError)
+				http.Error(w, "Unable to login", http.StatusInternalServerError)
 				return
 			}
 
