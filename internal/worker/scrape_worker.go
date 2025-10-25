@@ -1,14 +1,14 @@
-package service
+package worker
 
 import (
 	"context"
+	"ez2boot/internal/db"
 	"ez2boot/internal/model"
-	"ez2boot/internal/repository"
 	"log/slog"
 	"time"
 )
 
-func startScrapeRoutine(repo *repository.Repository, ctx context.Context, cfg model.Config, scrapeFunc func(*repository.Repository, model.Config, *slog.Logger) error, logger *slog.Logger) {
+func startScrapeRoutine(repo *db.Repository, ctx context.Context, cfg model.Config, scrapeFunc func(*db.Repository, model.Config, *slog.Logger) error, logger *slog.Logger) {
 	go func() {
 		ticker := time.NewTicker(cfg.ScrapeInterval)
 		defer ticker.Stop()

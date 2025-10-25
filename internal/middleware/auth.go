@@ -3,15 +3,15 @@ package middleware
 import (
 	"context"
 	"errors"
-	"ez2boot/internal/repository"
-	"ez2boot/internal/service/users"
+	"ez2boot/internal/db"
+	"ez2boot/internal/shared"
 	"log/slog"
 	"net/http"
 
 	"github.com/gorilla/mux"
 )
 
-func BasicAuthMiddleware(repo *repository.Repository, logger *slog.Logger) mux.MiddlewareFunc {
+func BasicAuthMiddleware(repo *db.Repository, logger *slog.Logger) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Check basic auth password
@@ -22,9 +22,9 @@ func BasicAuthMiddleware(repo *repository.Repository, logger *slog.Logger) mux.M
 				return
 			}
 
-			ok, err := users.ComparePassword(repo, username, password)
+			ok, err := user.ComparePassword(repo, username, password)
 			if err != nil {
-				if errors.Is(err, users.ErrUserNotFound) {
+				if errors.Is(err, shared.ErrUserNotFound) {
 					logger.Warn("Attempted login for user which does not exist", "username", username, "error", err)
 					w.WriteHeader(http.StatusUnauthorized) // Keep vague to avoid enumeration
 					return
@@ -39,7 +39,7 @@ func BasicAuthMiddleware(repo *repository.Repository, logger *slog.Logger) mux.M
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			} else {
-				userID, err := users.GetBasicAuthInfo(repo, username)
+				userID, err := user.GetBasicAuthInfo(repo, username)
 				if err != nil {
 					logger.Error("Could not retrieve userID for supplied basic auth user", "username", username, "source ip", r.RemoteAddr)
 					return
@@ -54,7 +54,7 @@ func BasicAuthMiddleware(repo *repository.Repository, logger *slog.Logger) mux.M
 	}
 }
 
-func SessionAuthMiddleware(repo *repository.Repository, logger *slog.Logger) mux.MiddlewareFunc {
+func SessionAuthMiddleware(repo *db.Repository, logger *slog.Logger) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -67,15 +67,15 @@ func SessionAuthMiddleware(repo *repository.Repository, logger *slog.Logger) mux
 			}
 
 			// Check whether the cookie is for a valid session, and get user account info
-			u, err := users.GetSessionInfo(repo, cookie.Value)
+			u, err := user.GetSessionInfo(repo, cookie.Value)
 			if err != nil {
-				if errors.Is(err, users.ErrSessionNotFound) {
+				if errors.Is(err, shared.ErrSessionNotFound) {
 					logger.Info("Session not found for user", "error", err)
 					http.Error(w, "Session not found", http.StatusUnauthorized)
 					return
 				}
 
-				if errors.Is(err, users.ErrSessionExpired) {
+				if errors.Is(err, shared.ErrSessionExpired) {
 					logger.Info("Session expired", "username", u.Username)
 					http.Error(w, "Session expired", http.StatusUnauthorized)
 					return

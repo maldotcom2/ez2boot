@@ -1,14 +1,15 @@
-package repository
+package session
 
 import (
 	"ez2boot/internal/model"
+	"ez2boot/internal/util"
 	"fmt"
 	"time"
 )
 
 // Return currently active sessions
-func (r *Repository) GetSessions() ([]model.Session, error) {
-	rows, err := r.DB.Query("SELECT email, server_group, expiry FROM sessions")
+func (r *Repository) GetAllSessions() ([]model.Session, error) {
+	rows, err := r.Base.DB.Query("SELECT email, server_group, expiry FROM sessions")
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +41,7 @@ func (r *Repository) GetSessions() ([]model.Session, error) {
 
 // Create a new session
 func (r *Repository) NewSession(session model.Session) (model.Session, error) {
-	tx, err := r.DB.Begin()
+	tx, err := r.Base.DB.Begin()
 	if err != nil {
 		return model.Session{}, err
 	}
@@ -64,7 +65,7 @@ func (r *Repository) NewSession(session model.Session) (model.Session, error) {
 		return model.Session{}, fmt.Errorf("No servers found for server_group: %s", session.ServerGroup)
 	}
 
-	sessionExpiry, err := GetExpiryFromDuration(0, session.Duration)
+	sessionExpiry, err := util.GetExpiryFromDuration(0, session.Duration)
 	if err != nil {
 		tx.Rollback()
 		return model.Session{}, err
@@ -87,12 +88,12 @@ func (r *Repository) NewSession(session model.Session) (model.Session, error) {
 
 // Update existing session
 func (r *Repository) UpdateSession(session model.Session) (bool, model.Session, error) {
-	newExpiry, err := GetExpiryFromDuration(0, session.Duration)
+	newExpiry, err := util.GetExpiryFromDuration(0, session.Duration)
 	if err != nil {
 		return false, model.Session{}, err
 	}
 
-	result, err := r.DB.Exec("UPDATE sessions SET expiry = $1, warning_notified = $2 WHERE token = $3 AND expiry > $4", newExpiry, 0, session.Token, time.Now().Unix())
+	result, err := r.Base.DB.Exec("UPDATE sessions SET expiry = $1, warning_notified = $2 WHERE token = $3 AND expiry > $4", newExpiry, 0, session.Token, time.Now().Unix())
 	if err != nil {
 		return false, model.Session{}, err
 	}
@@ -117,7 +118,7 @@ func (r *Repository) UpdateSession(session model.Session) (bool, model.Session, 
 
 // Set servers next_state off and mark session for cleanup
 func (r *Repository) EndSession(serverGroup string) error {
-	tx, err := r.DB.Begin()
+	tx, err := r.Base.DB.Begin()
 	if err != nil {
 		return err
 	}
@@ -144,9 +145,9 @@ func (r *Repository) EndSession(serverGroup string) error {
 // Cleanup worker task
 func (r *Repository) CleanupSessions(sessionsForCleanup []model.Session) {
 	for _, session := range sessionsForCleanup {
-		tx, err := r.DB.Begin()
+		tx, err := r.Base.DB.Begin()
 		if err != nil {
-			r.Logger.Error("Failed to begin transaction", "email", session.Email, "server_group", session.ServerGroup, "error", err)
+			r.Base.Logger.Error("Failed to begin transaction", "email", session.Email, "server_group", session.ServerGroup, "error", err)
 			continue
 		}
 
@@ -154,25 +155,25 @@ func (r *Repository) CleanupSessions(sessionsForCleanup []model.Session) {
 		_, err = tx.Exec("DELETE from sessions where server_group = $1", session.ServerGroup)
 		if err != nil {
 			tx.Rollback()
-			r.Logger.Error("Failed to cleanup expired session", "email", session.Email, "server_group", session.ServerGroup, "error", err)
+			r.Base.Logger.Error("Failed to cleanup expired session", "email", session.Email, "server_group", session.ServerGroup, "error", err)
 			continue
 		}
 
 		// Null next_state for all servers in group
-		r.Logger.Debug(session.ServerGroup)
+		r.Base.Logger.Debug(session.ServerGroup)
 		_, err = tx.Exec("UPDATE servers SET next_state = NULL where server_group = $1", session.ServerGroup)
 		if err != nil {
 			tx.Rollback()
-			r.Logger.Error("Failed to null server next_state", "server_group", session.ServerGroup, "error", err)
+			r.Base.Logger.Error("Failed to null server next_state", "server_group", session.ServerGroup, "error", err)
 			continue
 		}
 
 		if err = tx.Commit(); err != nil {
-			r.Logger.Error("Failed to commit transaction", "server_group", session.ServerGroup, "error", err)
+			r.Base.Logger.Error("Failed to commit transaction", "server_group", session.ServerGroup, "error", err)
 			continue
 		}
 
-		r.Logger.Info("Session ended normally", "email", session.Email, "server_group", session.ServerGroup)
+		r.Base.Logger.Info("Session ended normally", "email", session.Email, "server_group", session.ServerGroup)
 	}
 }
 
@@ -187,7 +188,7 @@ func (r *Repository) FindSessionsForAction(toCleanup int, onNotified int, server
 			WHERE srv.server_group = s.server_group
 			AND (srv.state != $3 OR srv.next_state != $3))`
 
-	rows, err := r.DB.Query(query, toCleanup, onNotified, serverState)
+	rows, err := r.Base.DB.Query(query, toCleanup, onNotified, serverState)
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +219,7 @@ func (r *Repository) FindSessionsForAction(toCleanup int, onNotified int, server
 }
 
 func (r *Repository) SetWarningNotifiedFlag(value int, serverGroup string) error {
-	_, err := r.DB.Exec("UPDATE sessions SET warning_notified = $1 WHERE server_group = $2", value, serverGroup)
+	_, err := r.Base.DB.Exec("UPDATE sessions SET warning_notified = $1 WHERE server_group = $2", value, serverGroup)
 	if err != nil {
 		return err
 	}
@@ -227,7 +228,7 @@ func (r *Repository) SetWarningNotifiedFlag(value int, serverGroup string) error
 }
 
 func (r *Repository) SetOnNotifiedFlag(value int, serverGroup string) error {
-	_, err := r.DB.Exec("UPDATE sessions SET on_notified = $1 WHERE server_group = $2", value, serverGroup)
+	_, err := r.Base.DB.Exec("UPDATE sessions SET on_notified = $1 WHERE server_group = $2", value, serverGroup)
 	if err != nil {
 		return err
 	}

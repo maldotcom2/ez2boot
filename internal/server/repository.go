@@ -1,4 +1,4 @@
-package repository
+package server
 
 import (
 	"ez2boot/internal/model"
@@ -7,8 +7,8 @@ import (
 )
 
 // Return all servers from catalogue - names and groups
-func (r *Repository) GetServers() (map[string][]model.Server, error) {
-	rows, err := r.DB.Query("SELECT unique_id, name, state, server_group FROM servers")
+func (r *Repository) GetAllServers() (map[string][]model.Server, error) {
+	rows, err := r.Base.DB.Query("SELECT unique_id, name, state, server_group FROM servers")
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +33,7 @@ func (r *Repository) UpdateServers(servers []model.Server) {
 
 	err := r.deleteObsolete(servers)
 	if err != nil {
-		r.Logger.Error("Failed to delete obsolete servers from local DB", "error", err)
+		r.Base.Logger.Error("Failed to delete obsolete servers from local DB", "error", err)
 		// Continue
 	}
 
@@ -57,7 +57,7 @@ func (r *Repository) deleteObsolete(servers []model.Server) error {
 	// Build the full query with expanded placeholders
 	query := fmt.Sprintf(`DELETE FROM servers WHERE unique_id NOT IN (%s)`, placeholderStr)
 
-	_, err := r.DB.Exec(query, ids...)
+	_, err := r.Base.DB.Exec(query, ids...)
 	if err != nil {
 		return err
 	}
@@ -72,9 +72,9 @@ func (r *Repository) addOrUpdate(servers []model.Server) {
 						WHERE servers.state IS NOT EXCLUDED.state OR servers.server_group IS NOT EXCLUDED.state`
 
 	for _, server := range servers {
-		_, err := r.DB.Exec(updateQuery, server.UniqueID, server.Name, server.State, server.ServerGroup, server.TimeAdded)
+		_, err := r.Base.DB.Exec(updateQuery, server.UniqueID, server.Name, server.State, server.ServerGroup, server.TimeAdded)
 		if err != nil {
-			r.Logger.Error("Failed to add or update server from scrap", "server", server, "error", err) // Log here to show error and continue
+			r.Base.Logger.Error("Failed to add or update server from scrap", "server", server, "error", err) // Log here to show error and continue
 		}
 	}
 }

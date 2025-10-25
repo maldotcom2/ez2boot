@@ -1,16 +1,16 @@
-package handler
+package session
 
 import (
 	"encoding/json"
+	"ez2boot/internal/db"
 	"ez2boot/internal/model"
-	"ez2boot/internal/repository"
 	"log/slog"
 	"net/http"
 )
 
-func GetSessions(repo *repository.Repository, logger *slog.Logger) http.HandlerFunc {
+func GetSessions(repo *db.Repository, logger *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		servers, err := repo.GetSessions()
+		servers, err := GetAllSessions()
 		if err != nil {
 			logger.Error("Failed to get sessions", "error", err)
 			http.Error(w, "Failed to get sessions", http.StatusInternalServerError)
@@ -25,28 +25,14 @@ func GetSessions(repo *repository.Repository, logger *slog.Logger) http.HandlerF
 	}
 }
 
-func NewSession(repo *repository.Repository, logger *slog.Logger) http.HandlerFunc {
+func NewSession(repo *db.Repository, logger *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Receive server_group, email and duration
 		var session model.Session
 		json.NewDecoder(r.Body).Decode(&session)
 
-		// Validate TODO: MOVE THIS SOMEWHERE ELSE
-		if session.Email == "" || session.ServerGroup == "" || session.Duration == "" {
-			logger.Error("Email server_group and duration required")
-			http.Error(w, "Email and ServerGroup required", http.StatusBadRequest)
-		}
-
-		// Generate token
-		token, err := GenerateToken(16)
-		if err != nil {
-			logger.Error("Failed to generate session token", "error", err)
-			http.Error(w, "Failed to generate session token", http.StatusInternalServerError)
-		}
-
-		// Write session info to DB
-		session.Token = token
-		session, err = repo.NewSession(session)
+		// Create the session
+		session, err := createNewSession(session)
 		if err != nil {
 			logger.Error("Failed to create new session", "error", err)
 			http.Error(w, "Failed to create new session", http.StatusInternalServerError)
@@ -63,7 +49,7 @@ func NewSession(repo *repository.Repository, logger *slog.Logger) http.HandlerFu
 	}
 }
 
-func UpdateSession(repo *repository.Repository, logger *slog.Logger) http.HandlerFunc {
+func UpdateSession(repo *db.Repository, logger *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Receive server_group, email and duration
 		var session model.Session

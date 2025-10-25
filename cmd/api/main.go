@@ -3,9 +3,8 @@ package main
 import (
 	"context"
 	"ez2boot/internal/config"
-	"ez2boot/internal/handler"
-	"ez2boot/internal/repository"
-	"ez2boot/internal/service"
+	"ez2boot/internal/db"
+	"ez2boot/internal/worker"
 	"log"
 	"log/slog"
 	"net/http"
@@ -33,16 +32,16 @@ func main() {
 	logger.Info("Log Level", "level", cfg.LogLevel)
 
 	// connect to DB
-	db, err := repository.Connect()
+	conn, err := db.Connect()
 	if err != nil {
 		logger.Error("Failed to connect to database", "error", err)
 		os.Exit(1)
 	}
 
-	defer db.Close()
+	defer conn.Close()
 
 	// Wrap DB pointer to get data access layer
-	repo := repository.NewRepository(db, logger)
+	repo := db.NewRepository(conn, logger)
 
 	// Setup DB
 	err = repo.SetupDB()
@@ -55,7 +54,7 @@ func main() {
 	router := mux.NewRouter()
 
 	// Setup routes
-	handler.SetupRoutes(router, repo, logger)
+	SetupRoutes(router, repo, logger)
 
 	// Set Go routine context
 	ctx, cancel := context.WithCancel(context.Background())
@@ -63,10 +62,10 @@ func main() {
 
 	// Start scraper
 	isRoutine := true
-	service.ScrapeAndPopulate(repo, ctx, cfg, isRoutine, logger)
+	worker.ScrapeAndPopulate(repo, ctx, cfg, isRoutine, logger)
 
 	// Start session worker
-	service.StartSessionWorker(repo, ctx, cfg, logger)
+	worker.StartSessionWorker(repo, ctx, cfg, logger)
 
 	//Start server
 	logger.Info("Server is ready and listening", "port", cfg.Port)

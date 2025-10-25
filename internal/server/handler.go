@@ -1,15 +1,15 @@
-package handler
+package server
 
 import (
 	"encoding/json"
-	"ez2boot/internal/repository"
+	"ez2boot/internal/db"
 	"log/slog"
 	"net/http"
 )
 
-func GetServers(repo *repository.Repository, logger *slog.Logger) http.HandlerFunc {
+func GetServers(repo *db.Repository, logger *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		servers, err := repo.GetServers()
+		servers, err := GetAllServers()
 		if err != nil {
 			logger.Error("Failed to get servers", "error", err)
 			http.Error(w, "Failed to get servers", http.StatusInternalServerError)

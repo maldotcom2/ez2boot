@@ -1,7 +1,21 @@
-// Take in Unix epoch for converting to time, and new duration for parsing and adding
-package repository
+package util
 
-import "time"
+import (
+	"crypto/rand"
+	"encoding/hex"
+	"time"
+)
+
+func GenerateToken(n int) (string, error) {
+	randomBytes := make([]byte, n)
+
+	_, err := rand.Read(randomBytes)
+	if err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(randomBytes), nil
+}
 
 func GetExpiryFromDuration(currentExpiry int64, duration string) (int64, error) {
 

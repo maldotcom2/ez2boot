@@ -1,16 +1,16 @@
-package service
+package worker
 
 import (
 	"context"
-	"ez2boot/internal/aws"
+	"ez2boot/internal/db"
 	"ez2boot/internal/model"
-	"ez2boot/internal/repository"
+	"ez2boot/internal/provider/aws"
 	"log/slog"
 )
 
-func ScrapeAndPopulate(repo *repository.Repository, ctx context.Context, cfg model.Config, isRoutine bool, logger *slog.Logger) error {
+func ScrapeAndPopulate(repo *db.Repository, ctx context.Context, cfg model.Config, isRoutine bool, logger *slog.Logger) error {
 	// Switch provider specific scrape function
-	var scrapeFunc func(*repository.Repository, model.Config, *slog.Logger) error
+	var scrapeFunc func(*db.Repository, model.Config, *slog.Logger) error
 	switch cfg.CloudProvider {
 	case "aws":
 		scrapeFunc = aws.GetEC2Instances

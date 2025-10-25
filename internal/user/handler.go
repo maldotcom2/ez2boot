@@ -1,17 +1,17 @@
-package handler
+package user
 
 import (
 	"encoding/json"
 	"errors"
+	"ez2boot/internal/db"
 	"ez2boot/internal/model"
-	"ez2boot/internal/repository"
-	"ez2boot/internal/service/users"
+	"ez2boot/internal/shared"
 	"log/slog"
 	"net/http"
 )
 
 // Handler to register new user
-func RegisterUser(repo *repository.Repository, logger *slog.Logger) http.HandlerFunc {
+func RegisterUser(repo *db.Repository, logger *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var u model.User
 		err := json.NewDecoder(r.Body).Decode(&u)
@@ -24,7 +24,7 @@ func RegisterUser(repo *repository.Repository, logger *slog.Logger) http.Handler
 			return
 		}
 
-		if err = users.ValidateAndCreateUser(repo, u); err != nil {
+		if err = validateAndCreateUser(repo, u); err != nil {
 			logger.Info("Failed to create user", "username", u.Username, "error", err)
 			http.Error(w, "Failed to create user", http.StatusInternalServerError)
 		}
@@ -33,7 +33,7 @@ func RegisterUser(repo *repository.Repository, logger *slog.Logger) http.Handler
 	}
 }
 
-func ChangePassword(repo *repository.Repository, logger *slog.Logger) http.HandlerFunc {
+func ChangePassword(repo *db.Repository, logger *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var c model.ChangePasswordRequest
 		err := json.NewDecoder(r.Body).Decode(&c)
@@ -46,13 +46,13 @@ func ChangePassword(repo *repository.Repository, logger *slog.Logger) http.Handl
 			return
 		}
 
-		if err = users.ChangePassword(repo, c, logger); err != nil {
+		if err = changePasswordByUser(repo, c, logger); err != nil {
 			logger.Error("Failed to change password for user", "username", c.Username, "error", err)
 
-			if errors.Is(err, users.ErrAuthenticationFailed) {
+			if errors.Is(err, shared.ErrAuthenticationFailed) {
 				http.Error(w, "Authentication failed", http.StatusUnauthorized)
 				return
-			} else if errors.Is(err, users.ErrInvalidPassword) {
+			} else if errors.Is(err, shared.ErrInvalidPassword) {
 				http.Error(w, "Password did not match complexity requirements", http.StatusBadRequest)
 				return
 			} else {

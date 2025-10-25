@@ -1,15 +1,15 @@
-package service
+package worker
 
 import (
 	"context"
+	"ez2boot/internal/db"
 	"ez2boot/internal/model"
-	"ez2boot/internal/repository"
 	"log/slog"
 	"time"
 )
 
 // Handle expired or aging sessions
-func StartSessionWorker(repo *repository.Repository, ctx context.Context, cfg model.Config, logger *slog.Logger) {
+func StartSessionWorker(repo *db.Repository, ctx context.Context, cfg model.Config, logger *slog.Logger) {
 	go func() {
 		ticker := time.NewTicker(cfg.InternalClock)
 		defer ticker.Stop()
