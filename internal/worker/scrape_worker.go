@@ -2,15 +2,12 @@ package worker
 
 import (
 	"context"
-	"ez2boot/internal/db"
-	"ez2boot/internal/model"
-	"log/slog"
 	"time"
 )
 
-func startScrapeRoutine(repo *db.Repository, ctx context.Context, cfg model.Config, scrapeFunc func(*db.Repository, model.Config, *slog.Logger) error, logger *slog.Logger) {
+func StartScrapeRoutine(w Worker, ctx context.Context, scrapeFunc func() error) {
 	go func() {
-		ticker := time.NewTicker(cfg.ScrapeInterval)
+		ticker := time.NewTicker(w.Config.ScrapeInterval)
 		defer ticker.Stop()
 
 		for {
@@ -19,9 +16,9 @@ func startScrapeRoutine(repo *db.Repository, ctx context.Context, cfg model.Conf
 				// Break out of Go Routine
 				return
 			case <-ticker.C:
-				err := scrapeFunc(repo, cfg, logger)
+				err := scrapeFunc()
 				if err != nil {
-					logger.Error("An error occured during routine scape:", "error", err)
+					w.Logger.Error("An error occured during routine scape:", "error", err)
 				}
 			}
 		}

@@ -7,10 +7,10 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func GetEnvVars() (model.Config, error) {
+func GetEnvVars() (*model.Config, error) {
 	err := godotenv.Load()
 	if err != nil {
-		return model.Config{}, err
+		return nil, err
 	}
 
 	cloudProvider := os.Getenv("CLOUD_PROVIDER")
@@ -30,7 +30,7 @@ func GetEnvVars() (model.Config, error) {
 
 	scrapeInterval, err := GetDurationFromString(scrapeIntervalStr)
 	if err != nil {
-		return model.Config{}, err
+		return nil, err
 	}
 
 	internalClockStr := os.Getenv("INTERNAL_CLOCK")
@@ -40,7 +40,7 @@ func GetEnvVars() (model.Config, error) {
 
 	internalClock, err := GetDurationFromString(internalClockStr)
 	if err != nil {
-		return model.Config{}, err
+		return nil, err
 	}
 
 	tagKey := os.Getenv("TAG_KEY")
@@ -65,7 +65,7 @@ func GetEnvVars() (model.Config, error) {
 
 	logLevel := ParseLogLevel(logLevelStr)
 
-	return model.Config{
+	cfg := &model.Config{
 		CloudProvider:     cloudProvider,
 		Port:              port,
 		ScrapeInterval:    scrapeInterval,
@@ -74,5 +74,7 @@ func GetEnvVars() (model.Config, error) {
 		AWSRegion:         awsRegion,
 		UserNotifications: userNotifications,
 		LogLevel:          logLevel,
-	}, nil
+	}
+
+	return cfg, nil
 }

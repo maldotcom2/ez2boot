@@ -4,6 +4,11 @@ import (
 	"context"
 	"ez2boot/internal/config"
 	"ez2boot/internal/db"
+	"ez2boot/internal/middleware"
+	"ez2boot/internal/provider/aws"
+	"ez2boot/internal/server"
+	"ez2boot/internal/session"
+	"ez2boot/internal/user"
 	"ez2boot/internal/worker"
 	"log"
 	"log/slog"
@@ -40,8 +45,75 @@ func main() {
 
 	defer conn.Close()
 
-	// Wrap DB pointer to get data access layer
+	// Shared base repo
 	repo := db.NewRepository(conn, logger)
+
+	// Server repo
+	serverRepo := &server.Repository{
+		Base: repo,
+	}
+
+	// Server service
+	serverService := &server.Service{
+		Repo:   serverRepo,
+		Logger: logger,
+	}
+
+	// Server handler
+	serverHandler := &server.Handler{
+		Service: serverService,
+	}
+
+	// Session repo
+	sessionRepo := &session.Repository{
+		Base: repo,
+	}
+
+	// Session service
+	sessionService := &session.Service{
+		Repo:   sessionRepo,
+		Logger: logger,
+	}
+
+	// Session handler
+	sessionHandler := &session.Handler{
+		Service: sessionService,
+	}
+
+	// User repo
+	userRepo := &user.Repository{
+		Base: repo,
+	}
+
+	// User service
+	userService := &user.Service{
+		Repo:   userRepo,
+		Logger: logger,
+	}
+
+	// User handler
+	userHandler := &user.Handler{
+		Service: userService,
+	}
+
+	// Middlware
+	mw := &middleware.Middleware{
+		Service: userService,
+		Logger:  logger,
+	}
+
+	// aws repository
+	awsRepo := &aws.Repository{
+		Base: repo,
+	}
+
+	// aws service
+	awsService := &aws.Service{
+		Repo:          awsRepo,
+		Config:        cfg,
+		ServerService: serverService,
+		Logger:        logger,
+	}
 
 	// Setup DB
 	err = repo.SetupDB()
@@ -54,18 +126,33 @@ func main() {
 	router := mux.NewRouter()
 
 	// Setup routes
-	SetupRoutes(router, repo, logger)
+	SetupRoutes(router, mw, serverHandler, sessionHandler, userHandler)
 
 	// Set Go routine context
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	var scrapeFunc func() error
+	switch cfg.CloudProvider {
+	case "aws":
+		scrapeFunc = awsService.GetEC2Instances
+	default:
+		logger.Error("Unsupported provider", "provider", cfg.CloudProvider)
+	}
+
+	// worker
+	w := &worker.Worker{
+		ServerService:  serverService,
+		SessionService: sessionService,
+		Config:         cfg,
+		Logger:         logger,
+	}
+
 	// Start scraper
-	isRoutine := true
-	worker.ScrapeAndPopulate(repo, ctx, cfg, isRoutine, logger)
+	worker.StartScrapeRoutine(*w, ctx, scrapeFunc)
 
 	// Start session worker
-	worker.StartSessionWorker(repo, ctx, cfg, logger)
+	worker.StartSessionWorker(*w, ctx)
 
 	//Start server
 	logger.Info("Server is ready and listening", "port", cfg.Port)

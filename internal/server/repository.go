@@ -7,7 +7,7 @@ import (
 )
 
 // Return all servers from catalogue - names and groups
-func (r *Repository) GetAllServers() (map[string][]model.Server, error) {
+func (r *Repository) GetServers() (map[string][]model.Server, error) {
 	rows, err := r.Base.DB.Query("SELECT unique_id, name, state, server_group FROM servers")
 	if err != nil {
 		return nil, err

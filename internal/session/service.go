@@ -2,12 +2,37 @@ package session
 
 import (
 	"errors"
-	"ez2boot/internal/db"
 	"ez2boot/internal/model"
+	"ez2boot/internal/shared"
 	"ez2boot/internal/util"
-	"log/slog"
 	"time"
 )
+
+func (s *Service) GetSessions() ([]model.Session, error) {
+	sessions, err := s.Repo.GetSessions()
+	if err != nil {
+		return []model.Session{}, err
+	}
+
+	return sessions, nil
+}
+
+func (s *Service) UpdateSession(session model.Session) (model.Session, error) {
+	if session.Email == "" || session.ServerGroup == "" || session.Duration == "" {
+		return model.Session{}, errors.New("email, server_group, duration is required")
+	}
+
+	updated, updatedSession, err := s.Repo.UpdateSession(session)
+	if err != nil {
+		return model.Session{}, err
+	}
+
+	if !updated {
+		return model.Session{}, shared.ErrSessionNotFound
+	}
+
+	return updatedSession, nil
+}
 
 func (s *Service) createNewSession(session model.Session) (model.Session, error) {
 	if session.Email == "" || session.ServerGroup == "" || session.Duration == "" {
@@ -29,9 +54,13 @@ func (s *Service) createNewSession(session model.Session) (model.Session, error)
 	return session, nil
 }
 
+func (s *Service) CleanupSessions(sessions []model.Session) {
+	s.Repo.CleanupSessions(sessions)
+}
+
 // Find expired sessions
-func (s *Service) findExpiredOrAgingSessions(repo *db.Repository) ([]model.Session, []model.Session, error) {
-	currentSessions, err := s.Repo.GetAllSessions()
+func (s *Service) FindExpiredOrAgingSessions() ([]model.Session, []model.Session, error) {
+	currentSessions, err := s.Repo.GetSessions()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -52,32 +81,48 @@ func (s *Service) findExpiredOrAgingSessions(repo *db.Repository) ([]model.Sessi
 	return expiredSessions, agingSessions, nil
 }
 
-func (s *Service) processExpiredSessions(repo *db.Repository, expiredSessions []model.Session, logger *slog.Logger) {
-	logger.Debug("Found expired sessions", "count", len(expiredSessions))
+func (s *Service) ProcessExpiredSessions(expiredSessions []model.Session) {
+	s.Logger.Debug("Found expired sessions", "count", len(expiredSessions))
 
 	for _, session := range expiredSessions {
 		if err := s.Repo.EndSession(session.ServerGroup); err != nil {
-			logger.Error("Failed to cleanup expired session", "email", session.Email, "server_group", session.ServerGroup, "error", err)
+			s.Logger.Error("Failed to cleanup expired session", "email", session.Email, "server_group", session.ServerGroup, "error", err)
 		}
 	}
 }
 
-func (s *Service) processAgingSessions(repo *db.Repository, agingSessions []model.Session, logger *slog.Logger) {
-	logger.Debug("Found aging sessions", "count", len(agingSessions))
+func (s *Service) ProcessAgingSessions(agingSessions []model.Session) {
+	s.Logger.Debug("Found aging sessions", "count", len(agingSessions))
 
 	for _, session := range agingSessions {
 		// TODO Queue notification
 		if err := s.Repo.SetWarningNotifiedFlag(1, session.ServerGroup); err != nil {
-			logger.Error("Failed to set session as notified", "email", session.Email, "server_group", session.ServerGroup, "error", err)
+			s.Logger.Error("Failed to set session as notified", "email", session.Email, "server_group", session.ServerGroup, "error", err)
 		}
 	}
 }
 
-func (s *Service) findSessionsForAction(repo *db.Repository, toCleanup int, onNotified int, serverState string) ([]model.Session, error) {
+func (s *Service) FindSessionsForAction(toCleanup int, onNotified int, serverState string) ([]model.Session, error) {
 	sessions, err := s.Repo.FindSessionsForAction(toCleanup, onNotified, serverState)
 	if err != nil {
 		return nil, err
 	}
 
 	return sessions, nil
+}
+
+func (s *Service) SetWarningNotifiedFlag(value int, serverGroup string) error {
+	if err := s.Repo.SetWarningNotifiedFlag(value, serverGroup); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Service) SetOnNotifiedFlag(value int, serverGroup string) error {
+	if err := s.Repo.SetOnNotifiedFlag(value, serverGroup); err != nil {
+		return err
+	}
+
+	return nil
 }

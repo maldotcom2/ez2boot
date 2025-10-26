@@ -3,11 +3,9 @@ package user
 import (
 	"database/sql"
 	"errors"
-	"ez2boot/internal/db"
 	"ez2boot/internal/model"
 	"ez2boot/internal/shared"
 	"fmt"
-	"log/slog"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -15,7 +13,7 @@ import (
 	"github.com/alexedwards/argon2id"
 )
 
-func (s *Service) validateAndCreateUser(repo *db.Repository, u model.User) error {
+func (s *Service) validateAndCreateUser(u model.User) error {
 	// Validate password requirements
 	if err := validatePassword(u.Username, u.Password); err != nil {
 		return err
@@ -53,9 +51,9 @@ func hashString(secret string) (string, error) {
 }
 
 // Change a password for authenticated user
-func (s *Service) changePasswordByUser(repo *db.Repository, req model.ChangePasswordRequest, logger *slog.Logger) error {
+func (s *Service) changePasswordByUser(req model.ChangePasswordRequest) error {
 	// Check current password
-	isCurrentPassword, err := s.ComparePassword(repo, req.Username, req.OldPassword)
+	isCurrentPassword, err := s.ComparePassword(req.Username, req.OldPassword)
 	if err != nil {
 		return err
 	}
@@ -100,7 +98,7 @@ func validatePassword(username string, password string) error {
 	return nil
 }
 
-func (s *Service) ComparePassword(repo *db.Repository, username string, password string) (bool, error) {
+func (s *Service) ComparePassword(username string, password string) (bool, error) {
 	hash, err := s.Repo.findHashByUsername(username)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -117,7 +115,7 @@ func (s *Service) ComparePassword(repo *db.Repository, username string, password
 	return match, nil
 }
 
-func (s *Service) getSessionInfo(repo *db.Repository, token string) (model.UserSession, error) {
+func (s *Service) GetSessionInfo(token string) (model.UserSession, error) {
 	u, err := s.Repo.findUserInfoByToken(token)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -133,7 +131,7 @@ func (s *Service) getSessionInfo(repo *db.Repository, token string) (model.UserS
 	return u, nil
 }
 
-func (s *Service) GetBasicAuthInfo(repo *db.Repository, username string) (int64, error) {
+func (s *Service) GetBasicAuthInfo(username string) (int64, error) {
 	userID, err := s.Repo.findBasicAuthUserID(username)
 	if err != nil {
 		return 0, err

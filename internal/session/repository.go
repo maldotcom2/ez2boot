@@ -8,7 +8,7 @@ import (
 )
 
 // Return currently active sessions
-func (r *Repository) GetAllSessions() ([]model.Session, error) {
+func (r *Repository) GetSessions() ([]model.Session, error) {
 	rows, err := r.Base.DB.Query("SELECT email, server_group, expiry FROM sessions")
 	if err != nil {
 		return nil, err
