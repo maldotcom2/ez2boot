@@ -22,7 +22,7 @@ func main() {
 	// Load env vars
 	cfg, err := config.GetEnvVars()
 	if err != nil {
-		log.Print("No .env file present")
+		log.Print("Could not load environment variables, check that .env file is present or that env variables have been configured")
 	}
 
 	// Create log handler
@@ -161,4 +161,37 @@ func main() {
 		logger.Error("Failed to start http server", "error", err)
 		os.Exit(1)
 	}
+}
+
+func SetupRoutes(router *mux.Router, mw *middleware.Middleware, server *server.Handler, session *session.Handler, user *user.Handler) {
+
+	// API subrouter and routes
+	apiRouter := router.PathPrefix("/api").Subrouter()
+	apiRouter.Use(mw.BasicAuthMiddleware())
+	apiRouter.Use(middleware.JsonContentTypeMiddleware)
+	apiRouter.Use(middleware.CORSMiddleware)
+
+	apiRouter.HandleFunc("/servers", server.GetServers()).Methods("GET")
+
+	apiRouter.HandleFunc("/sessions", session.GetSessions()).Methods("GET")
+	apiRouter.HandleFunc("/sessions", session.NewSession()).Methods("POST")
+	apiRouter.HandleFunc("/sessions", session.UpdateSession()).Methods("PUT")
+
+	apiRouter.HandleFunc("/register", user.RegisterUser()).Methods("POST")
+	apiRouter.HandleFunc("/changepassword", user.ChangePassword()).Methods("PUT")
+
+	// UI subrouter and routes
+	uiRouter := router.PathPrefix("/ui").Subrouter()
+	uiRouter.Use(mw.SessionAuthMiddleware())
+	uiRouter.Use(middleware.JsonContentTypeMiddleware)
+	uiRouter.Use(middleware.CORSMiddleware)
+
+	uiRouter.HandleFunc("/servers", server.GetServers()).Methods("GET")
+
+	uiRouter.HandleFunc("/sessions", session.GetSessions()).Methods("GET")
+	uiRouter.HandleFunc("/sessions", session.NewSession()).Methods("POST")
+	uiRouter.HandleFunc("/sessions", session.UpdateSession()).Methods("PUT")
+
+	uiRouter.HandleFunc("/register", user.RegisterUser()).Methods("POST")
+	uiRouter.HandleFunc("/changepassword", user.ChangePassword()).Methods("PUT")
 }
