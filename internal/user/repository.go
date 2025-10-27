@@ -5,6 +5,16 @@ import (
 	"fmt"
 )
 
+// Login UI user
+func (r *Repository) saveUserSession(tokenHash string, expiry int64, userID int64) error {
+	// Write hash, expiry and user ID
+	if _, err := r.Base.DB.Exec("INSERT INTO user_sessions (token_hash, session_expiry, user_id) VALUES ($1, $2, $3)", tokenHash, expiry, userID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Create new user
 func (r *Repository) createUser(username string, passwordHash string) error {
 	if _, err := r.Base.DB.Exec("INSERT INTO users (username, password_hash, is_active) VALUES ($1, $2, $3)", username, passwordHash, 1); err != nil {
@@ -14,13 +24,14 @@ func (r *Repository) createUser(username string, passwordHash string) error {
 }
 
 // Find password hash by username
-func (r *Repository) findHashByUsername(username string) (string, error) {
+func (r *Repository) findIDHashByUsername(username string) (int64, string, error) {
 	var passwordHash string
-	err := r.Base.DB.QueryRow("SELECT password_hash FROM users WHERE username = $1", username).Scan(&passwordHash)
+	var id int64
+	err := r.Base.DB.QueryRow("SELECT id, password_hash FROM users WHERE username = $1", username).Scan(&id, &passwordHash)
 	if err != nil {
-		return "", err
+		return 0, "", err
 	}
-	return passwordHash, nil
+	return id, passwordHash, nil
 }
 
 // Change password for username
@@ -40,17 +51,6 @@ func (r *Repository) changePassword(username string, newHash string) error {
 	}
 
 	return nil
-}
-
-// Get userID by name for basic auth
-func (r *Repository) findBasicAuthUserID(username string) (int64, error) {
-	var id int64
-	err := r.Base.DB.QueryRow("SELECT id FROM users WHERE username = $1", username).Scan(&id)
-	if err != nil {
-		return 0, err
-	}
-
-	return id, nil
 }
 
 // Get user session info by session token

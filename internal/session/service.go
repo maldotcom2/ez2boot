@@ -40,7 +40,7 @@ func (s *Service) createNewSession(session model.Session) (model.Session, error)
 	}
 
 	// Generate token
-	token, err := util.GenerateToken(16)
+	token, err := util.GenerateRandomString(16)
 	if err != nil {
 		return model.Session{}, err
 	}
@@ -102,8 +102,8 @@ func (s *Service) ProcessAgingSessions(agingSessions []model.Session) {
 	}
 }
 
-func (s *Service) FindSessionsForAction(toCleanup int, onNotified int, serverState string) ([]model.Session, error) {
-	sessions, err := s.Repo.FindSessionsForAction(toCleanup, onNotified, serverState)
+func (s *Service) FindSessionsForAction(toCleanup int, onNotified int, offNotified int, serverState string) ([]model.Session, error) {
+	sessions, err := s.Repo.FindSessionsForAction(toCleanup, onNotified, offNotified, serverState)
 	if err != nil {
 		return nil, err
 	}

@@ -6,14 +6,15 @@ import (
 )
 
 type Config struct {
-	CloudProvider     string
-	Port              string
-	ScrapeInterval    time.Duration
-	InternalClock     time.Duration
-	TagKey            string
-	AWSRegion         string
-	UserNotifications string
-	LogLevel          slog.Level
+	CloudProvider       string
+	Port                string
+	ScrapeInterval      time.Duration
+	InternalClock       time.Duration
+	TagKey              string
+	AWSRegion           string
+	UserNotifications   string
+	UserSessionDuration time.Duration
+	LogLevel            slog.Level
 	// Add more fields as needed
 }
 
@@ -34,7 +35,7 @@ type Session struct {
 	Message     string    `json:"message"`
 }
 
-type User struct {
+type UserLogin struct {
 	Username string `json:"user_name"`
 	Password string `json:"password"`
 }
@@ -49,4 +50,6 @@ type UserSession struct {
 	SessionExpiry int64
 	UserID        string
 	Username      string
+	Password      string
+	Token         string
 }

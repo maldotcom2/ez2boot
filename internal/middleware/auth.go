@@ -20,34 +20,28 @@ func (m *Middleware) BasicAuthMiddleware() mux.MiddlewareFunc {
 				return
 			}
 
-			ok, err := m.Service.ComparePassword(username, password)
+			userID, ok, err := m.Service.AuthenticateUser(username, password)
 			if err != nil {
 				if errors.Is(err, shared.ErrUserNotFound) {
 					m.Logger.Warn("Attempted login for user which does not exist", "username", username, "error", err)
 					w.WriteHeader(http.StatusUnauthorized) // Keep vague to avoid enumeration
 					return
 				}
-				m.Logger.Error("Could not compare password for supplied user", "username", username, "error", err)
+				m.Logger.Error("Could not compare password for supplied user", "userID", userID, "username", username, "error", err)
 				http.Error(w, "Unable to login", http.StatusInternalServerError)
 				return
 			}
 
 			if !ok {
-				m.Logger.Warn("Unauthorised login attempt for user", "username", username, "source ip", r.RemoteAddr)
+				m.Logger.Warn("Unauthorised login attempt for user", "userID", userID, "username", username, "source ip", r.RemoteAddr)
 				w.WriteHeader(http.StatusUnauthorized)
 				return
-			} else {
-				userID, err := m.Service.GetBasicAuthInfo(username)
-				if err != nil {
-					m.Logger.Error("Could not retrieve userID for supplied basic auth user", "username", username, "source ip", r.RemoteAddr)
-					return
-				}
-
-				m.Logger.Info("Basic auth passed", "username", username, "Path", r.URL.Path, "Source IP", r.RemoteAddr)
-				// Pass down request to the next middleware
-				ctx := context.WithValue(r.Context(), UserIDKey, userID)
-				next.ServeHTTP(w, r.WithContext(ctx))
 			}
+
+			m.Logger.Info("Basic auth passed", "username", username, "Path", r.URL.Path, "Source IP", r.RemoteAddr)
+			// Pass down request to the next middleware
+			ctx := context.WithValue(r.Context(), UserIDKey, userID)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
@@ -57,7 +51,7 @@ func (m *Middleware) SessionAuthMiddleware() mux.MiddlewareFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 			// Check for session cookie
-			cookie, err := r.Cookie("session_id")
+			cookie, err := r.Cookie("session")
 			if err != nil || cookie.Value == "" {
 				m.Logger.Info("User didn't present a sessionID to middleware - client redirect", "Path", r.URL.Path, "Source IP", r.RemoteAddr)
 				w.WriteHeader(http.StatusUnauthorized)

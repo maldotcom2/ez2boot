@@ -5,6 +5,7 @@ import (
 	"errors"
 	"ez2boot/internal/model"
 	"ez2boot/internal/shared"
+	"ez2boot/internal/util"
 	"fmt"
 	"strings"
 	"time"
@@ -13,14 +14,46 @@ import (
 	"github.com/alexedwards/argon2id"
 )
 
-func (s *Service) validateAndCreateUser(u model.User) error {
+func (s *Service) LoginUser(u model.UserLogin) (string, error) {
+	// Authenticate
+	userID, ok, err := s.AuthenticateUser(u.Username, u.Password)
+	if err != nil {
+		return "", err
+	}
+
+	if !ok {
+		return "", shared.ErrAuthenticationFailed
+	}
+
+	// Create token
+	str, err := util.GenerateRandomString(32)
+	if err != nil {
+		return "", err
+	}
+
+	hash, err := util.HashString(str)
+	if err != nil {
+		return "", err
+	}
+
+	sessionExpiry := time.Now().Add(s.Config.UserSessionDuration).Unix()
+
+	// Store it
+	if err = s.Repo.saveUserSession(hash, sessionExpiry, userID); err != nil {
+		return "", err
+	}
+
+	return hash, nil
+}
+
+func (s *Service) validateAndCreateUser(u model.UserLogin) error {
 	// Validate password requirements
 	if err := validatePassword(u.Username, u.Password); err != nil {
 		return err
 	}
 
 	// Hash password here
-	passwordHash, err := hashString(u.Password)
+	passwordHash, err := util.HashString(u.Password)
 	if err != nil {
 		return err
 	}
@@ -32,28 +65,10 @@ func (s *Service) validateAndCreateUser(u model.User) error {
 	return nil
 }
 
-func hashString(secret string) (string, error) {
-
-	params := &argon2id.Params{
-		Memory:      128 * 1024,
-		Iterations:  4,
-		Parallelism: 1,
-		SaltLength:  16,
-		KeyLength:   32,
-	}
-
-	hash, err := argon2id.CreateHash(secret, params)
-	if err != nil {
-		return "", err
-	}
-
-	return hash, nil
-}
-
 // Change a password for authenticated user
 func (s *Service) changePasswordByUser(req model.ChangePasswordRequest) error {
 	// Check current password
-	isCurrentPassword, err := s.ComparePassword(req.Username, req.OldPassword)
+	_, isCurrentPassword, err := s.AuthenticateUser(req.Username, req.OldPassword)
 	if err != nil {
 		return err
 	}
@@ -68,7 +83,7 @@ func (s *Service) changePasswordByUser(req model.ChangePasswordRequest) error {
 	}
 
 	// Hash new password and change
-	newHash, err := hashString(req.NewPassword)
+	newHash, err := util.HashString(req.NewPassword)
 	if err != nil {
 		return err
 	}
@@ -98,21 +113,21 @@ func validatePassword(username string, password string) error {
 	return nil
 }
 
-func (s *Service) ComparePassword(username string, password string) (bool, error) {
-	hash, err := s.Repo.findHashByUsername(username)
+func (s *Service) AuthenticateUser(username string, password string) (int64, bool, error) {
+	id, hash, err := s.Repo.findIDHashByUsername(username)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return false, shared.ErrUserNotFound
+			return 0, false, shared.ErrUserNotFound
 		}
-		return false, err
+		return 0, false, err
 	}
 
 	match, err := argon2id.ComparePasswordAndHash(password, hash)
 	if err != nil {
-		return false, err
+		return 0, false, err
 	}
 
-	return match, nil
+	return id, match, nil
 }
 
 func (s *Service) GetSessionInfo(token string) (model.UserSession, error) {
@@ -129,13 +144,4 @@ func (s *Service) GetSessionInfo(token string) (model.UserSession, error) {
 	}
 
 	return u, nil
-}
-
-func (s *Service) GetBasicAuthInfo(username string) (int64, error) {
-	userID, err := s.Repo.findBasicAuthUserID(username)
-	if err != nil {
-		return 0, err
-	}
-
-	return userID, nil
 }

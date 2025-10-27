@@ -37,7 +37,7 @@ func StartSessionWorker(w Worker, ctx context.Context) {
 				}
 
 				// Terminated sessions
-				sessionsForCleanup, err := w.SessionService.FindSessionsForAction(1, 1, "off")
+				sessionsForCleanup, err := w.SessionService.FindSessionsForAction(1, 1, 1, "off")
 				if err != nil {
 					w.Logger.Error("Error occurred while finding sessions for cleanup", "error", err)
 				}
@@ -49,7 +49,7 @@ func StartSessionWorker(w Worker, ctx context.Context) {
 				}
 
 				// Ready-for-use sessions
-				sessionsForUse, err := w.SessionService.FindSessionsForAction(0, 0, "on")
+				sessionsForUse, err := w.SessionService.FindSessionsForAction(0, 0, 0, "on")
 				if err != nil {
 					w.Logger.Error("Error occurred while finding sessions ready for use", "error", err)
 				}

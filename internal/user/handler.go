@@ -6,12 +6,43 @@ import (
 	"ez2boot/internal/model"
 	"ez2boot/internal/shared"
 	"net/http"
+	"time"
 )
+
+func (h *Handler) Login() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var u model.UserLogin
+		if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
+			h.Logger.Info("Malformed request", "username", u.Username, "error", err)
+			http.Error(w, "Malformed request", http.StatusBadRequest)
+		}
+
+		h.Logger.Info("Login attempted", "username", u.Username)
+
+		token, err := h.Service.LoginUser(u)
+		if err != nil {
+			h.Logger.Info("Failed to login", "username", u.Username, "error", err)
+			http.Error(w, "Failed to login", http.StatusInternalServerError)
+		}
+
+		http.SetCookie(w, &http.Cookie{
+			Name:     "session",
+			Value:    token,
+			Path:     "/",
+			Expires:  time.Now().Add(h.Service.Config.UserSessionDuration),
+			SameSite: http.SameSiteNoneMode,
+			HttpOnly: true,
+			Secure:   true,
+		})
+
+		h.Logger.Info("User logged in", "username", u.Username)
+	}
+}
 
 // Handler to register new user
 func (h *Handler) RegisterUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var u model.User
+		var u model.UserLogin
 		err := json.NewDecoder(r.Body).Decode(&u)
 
 		h.Logger.Info("Attempted registration", "username", u.Username)

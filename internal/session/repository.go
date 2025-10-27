@@ -145,6 +145,7 @@ func (r *Repository) EndSession(serverGroup string) error {
 // Cleanup worker task
 func (r *Repository) CleanupSessions(sessionsForCleanup []model.Session) {
 	for _, session := range sessionsForCleanup {
+		r.Base.Logger.Debug("Cleanup Session", "session", session.Email)
 		tx, err := r.Base.DB.Begin()
 		if err != nil {
 			r.Base.Logger.Error("Failed to begin transaction", "email", session.Email, "server_group", session.ServerGroup, "error", err)
@@ -178,17 +179,17 @@ func (r *Repository) CleanupSessions(sessionsForCleanup []model.Session) {
 }
 
 // Find sessions where all relevant servers are in requested state (on or off)
-func (r *Repository) FindSessionsForAction(toCleanup int, onNotified int, serverState string) ([]model.Session, error) {
+func (r *Repository) FindSessionsForAction(toCleanup int, onNotified int, offNotified int, serverState string) ([]model.Session, error) {
 	query := `SELECT s.email, s.server_group, s.expiry
 			FROM sessions s
-			WHERE s.to_cleanup = $1 AND s.on_notified = $2
+			WHERE s.to_cleanup = $1 AND s.on_notified = $2 AND off_notified = $3
 			AND NOT EXISTS (
 			SELECT 1
 			FROM servers srv
 			WHERE srv.server_group = s.server_group
-			AND (srv.state != $3 OR srv.next_state != $3))`
+			AND (srv.state != $4 OR srv.next_state != $4))`
 
-	rows, err := r.Base.DB.Query(query, toCleanup, onNotified, serverState)
+	rows, err := r.Base.DB.Query(query, toCleanup, onNotified, offNotified, serverState)
 	if err != nil {
 		return nil, err
 	}

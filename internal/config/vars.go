@@ -65,15 +65,26 @@ func GetEnvVars() (*model.Config, error) {
 
 	logLevel := ParseLogLevel(logLevelStr)
 
+	userSessionDurationStr := os.Getenv("USER_SESSION_DURATION")
+	if userSessionDurationStr == "" {
+		userSessionDurationStr = "6h" //default
+	}
+
+	userSessionDuration, err := GetDurationFromString(userSessionDurationStr)
+	if err != nil {
+		return nil, err
+	}
+
 	cfg := &model.Config{
-		CloudProvider:     cloudProvider,
-		Port:              port,
-		ScrapeInterval:    scrapeInterval,
-		InternalClock:     internalClock,
-		TagKey:            tagKey,
-		AWSRegion:         awsRegion,
-		UserNotifications: userNotifications,
-		LogLevel:          logLevel,
+		CloudProvider:       cloudProvider,
+		Port:                port,
+		ScrapeInterval:      scrapeInterval,
+		InternalClock:       internalClock,
+		TagKey:              tagKey,
+		AWSRegion:           awsRegion,
+		UserNotifications:   userNotifications,
+		UserSessionDuration: userSessionDuration,
+		LogLevel:            logLevel,
 	}
 
 	return cfg, nil

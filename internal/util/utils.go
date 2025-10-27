@@ -2,11 +2,13 @@ package util
 
 import (
 	"crypto/rand"
-	"encoding/hex"
+	"encoding/base64"
 	"time"
+
+	"github.com/alexedwards/argon2id"
 )
 
-func GenerateToken(n int) (string, error) {
+func GenerateRandomString(n int) (string, error) {
 	randomBytes := make([]byte, n)
 
 	_, err := rand.Read(randomBytes)
@@ -14,7 +16,24 @@ func GenerateToken(n int) (string, error) {
 		return "", err
 	}
 
-	return hex.EncodeToString(randomBytes), nil
+	return base64.RawURLEncoding.EncodeToString(randomBytes), nil
+}
+
+func HashString(secret string) (string, error) {
+	params := &argon2id.Params{
+		Memory:      128 * 1024,
+		Iterations:  4,
+		Parallelism: 1,
+		SaltLength:  16,
+		KeyLength:   32,
+	}
+
+	hash, err := argon2id.CreateHash(secret, params)
+	if err != nil {
+		return "", err
+	}
+
+	return hash, nil
 }
 
 func GetExpiryFromDuration(currentExpiry int64, duration string) (int64, error) {

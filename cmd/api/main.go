@@ -88,12 +88,14 @@ func main() {
 	// User service
 	userService := &user.Service{
 		Repo:   userRepo,
+		Config: cfg,
 		Logger: logger,
 	}
 
 	// User handler
 	userHandler := &user.Handler{
 		Service: userService,
+		Logger:  logger,
 	}
 
 	// Middlware
@@ -165,18 +167,21 @@ func main() {
 
 func SetupRoutes(router *mux.Router, mw *middleware.Middleware, server *server.Handler, session *session.Handler, user *user.Handler) {
 
+	// Public routes, no auth
+	publicRouter := router.PathPrefix("/ui").Subrouter()
+	publicRouter.Use(middleware.JsonContentTypeMiddleware)
+	publicRouter.Use(middleware.CORSMiddleware)
+	publicRouter.HandleFunc("/login", user.Login()).Methods("POST")
+
 	// API subrouter and routes
 	apiRouter := router.PathPrefix("/api").Subrouter()
 	apiRouter.Use(mw.BasicAuthMiddleware())
 	apiRouter.Use(middleware.JsonContentTypeMiddleware)
 	apiRouter.Use(middleware.CORSMiddleware)
-
 	apiRouter.HandleFunc("/servers", server.GetServers()).Methods("GET")
-
 	apiRouter.HandleFunc("/sessions", session.GetSessions()).Methods("GET")
 	apiRouter.HandleFunc("/sessions", session.NewSession()).Methods("POST")
 	apiRouter.HandleFunc("/sessions", session.UpdateSession()).Methods("PUT")
-
 	apiRouter.HandleFunc("/register", user.RegisterUser()).Methods("POST")
 	apiRouter.HandleFunc("/changepassword", user.ChangePassword()).Methods("PUT")
 
@@ -185,13 +190,10 @@ func SetupRoutes(router *mux.Router, mw *middleware.Middleware, server *server.H
 	uiRouter.Use(mw.SessionAuthMiddleware())
 	uiRouter.Use(middleware.JsonContentTypeMiddleware)
 	uiRouter.Use(middleware.CORSMiddleware)
-
 	uiRouter.HandleFunc("/servers", server.GetServers()).Methods("GET")
-
 	uiRouter.HandleFunc("/sessions", session.GetSessions()).Methods("GET")
 	uiRouter.HandleFunc("/sessions", session.NewSession()).Methods("POST")
 	uiRouter.HandleFunc("/sessions", session.UpdateSession()).Methods("PUT")
-
 	uiRouter.HandleFunc("/register", user.RegisterUser()).Methods("POST")
 	uiRouter.HandleFunc("/changepassword", user.ChangePassword()).Methods("PUT")
 }
