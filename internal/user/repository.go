@@ -24,7 +24,7 @@ func (r *Repository) createUser(username string, passwordHash string) error {
 }
 
 // Find password hash by username
-func (r *Repository) findIDHashByUsername(username string) (int64, string, error) {
+func (r *Repository) findUserIDHashByUsername(username string) (int64, string, error) {
 	var passwordHash string
 	var id int64
 	err := r.Base.DB.QueryRow("SELECT id, password_hash FROM users WHERE username = $1", username).Scan(&id, &passwordHash)
@@ -58,13 +58,14 @@ func (r *Repository) findUserInfoByToken(token string) (model.UserSession, error
 	query := `SELECT user_sessions.session_expiry, user_sessions.user_id, users.username
         	FROM user_sessions
         	JOIN users ON user_sessions.user_id = users.id
-        	WHERE user_sessions.session_id = $1`
+        	WHERE user_sessions.token_hash = $1`
 
 	var u model.UserSession
 	err := r.Base.DB.QueryRow(query, token).Scan(&u.SessionExpiry, &u.UserID, &u.Username)
 	if err != nil {
+		r.Logger.Debug("Error", "error", err)
 		return model.UserSession{}, err
 	}
-
+	r.Logger.Debug("Comparing", "token", token)
 	return u, nil
 }

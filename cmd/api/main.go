@@ -82,7 +82,8 @@ func main() {
 
 	// User repo
 	userRepo := &user.Repository{
-		Base: repo,
+		Base:   repo,
+		Logger: logger,
 	}
 
 	// User service

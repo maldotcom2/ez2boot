@@ -21,8 +21,14 @@ func (h *Handler) Login() http.HandlerFunc {
 
 		token, err := h.Service.LoginUser(u)
 		if err != nil {
+			if errors.Is(err, shared.ErrAuthenticationFailed) {
+				h.Logger.Info("Invalid username or password", "username", u.Username, "error", err)
+				http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+				return
+			}
 			h.Logger.Info("Failed to login", "username", u.Username, "error", err)
 			http.Error(w, "Failed to login", http.StatusInternalServerError)
+			return
 		}
 
 		http.SetCookie(w, &http.Cookie{
@@ -56,6 +62,7 @@ func (h *Handler) RegisterUser() http.HandlerFunc {
 		if err = h.Service.validateAndCreateUser(u); err != nil {
 			h.Logger.Info("Failed to create user", "username", u.Username, "error", err)
 			http.Error(w, "Failed to create user", http.StatusInternalServerError)
+			return
 		}
 
 		w.WriteHeader(http.StatusCreated)

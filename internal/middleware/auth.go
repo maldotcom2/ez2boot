@@ -72,6 +72,9 @@ func (m *Middleware) SessionAuthMiddleware() mux.MiddlewareFunc {
 					http.Error(w, "Session expired", http.StatusUnauthorized)
 					return
 				}
+
+				m.Logger.Error("An error occured while evaluating session", "username", u.Username, "error", err)
+				http.Error(w, "Error while evaluating session", http.StatusInternalServerError)
 			}
 
 			// Create a context containing the userID and the account verified status. This controls the authorisation to downstream functions.

@@ -7,7 +7,8 @@ import (
 )
 
 type Repository struct {
-	Base *db.Repository
+	Base   *db.Repository
+	Logger *slog.Logger
 }
 
 type Service struct {
