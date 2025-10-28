@@ -147,6 +147,7 @@ func main() {
 	w := &worker.Worker{
 		ServerService:  serverService,
 		SessionService: sessionService,
+		UserService:    userService,
 		Config:         cfg,
 		Logger:         logger,
 	}
@@ -156,6 +157,9 @@ func main() {
 
 	// Start session worker
 	worker.StartSessionWorker(*w, ctx)
+
+	// Start user session cleanup
+	worker.StartExpiredUserSessionCleanup(*w, ctx)
 
 	//Start server
 	logger.Info("Server is ready and listening", "port", cfg.Port)

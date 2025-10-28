@@ -155,3 +155,14 @@ func (s *Service) GetSessionInfo(token string) (model.UserSession, error) {
 
 	return u, nil
 }
+
+func (s *Service) CleanupExpiredSessions() (sql.Result, error) {
+	now := time.Now().Unix()
+
+	result, err := s.Repo.deleteExpiredSessions(now)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}

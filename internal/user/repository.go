@@ -1,6 +1,7 @@
 package user
 
 import (
+	"database/sql"
 	"ez2boot/internal/model"
 	"fmt"
 )
@@ -73,9 +74,17 @@ func (r *Repository) findUserInfoByToken(token string) (model.UserSession, error
 	var u model.UserSession
 	err := r.Base.DB.QueryRow(query, token).Scan(&u.SessionExpiry, &u.UserID, &u.Email)
 	if err != nil {
-		r.Logger.Debug("Error", "error", err)
 		return model.UserSession{}, err
 	}
-	r.Logger.Debug("Comparing", "token", token)
+
 	return u, nil
+}
+
+func (r *Repository) deleteExpiredSessions(now int64) (sql.Result, error) {
+	result, err := r.Base.DB.Exec("DELETE FROM user_sessions WHERE session_expiry < $1", now)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
