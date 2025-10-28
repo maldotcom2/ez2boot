@@ -6,6 +6,6 @@ import (
 )
 
 type Middleware struct {
-	Service *user.Service
-	Logger  *slog.Logger
+	UserService *user.Service
+	Logger      *slog.Logger
 }

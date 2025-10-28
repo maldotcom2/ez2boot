@@ -101,8 +101,8 @@ func main() {
 
 	// Middlware
 	mw := &middleware.Middleware{
-		Service: userService,
-		Logger:  logger,
+		UserService: userService,
+		Logger:      logger,
 	}
 
 	// aws repository

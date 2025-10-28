@@ -13,20 +13,21 @@ func (h *Handler) Login() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var u model.UserLogin
 		if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
-			h.Logger.Info("Malformed request", "username", u.Username, "error", err)
+			h.Logger.Info("Malformed request", "email", u.Email, "error", err)
 			http.Error(w, "Malformed request", http.StatusBadRequest)
+			return
 		}
 
-		h.Logger.Info("Login attempted", "username", u.Username)
+		h.Logger.Info("Login attempted", "email", u.Email)
 
 		token, err := h.Service.LoginUser(u)
 		if err != nil {
 			if errors.Is(err, shared.ErrAuthenticationFailed) {
-				h.Logger.Info("Invalid username or password", "username", u.Username, "error", err)
-				http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+				h.Logger.Info("Invalid email or password", "email", u.Email, "error", err)
+				http.Error(w, "Invalid email or password", http.StatusUnauthorized)
 				return
 			}
-			h.Logger.Info("Failed to login", "username", u.Username, "error", err)
+			h.Logger.Info("Failed to login", "email", u.Email, "error", err)
 			http.Error(w, "Failed to login", http.StatusInternalServerError)
 			return
 		}
@@ -41,7 +42,7 @@ func (h *Handler) Login() http.HandlerFunc {
 			Secure:   true,
 		})
 
-		h.Logger.Info("User logged in", "username", u.Username)
+		h.Logger.Info("User logged in", "email", u.Email)
 	}
 }
 
@@ -51,16 +52,16 @@ func (h *Handler) RegisterUser() http.HandlerFunc {
 		var u model.UserLogin
 		err := json.NewDecoder(r.Body).Decode(&u)
 
-		h.Logger.Info("Attempted registration", "username", u.Username)
+		h.Logger.Info("Attempted registration", "email", u.Email)
 
 		if err != nil {
-			h.Logger.Info("Malformed request", "username", u.Username)
+			h.Logger.Info("Malformed request", "email", u.Email)
 			http.Error(w, "Malformed request", http.StatusBadRequest)
 			return
 		}
 
 		if err = h.Service.validateAndCreateUser(u); err != nil {
-			h.Logger.Info("Failed to create user", "username", u.Username, "error", err)
+			h.Logger.Info("Failed to create user", "email", u.Email, "error", err)
 			http.Error(w, "Failed to create user", http.StatusInternalServerError)
 			return
 		}
@@ -74,10 +75,10 @@ func (h *Handler) ChangePassword() http.HandlerFunc {
 		var c model.ChangePasswordRequest
 		err := json.NewDecoder(r.Body).Decode(&c)
 
-		h.Logger.Info("Attempted password change", "username", c.Username)
+		h.Logger.Info("Attempted password change", "email", c.Email)
 
 		if err != nil {
-			h.Logger.Error("Malformed request", "username", c.Username)
+			h.Logger.Error("Malformed request", "email", c.Email)
 			http.Error(w, "Malformed request", http.StatusBadRequest)
 			return
 		}

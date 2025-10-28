@@ -16,7 +16,7 @@ import (
 
 func (s *Service) LoginUser(u model.UserLogin) (string, error) {
 	// Authenticate
-	userID, ok, err := s.AuthenticateUser(u.Username, u.Password)
+	userID, ok, err := s.AuthenticateUser(u.Email, u.Password)
 	if err != nil {
 		return "", err
 	}
@@ -48,7 +48,7 @@ func (s *Service) LoginUser(u model.UserLogin) (string, error) {
 
 func (s *Service) validateAndCreateUser(u model.UserLogin) error {
 	// Validate password requirements
-	if err := validatePassword(u.Username, u.Password); err != nil {
+	if err := validatePassword(u.Email, u.Password); err != nil {
 		return err
 	}
 
@@ -58,7 +58,7 @@ func (s *Service) validateAndCreateUser(u model.UserLogin) error {
 		return err
 	}
 
-	if err := s.Repo.createUser(u.Username, passwordHash); err != nil {
+	if err := s.Repo.createUser(u.Email, passwordHash); err != nil {
 		return err
 	}
 
@@ -68,7 +68,7 @@ func (s *Service) validateAndCreateUser(u model.UserLogin) error {
 // Change a password for authenticated user
 func (s *Service) changePasswordByUser(req model.ChangePasswordRequest) error {
 	// Check current password
-	_, isCurrentPassword, err := s.AuthenticateUser(req.Username, req.OldPassword)
+	_, isCurrentPassword, err := s.AuthenticateUser(req.Email, req.OldPassword)
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ func (s *Service) changePasswordByUser(req model.ChangePasswordRequest) error {
 	}
 
 	//Validate complexity
-	if err := validatePassword(req.Username, req.NewPassword); err != nil {
+	if err := validatePassword(req.Email, req.NewPassword); err != nil {
 		return fmt.Errorf("%w: %v", shared.ErrInvalidPassword, err)
 	}
 
@@ -88,33 +88,33 @@ func (s *Service) changePasswordByUser(req model.ChangePasswordRequest) error {
 		return err
 	}
 
-	if err = s.Repo.changePassword(req.Username, newHash); err != nil {
+	if err = s.Repo.changePassword(req.Email, newHash); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func validatePassword(username string, password string) error {
+func validatePassword(email string, password string) error {
 	length := utf8.RuneCountInString(password)
 
 	if length < 14 {
 		return errors.New("Password must be 14 characters or more")
 	}
 
-	if strings.Contains(password, username) {
-		return errors.New("Password cannot contain the username")
+	if strings.Contains(password, email) {
+		return errors.New("Password cannot contain the email")
 	}
 
-	if strings.Contains(password, username) {
-		return errors.New("Username cannot contain the password")
+	if strings.Contains(password, email) {
+		return errors.New("email cannot contain the password")
 	}
 
 	return nil
 }
 
-func (s *Service) AuthenticateUser(username string, password string) (int64, bool, error) {
-	id, hash, err := s.Repo.findUserIDHashByUsername(username)
+func (s *Service) AuthenticateUser(email string, password string) (int64, bool, error) {
+	id, hash, err := s.Repo.findUserIDHashByEmail(email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return 0, false, shared.ErrUserNotFound

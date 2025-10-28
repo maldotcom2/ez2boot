@@ -18,6 +18,7 @@ func (h *Handler) GetServers() http.HandlerFunc {
 		if err != nil {
 			h.Logger.Error("Failed to encode JSON response", "error", err)
 			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+			return
 		}
 	}
 }

@@ -16,27 +16,27 @@ func (r *Repository) saveUserSession(tokenHash string, expiry int64, userID int6
 }
 
 // Create new user
-func (r *Repository) createUser(username string, passwordHash string) error {
-	if _, err := r.Base.DB.Exec("INSERT INTO users (username, password_hash, is_active) VALUES ($1, $2, $3)", username, passwordHash, 1); err != nil {
+func (r *Repository) createUser(email string, passwordHash string) error {
+	if _, err := r.Base.DB.Exec("INSERT INTO users (email, password_hash, is_active) VALUES ($1, $2, $3)", email, passwordHash, 1); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Find password hash by username
-func (r *Repository) findUserIDHashByUsername(username string) (int64, string, error) {
+// Find password hash by email
+func (r *Repository) findUserIDHashByEmail(email string) (int64, string, error) {
 	var passwordHash string
 	var id int64
-	err := r.Base.DB.QueryRow("SELECT id, password_hash FROM users WHERE username = $1", username).Scan(&id, &passwordHash)
+	err := r.Base.DB.QueryRow("SELECT id, password_hash FROM users WHERE email = $1", email).Scan(&id, &passwordHash)
 	if err != nil {
 		return 0, "", err
 	}
 	return id, passwordHash, nil
 }
 
-// Change password for username
-func (r *Repository) changePassword(username string, newHash string) error {
-	result, err := r.Base.DB.Exec("UPDATE users SET password_hash = $1 WHERE username = $2", newHash, username)
+// Change password for user
+func (r *Repository) changePassword(email string, newHash string) error {
+	result, err := r.Base.DB.Exec("UPDATE users SET password_hash = $1 WHERE email = $2", newHash, email)
 	if err != nil {
 		return err
 	}
@@ -47,7 +47,7 @@ func (r *Repository) changePassword(username string, newHash string) error {
 	}
 
 	if rows == 0 {
-		return fmt.Errorf("Password was not updated for user: %s", username)
+		return fmt.Errorf("Password was not updated for user: %s", email)
 	}
 
 	return nil
@@ -55,13 +55,13 @@ func (r *Repository) changePassword(username string, newHash string) error {
 
 // Get user session info by session token
 func (r *Repository) findUserInfoByToken(token string) (model.UserSession, error) {
-	query := `SELECT user_sessions.session_expiry, user_sessions.user_id, users.username
+	query := `SELECT user_sessions.session_expiry, user_sessions.user_id, users.email
         	FROM user_sessions
         	JOIN users ON user_sessions.user_id = users.id
         	WHERE user_sessions.token_hash = $1`
 
 	var u model.UserSession
-	err := r.Base.DB.QueryRow(query, token).Scan(&u.SessionExpiry, &u.UserID, &u.Username)
+	err := r.Base.DB.QueryRow(query, token).Scan(&u.SessionExpiry, &u.UserID, &u.Email)
 	if err != nil {
 		r.Logger.Debug("Error", "error", err)
 		return model.UserSession{}, err

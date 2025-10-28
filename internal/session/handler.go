@@ -20,6 +20,7 @@ func (h *Handler) GetSessions() http.HandlerFunc {
 		if err != nil {
 			h.Logger.Error("Failed to encode JSON response", "error", err)
 			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+			return
 		}
 	}
 }
@@ -44,6 +45,7 @@ func (h *Handler) NewSession() http.HandlerFunc {
 		if err != nil {
 			h.Logger.Error("Failed to encode JSON response", "error", err)
 			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+			return
 		}
 	}
 }
@@ -59,6 +61,7 @@ func (h *Handler) UpdateSession() http.HandlerFunc {
 			if err == shared.ErrSessionNotFound {
 				h.Logger.Error("Failed to find session", "error", err)
 				http.Error(w, "Failed to find session", http.StatusUnauthorized)
+				return
 			}
 		}
 
@@ -66,6 +69,7 @@ func (h *Handler) UpdateSession() http.HandlerFunc {
 		if err != nil {
 			h.Logger.Error("Failed to encode JSON response", "error", err)
 			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+			return
 		}
 	}
 }

@@ -13,32 +13,32 @@ func (m *Middleware) BasicAuthMiddleware() mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Check basic auth password
-			username, password, ok := r.BasicAuth()
+			email, password, ok := r.BasicAuth()
 			if !ok {
-				m.Logger.Warn("Unauthorised login attempt due to incorrect or missing auth header", "username", username, "source ip", r.RemoteAddr)
+				m.Logger.Warn("Unauthorised login attempt due to incorrect or missing auth header", "email", email, "source ip", r.RemoteAddr)
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
 
-			userID, ok, err := m.Service.AuthenticateUser(username, password)
+			userID, ok, err := m.UserService.AuthenticateUser(email, password)
 			if err != nil {
 				if errors.Is(err, shared.ErrUserNotFound) {
-					m.Logger.Warn("Attempted login for user which does not exist", "username", username, "error", err)
+					m.Logger.Warn("Attempted login for user which does not exist", "email", email, "error", err)
 					w.WriteHeader(http.StatusUnauthorized) // Keep vague to avoid enumeration
 					return
 				}
-				m.Logger.Error("Could not compare password for supplied user", "userID", userID, "username", username, "error", err)
+				m.Logger.Error("Could not compare password for supplied user", "userID", userID, "email", email, "error", err)
 				http.Error(w, "Unable to login", http.StatusInternalServerError)
 				return
 			}
 
 			if !ok {
-				m.Logger.Warn("Unauthorised login attempt for user", "userID", userID, "username", username, "source ip", r.RemoteAddr)
+				m.Logger.Warn("Unauthorised login attempt for user", "userID", userID, "email", email, "source ip", r.RemoteAddr)
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
 
-			m.Logger.Info("Basic auth passed", "username", username, "Path", r.URL.Path, "Source IP", r.RemoteAddr)
+			m.Logger.Info("Basic auth passed", "email", email, "Path", r.URL.Path, "Source IP", r.RemoteAddr)
 			// Pass down request to the next middleware
 			ctx := context.WithValue(r.Context(), UserIDKey, userID)
 			next.ServeHTTP(w, r.WithContext(ctx))
@@ -59,7 +59,7 @@ func (m *Middleware) SessionAuthMiddleware() mux.MiddlewareFunc {
 			}
 
 			// Check whether the cookie is for a valid session, and get user account info
-			u, err := m.Service.GetSessionInfo(cookie.Value)
+			u, err := m.UserService.GetSessionInfo(cookie.Value)
 			if err != nil {
 				if errors.Is(err, shared.ErrSessionNotFound) {
 					m.Logger.Info("Session not found for user", "error", err)
@@ -68,17 +68,18 @@ func (m *Middleware) SessionAuthMiddleware() mux.MiddlewareFunc {
 				}
 
 				if errors.Is(err, shared.ErrSessionExpired) {
-					m.Logger.Info("Session expired", "username", u.Username)
+					m.Logger.Info("Session expired", "email", u.Email)
 					http.Error(w, "Session expired", http.StatusUnauthorized)
 					return
 				}
 
-				m.Logger.Error("An error occured while evaluating session", "username", u.Username, "error", err)
+				m.Logger.Error("An error occured while evaluating session", "email", u.Email, "error", err)
 				http.Error(w, "Error while evaluating session", http.StatusInternalServerError)
+				return
 			}
 
 			// Create a context containing the userID and the account verified status. This controls the authorisation to downstream functions.
-			m.Logger.Info("User request passed middleware", "username", u.Username, "Path", r.URL.Path, "Source IP", r.RemoteAddr)
+			m.Logger.Info("User request passed middleware", "email", u.Email, "Path", r.URL.Path, "Source IP", r.RemoteAddr)
 			ctx := context.WithValue(r.Context(), UserIDKey, u.UserID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
