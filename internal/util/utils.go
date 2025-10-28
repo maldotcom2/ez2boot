@@ -21,6 +21,7 @@ func GenerateRandomString(n int) (string, error) {
 	return base64.RawURLEncoding.EncodeToString(randomBytes), nil
 }
 
+// Password hashing only
 func HashPassword(secret string) (string, error) {
 	params := &argon2id.Params{
 		Memory:      128 * 1024,
@@ -38,6 +39,7 @@ func HashPassword(secret string) (string, error) {
 	return hash, nil
 }
 
+// Deterministic hashing for session tokens
 func HashToken(secret string) string {
 	hash := sha256.Sum256([]byte(secret))
 	tokenHash := hex.EncodeToString(hash[:])

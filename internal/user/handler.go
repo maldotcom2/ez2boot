@@ -46,6 +46,32 @@ func (h *Handler) Login() http.HandlerFunc {
 	}
 }
 
+func (h *Handler) Logout() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Get session token
+		cookie, _ := r.Cookie("session")
+
+		if err := h.Service.logoutUser(cookie.Value); err != nil {
+			h.Logger.Error("Error while logging out user", "error", err)
+			http.Error(w, "Failed to logout", http.StatusInternalServerError)
+			// TODO Redirect to login page
+		}
+
+		// Expire and null cookie
+		http.SetCookie(w, &http.Cookie{
+			Name:     "session",
+			Value:    "",
+			Path:     "/",
+			Expires:  time.Unix(0, 0),
+			HttpOnly: true,
+			MaxAge:   -1,
+		})
+
+		h.Logger.Info("User logged out")
+		// TODO redirect
+	}
+}
+
 // Handler to register new user
 func (h *Handler) RegisterUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

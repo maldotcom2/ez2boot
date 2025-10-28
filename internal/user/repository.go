@@ -6,12 +6,22 @@ import (
 )
 
 // Login UI user
-func (r *Repository) saveUserSession(tokenHash string, expiry int64, userID int64) error {
+func (r *Repository) createUserSession(tokenHash string, expiry int64, userID int64) error {
 	// Write hash, expiry and user ID
 	if _, err := r.Base.DB.Exec("INSERT INTO user_sessions (token_hash, session_expiry, user_id) VALUES ($1, $2, $3)", tokenHash, expiry, userID); err != nil {
 		return err
 	}
 
+	return nil
+}
+
+// Delete provided session
+func (r *Repository) deleteUserSession(tokenHash string) error {
+	_, err := r.Base.DB.Exec("DELETE FROM user_sessions WHERE token_hash = $1", tokenHash)
+	if err != nil {
+		return err
+	}
+	// No check for 0 rows because logout is a protected route, auth is implicit
 	return nil
 }
 
@@ -23,7 +33,7 @@ func (r *Repository) createUser(email string, passwordHash string) error {
 	return nil
 }
 
-// Find password hash by email
+// Find password hash and ID by email
 func (r *Repository) findUserIDHashByEmail(email string) (int64, string, error) {
 	var passwordHash string
 	var id int64

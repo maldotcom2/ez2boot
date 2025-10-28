@@ -32,18 +32,25 @@ func (s *Service) LoginUser(u model.UserLogin) (string, error) {
 	}
 
 	hash := util.HashToken(str)
-	if err != nil {
-		return "", err
-	}
 
 	sessionExpiry := time.Now().Add(s.Config.UserSessionDuration).Unix()
 
 	// Store it
-	if err = s.Repo.saveUserSession(hash, sessionExpiry, userID); err != nil {
+	if err = s.Repo.createUserSession(hash, sessionExpiry, userID); err != nil {
 		return "", err
 	}
 
 	return str, nil
+}
+
+func (s *Service) logoutUser(token string) error {
+	hash := util.HashToken(token)
+
+	if err := s.Repo.deleteUserSession(hash); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *Service) validateAndCreateUser(u model.UserLogin) error {

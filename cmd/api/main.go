@@ -197,4 +197,5 @@ func SetupRoutes(router *mux.Router, mw *middleware.Middleware, server *server.H
 	uiRouter.HandleFunc("/sessions", session.UpdateSession()).Methods("PUT")
 	uiRouter.HandleFunc("/register", user.RegisterUser()).Methods("POST")
 	uiRouter.HandleFunc("/changepassword", user.ChangePassword()).Methods("PUT")
+	uiRouter.HandleFunc("/logout", user.Logout()).Methods("POST")
 }
