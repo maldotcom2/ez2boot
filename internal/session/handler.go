@@ -7,9 +7,9 @@ import (
 	"net/http"
 )
 
-func (h *Handler) GetSessions() http.HandlerFunc {
+func (h *Handler) GetServerSessions() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		sessions, err := h.Service.GetSessions()
+		sessions, err := h.Service.getServerSessions()
 		if err != nil {
 			h.Logger.Error("Failed to get sessions", "error", err)
 			http.Error(w, "Failed to get sessions", http.StatusInternalServerError)
@@ -25,14 +25,14 @@ func (h *Handler) GetSessions() http.HandlerFunc {
 	}
 }
 
-func (h *Handler) NewSession() http.HandlerFunc {
+func (h *Handler) NewServerSession() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Receive server_group, email and duration
-		var session model.Session
-		json.NewDecoder(r.Body).Decode(&session)
+		var s model.ServerSession
+		json.NewDecoder(r.Body).Decode(&s)
 
 		// Create the session
-		session, err := h.Service.createNewSession(session)
+		s, err := h.Service.newServerSession(s)
 		if err != nil {
 			h.Logger.Error("Failed to create new session", "error", err)
 			http.Error(w, "Failed to create new session", http.StatusInternalServerError)
@@ -40,8 +40,8 @@ func (h *Handler) NewSession() http.HandlerFunc {
 		}
 
 		// Return to client
-		session.Message = "Success"
-		err = json.NewEncoder(w).Encode(session)
+		s.Message = "Success"
+		err = json.NewEncoder(w).Encode(s)
 		if err != nil {
 			h.Logger.Error("Failed to encode JSON response", "error", err)
 			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
@@ -50,13 +50,13 @@ func (h *Handler) NewSession() http.HandlerFunc {
 	}
 }
 
-func (h *Handler) UpdateSession() http.HandlerFunc {
+func (h *Handler) UpdateServerSession() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Receive server_group, email and duration
-		var session model.Session
-		json.NewDecoder(r.Body).Decode(&session)
+		var s model.ServerSession
+		json.NewDecoder(r.Body).Decode(&s)
 
-		session, err := h.Service.UpdateSession(session)
+		s, err := h.Service.updateServerSession(s)
 		if err != nil {
 			if err == shared.ErrSessionNotFound {
 				h.Logger.Error("Failed to find session", "error", err)
@@ -65,7 +65,7 @@ func (h *Handler) UpdateSession() http.HandlerFunc {
 			}
 		}
 
-		err = json.NewEncoder(w).Encode(session)
+		err = json.NewEncoder(w).Encode(s)
 		if err != nil {
 			h.Logger.Error("Failed to encode JSON response", "error", err)
 			http.Error(w, "Failed to encode response", http.StatusInternalServerError)

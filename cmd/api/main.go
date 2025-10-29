@@ -156,7 +156,7 @@ func main() {
 	worker.StartScrapeRoutine(*w, ctx, scrapeFunc)
 
 	// Start session worker
-	worker.StartSessionWorker(*w, ctx)
+	worker.StartServerSessionWorker(*w, ctx)
 
 	// Start user session cleanup
 	worker.StartExpiredUserSessionCleanup(*w, ctx)
@@ -184,9 +184,9 @@ func SetupRoutes(router *mux.Router, mw *middleware.Middleware, server *server.H
 	apiRouter.Use(middleware.JsonContentTypeMiddleware)
 	apiRouter.Use(middleware.CORSMiddleware)
 	apiRouter.HandleFunc("/servers", server.GetServers()).Methods("GET")
-	apiRouter.HandleFunc("/sessions", session.GetSessions()).Methods("GET")
-	apiRouter.HandleFunc("/sessions", session.NewSession()).Methods("POST")
-	apiRouter.HandleFunc("/sessions", session.UpdateSession()).Methods("PUT")
+	apiRouter.HandleFunc("/sessions", session.GetServerSessions()).Methods("GET")
+	apiRouter.HandleFunc("/sessions", session.NewServerSession()).Methods("POST")
+	apiRouter.HandleFunc("/sessions", session.UpdateServerSession()).Methods("PUT")
 	apiRouter.HandleFunc("/register", user.RegisterUser()).Methods("POST")
 	apiRouter.HandleFunc("/changepassword", user.ChangePassword()).Methods("PUT")
 
@@ -196,9 +196,9 @@ func SetupRoutes(router *mux.Router, mw *middleware.Middleware, server *server.H
 	uiRouter.Use(middleware.JsonContentTypeMiddleware)
 	uiRouter.Use(middleware.CORSMiddleware)
 	uiRouter.HandleFunc("/servers", server.GetServers()).Methods("GET")
-	uiRouter.HandleFunc("/sessions", session.GetSessions()).Methods("GET")
-	uiRouter.HandleFunc("/sessions", session.NewSession()).Methods("POST")
-	uiRouter.HandleFunc("/sessions", session.UpdateSession()).Methods("PUT")
+	uiRouter.HandleFunc("/sessions", session.GetServerSessions()).Methods("GET")
+	uiRouter.HandleFunc("/sessions", session.NewServerSession()).Methods("POST")
+	uiRouter.HandleFunc("/sessions", session.UpdateServerSession()).Methods("PUT")
 	uiRouter.HandleFunc("/register", user.RegisterUser()).Methods("POST")
 	uiRouter.HandleFunc("/changepassword", user.ChangePassword()).Methods("PUT")
 	uiRouter.HandleFunc("/logout", user.Logout()).Methods("POST")

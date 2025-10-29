@@ -8,65 +8,65 @@ import (
 	"time"
 )
 
-func (s *Service) GetSessions() ([]model.Session, error) {
-	sessions, err := s.Repo.GetSessions()
+func (s *Service) getServerSessions() ([]model.ServerSession, error) {
+	sessions, err := s.Repo.getServerSessions()
 	if err != nil {
-		return []model.Session{}, err
+		return []model.ServerSession{}, err
 	}
 
 	return sessions, nil
 }
 
-func (s *Service) UpdateSession(session model.Session) (model.Session, error) {
+func (s *Service) updateServerSession(session model.ServerSession) (model.ServerSession, error) {
 	if session.Email == "" || session.ServerGroup == "" || session.Duration == "" {
-		return model.Session{}, errors.New("email, server_group, duration is required")
+		return model.ServerSession{}, errors.New("email, server_group, duration is required")
 	}
 
-	updated, updatedSession, err := s.Repo.UpdateSession(session)
+	updated, updatedSession, err := s.Repo.updateServerSession(session)
 	if err != nil {
-		return model.Session{}, err
+		return model.ServerSession{}, err
 	}
 
 	if !updated {
-		return model.Session{}, shared.ErrSessionNotFound
+		return model.ServerSession{}, shared.ErrSessionNotFound
 	}
 
 	return updatedSession, nil
 }
 
-func (s *Service) createNewSession(session model.Session) (model.Session, error) {
+func (s *Service) newServerSession(session model.ServerSession) (model.ServerSession, error) {
 	if session.Email == "" || session.ServerGroup == "" || session.Duration == "" {
-		return model.Session{}, errors.New("Email, server_group and duration required")
+		return model.ServerSession{}, errors.New("Email, server_group and duration required")
 	}
 
 	// Generate token
 	token, err := util.GenerateRandomString(16)
 	if err != nil {
-		return model.Session{}, err
+		return model.ServerSession{}, err
 	}
 
 	session.Token = token
-	session, err = s.Repo.NewSession(session)
+	session, err = s.Repo.newServerSession(session)
 	if err != nil {
-		return model.Session{}, err
+		return model.ServerSession{}, err
 	}
 
 	return session, nil
 }
 
-func (s *Service) CleanupSessions(sessions []model.Session) {
-	s.Repo.CleanupSessions(sessions)
+func (s *Service) CleanupServerSessions(sessions []model.ServerSession) {
+	s.Repo.cleanupServerSessions(sessions)
 }
 
 // Find expired sessions
-func (s *Service) FindExpiredOrAgingSessions() ([]model.Session, []model.Session, error) {
-	currentSessions, err := s.Repo.GetSessions()
+func (s *Service) FindExpiredOrAgingServerSessions() ([]model.ServerSession, []model.ServerSession, error) {
+	currentSessions, err := s.Repo.getServerSessions()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	var expiredSessions []model.Session
-	var agingSessions []model.Session
+	var expiredSessions []model.ServerSession
+	var agingSessions []model.ServerSession
 	now := time.Now().UTC()
 	warningWindow := now.Add(15 * time.Minute) //TODO make adjustable
 
@@ -81,29 +81,29 @@ func (s *Service) FindExpiredOrAgingSessions() ([]model.Session, []model.Session
 	return expiredSessions, agingSessions, nil
 }
 
-func (s *Service) ProcessExpiredSessions(expiredSessions []model.Session) {
+func (s *Service) ProcessExpiredSessions(expiredSessions []model.ServerSession) {
 	s.Logger.Debug("Found expired sessions", "count", len(expiredSessions))
 
 	for _, session := range expiredSessions {
-		if err := s.Repo.EndSession(session.ServerGroup); err != nil {
+		if err := s.Repo.endServerSession(session.ServerGroup); err != nil {
 			s.Logger.Error("Failed to cleanup expired session", "email", session.Email, "server_group", session.ServerGroup, "error", err)
 		}
 	}
 }
 
-func (s *Service) ProcessAgingSessions(agingSessions []model.Session) {
+func (s *Service) ProcessAgingSessions(agingSessions []model.ServerSession) {
 	s.Logger.Debug("Found aging sessions", "count", len(agingSessions))
 
 	for _, session := range agingSessions {
 		// TODO Queue notification
-		if err := s.Repo.SetWarningNotifiedFlag(1, session.ServerGroup); err != nil {
+		if err := s.Repo.setWarningNotifiedFlag(1, session.ServerGroup); err != nil {
 			s.Logger.Error("Failed to set session as notified", "email", session.Email, "server_group", session.ServerGroup, "error", err)
 		}
 	}
 }
 
-func (s *Service) FindSessionsForAction(toCleanup int, onNotified int, offNotified int, serverState string) ([]model.Session, error) {
-	sessions, err := s.Repo.FindSessionsForAction(toCleanup, onNotified, offNotified, serverState)
+func (s *Service) FindServerSessionsForAction(toCleanup int, onNotified int, offNotified int, serverState string) ([]model.ServerSession, error) {
+	sessions, err := s.Repo.findServerSessionsForAction(toCleanup, onNotified, offNotified, serverState)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func (s *Service) FindSessionsForAction(toCleanup int, onNotified int, offNotifi
 }
 
 func (s *Service) SetWarningNotifiedFlag(value int, serverGroup string) error {
-	if err := s.Repo.SetWarningNotifiedFlag(value, serverGroup); err != nil {
+	if err := s.Repo.setWarningNotifiedFlag(value, serverGroup); err != nil {
 		return err
 	}
 
@@ -120,7 +120,7 @@ func (s *Service) SetWarningNotifiedFlag(value int, serverGroup string) error {
 }
 
 func (s *Service) SetOnNotifiedFlag(value int, serverGroup string) error {
-	if err := s.Repo.SetOnNotifiedFlag(value, serverGroup); err != nil {
+	if err := s.Repo.setOnNotifiedFlag(value, serverGroup); err != nil {
 		return err
 	}
 

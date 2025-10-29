@@ -6,7 +6,7 @@ import (
 )
 
 // Handle expired or aging sessions
-func StartSessionWorker(w Worker, ctx context.Context) {
+func StartServerSessionWorker(w Worker, ctx context.Context) {
 	go func() {
 		ticker := time.NewTicker(w.Config.InternalClock)
 		defer ticker.Stop()
@@ -18,7 +18,7 @@ func StartSessionWorker(w Worker, ctx context.Context) {
 				return
 			case <-ticker.C:
 				// Process expired or aging sessions
-				expiredSessions, agingSessions, err := w.SessionService.FindExpiredOrAgingSessions()
+				expiredSessions, agingSessions, err := w.SessionService.FindExpiredOrAgingServerSessions()
 				if err != nil {
 					w.Logger.Error("Error when trying to find aging or expired sessions", "error", err)
 					continue
@@ -37,7 +37,7 @@ func StartSessionWorker(w Worker, ctx context.Context) {
 				}
 
 				// Terminated sessions
-				sessionsForCleanup, err := w.SessionService.FindSessionsForAction(1, 1, 1, "off")
+				sessionsForCleanup, err := w.SessionService.FindServerSessionsForAction(1, 1, 1, "off")
 				if err != nil {
 					w.Logger.Error("Error occurred while finding sessions for cleanup", "error", err)
 				}
@@ -45,11 +45,11 @@ func StartSessionWorker(w Worker, ctx context.Context) {
 				if len(sessionsForCleanup) == 0 {
 					w.Logger.Debug("No sessions for cleanup")
 				} else {
-					w.SessionService.CleanupSessions(sessionsForCleanup)
+					w.SessionService.CleanupServerSessions(sessionsForCleanup)
 				}
 
 				// Ready-for-use sessions
-				sessionsForUse, err := w.SessionService.FindSessionsForAction(0, 0, 0, "on")
+				sessionsForUse, err := w.SessionService.FindServerSessionsForAction(0, 0, 0, "on")
 				if err != nil {
 					w.Logger.Error("Error occurred while finding sessions ready for use", "error", err)
 				}

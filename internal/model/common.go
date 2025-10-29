@@ -26,7 +26,7 @@ type Server struct {
 	TimeAdded   int64  `json:"time_added"`
 }
 
-type Session struct {
+type ServerSession struct {
 	Email       string    `json:"email"`
 	ServerGroup string    `json:"server_group"`
 	Token       string    `json:"token"`

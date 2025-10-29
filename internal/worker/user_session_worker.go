@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// Cleanup expired user sessions
 func StartExpiredUserSessionCleanup(w Worker, ctx context.Context) {
 	go func() {
 		ticker := time.NewTicker(w.Config.InternalClock)
@@ -29,7 +30,6 @@ func StartExpiredUserSessionCleanup(w Worker, ctx context.Context) {
 				}
 
 				rows, err := result.RowsAffected()
-				w.Logger.Debug("rows affected", "rows", rows)
 				if err != nil {
 					w.Logger.Error("Error getting affected rows for user session cleanup", "error", err)
 					continue
