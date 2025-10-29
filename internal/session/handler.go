@@ -2,7 +2,6 @@ package session
 
 import (
 	"encoding/json"
-	"ez2boot/internal/model"
 	"ez2boot/internal/shared"
 	"net/http"
 )
@@ -28,7 +27,7 @@ func (h *Handler) GetServerSessions() http.HandlerFunc {
 func (h *Handler) NewServerSession() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Receive server_group, email and duration
-		var s model.ServerSession
+		var s ServerSession
 		json.NewDecoder(r.Body).Decode(&s)
 
 		// Create the session
@@ -53,7 +52,7 @@ func (h *Handler) NewServerSession() http.HandlerFunc {
 func (h *Handler) UpdateServerSession() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Receive server_group, email and duration
-		var s model.ServerSession
+		var s ServerSession
 		json.NewDecoder(r.Body).Decode(&s)
 
 		s, err := h.Service.updateServerSession(s)

@@ -2,71 +2,70 @@ package session
 
 import (
 	"errors"
-	"ez2boot/internal/model"
 	"ez2boot/internal/shared"
 	"ez2boot/internal/util"
 	"time"
 )
 
-func (s *Service) getServerSessions() ([]model.ServerSession, error) {
+func (s *Service) getServerSessions() ([]ServerSession, error) {
 	sessions, err := s.Repo.getServerSessions()
 	if err != nil {
-		return []model.ServerSession{}, err
+		return []ServerSession{}, err
 	}
 
 	return sessions, nil
 }
 
-func (s *Service) updateServerSession(session model.ServerSession) (model.ServerSession, error) {
+func (s *Service) updateServerSession(session ServerSession) (ServerSession, error) {
 	if session.Email == "" || session.ServerGroup == "" || session.Duration == "" {
-		return model.ServerSession{}, errors.New("email, server_group, duration is required")
+		return ServerSession{}, errors.New("email, server_group, duration is required")
 	}
 
 	updated, updatedSession, err := s.Repo.updateServerSession(session)
 	if err != nil {
-		return model.ServerSession{}, err
+		return ServerSession{}, err
 	}
 
 	if !updated {
-		return model.ServerSession{}, shared.ErrSessionNotFound
+		return ServerSession{}, shared.ErrSessionNotFound
 	}
 
 	return updatedSession, nil
 }
 
-func (s *Service) newServerSession(session model.ServerSession) (model.ServerSession, error) {
+func (s *Service) newServerSession(session ServerSession) (ServerSession, error) {
 	if session.Email == "" || session.ServerGroup == "" || session.Duration == "" {
-		return model.ServerSession{}, errors.New("Email, server_group and duration required")
+		return ServerSession{}, errors.New("Email, server_group and duration required")
 	}
 
 	// Generate token
 	token, err := util.GenerateRandomString(16)
 	if err != nil {
-		return model.ServerSession{}, err
+		return ServerSession{}, err
 	}
 
 	session.Token = token
 	session, err = s.Repo.newServerSession(session)
 	if err != nil {
-		return model.ServerSession{}, err
+		return ServerSession{}, err
 	}
 
 	return session, nil
 }
 
-func (s *Service) CleanupServerSessions(sessions []model.ServerSession) {
+func (s *Service) CleanupServerSessions(sessions []ServerSession) {
 	s.Repo.cleanupServerSessions(sessions)
 }
 
 // Find expired sessions
-func (s *Service) FindExpiredOrAgingServerSessions() ([]model.ServerSession, []model.ServerSession, error) {
+func (s *Service) FindExpiredOrAgingServerSessions() ([]ServerSession, []ServerSession, error) {
 	currentSessions, err := s.Repo.getServerSessions()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	var expiredSessions []model.ServerSession
-	var agingSessions []model.ServerSession
+	var expiredSessions []ServerSession
+	var agingSessions []ServerSession
 	now := time.Now().UTC()
 	warningWindow := now.Add(15 * time.Minute) //TODO make adjustable
 
@@ -81,7 +80,7 @@ func (s *Service) FindExpiredOrAgingServerSessions() ([]model.ServerSession, []m
 	return expiredSessions, agingSessions, nil
 }
 
-func (s *Service) ProcessExpiredSessions(expiredSessions []model.ServerSession) {
+func (s *Service) ProcessExpiredSessions(expiredSessions []ServerSession) {
 	s.Logger.Debug("Found expired sessions", "count", len(expiredSessions))
 
 	for _, session := range expiredSessions {
@@ -91,7 +90,7 @@ func (s *Service) ProcessExpiredSessions(expiredSessions []model.ServerSession) 
 	}
 }
 
-func (s *Service) ProcessAgingSessions(agingSessions []model.ServerSession) {
+func (s *Service) ProcessAgingSessions(agingSessions []ServerSession) {
 	s.Logger.Debug("Found aging sessions", "count", len(agingSessions))
 
 	for _, session := range agingSessions {
@@ -102,7 +101,7 @@ func (s *Service) ProcessAgingSessions(agingSessions []model.ServerSession) {
 	}
 }
 
-func (s *Service) FindServerSessionsForAction(toCleanup int, onNotified int, offNotified int, serverState string) ([]model.ServerSession, error) {
+func (s *Service) FindServerSessionsForAction(toCleanup int, onNotified int, offNotified int, serverState string) ([]ServerSession, error) {
 	sessions, err := s.Repo.findServerSessionsForAction(toCleanup, onNotified, offNotified, serverState)
 	if err != nil {
 		return nil, err

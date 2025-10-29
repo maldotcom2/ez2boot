@@ -177,6 +177,7 @@ func SetupRoutes(router *mux.Router, mw *middleware.Middleware, server *server.H
 	publicRouter.Use(middleware.JsonContentTypeMiddleware)
 	publicRouter.Use(middleware.CORSMiddleware)
 	publicRouter.HandleFunc("/login", user.Login()).Methods("POST")
+	publicRouter.HandleFunc("/register", user.RegisterUser()).Methods("POST") //TODO remove
 
 	// API subrouter and routes
 	apiRouter := router.PathPrefix("/api").Subrouter()

@@ -2,7 +2,6 @@ package user
 
 import (
 	"database/sql"
-	"ez2boot/internal/model"
 	"fmt"
 )
 
@@ -65,16 +64,16 @@ func (r *Repository) changePassword(email string, newHash string) error {
 }
 
 // Get user session info by session token
-func (r *Repository) findUserInfoByToken(token string) (model.UserSession, error) {
+func (r *Repository) findUserInfoByToken(token string) (UserSession, error) {
 	query := `SELECT user_sessions.session_expiry, user_sessions.user_id, users.email
         	FROM user_sessions
         	JOIN users ON user_sessions.user_id = users.id
         	WHERE user_sessions.token_hash = $1`
 
-	var u model.UserSession
+	var u UserSession
 	err := r.Base.DB.QueryRow(query, token).Scan(&u.SessionExpiry, &u.UserID, &u.Email)
 	if err != nil {
-		return model.UserSession{}, err
+		return UserSession{}, err
 	}
 
 	return u, nil

@@ -1,14 +1,13 @@
 package session
 
 import (
-	"ez2boot/internal/model"
 	"ez2boot/internal/util"
 	"fmt"
 	"time"
 )
 
 // Return currently active sessions
-func (r *Repository) getServerSessions() ([]model.ServerSession, error) {
+func (r *Repository) getServerSessions() ([]ServerSession, error) {
 	rows, err := r.Base.DB.Query("SELECT email, server_group, expiry FROM server_sessions")
 	if err != nil {
 		return nil, err
@@ -16,7 +15,7 @@ func (r *Repository) getServerSessions() ([]model.ServerSession, error) {
 
 	defer rows.Close()
 
-	sessions := []model.ServerSession{}
+	sessions := []ServerSession{}
 
 	for rows.Next() {
 		var email string
@@ -28,7 +27,7 @@ func (r *Repository) getServerSessions() ([]model.ServerSession, error) {
 			return nil, err
 		}
 
-		s := model.ServerSession{
+		s := ServerSession{
 			Email:       email,
 			ServerGroup: serverGroup,
 			Expiry:      time.Unix(expiryInt, 0).UTC(),
@@ -40,35 +39,35 @@ func (r *Repository) getServerSessions() ([]model.ServerSession, error) {
 }
 
 // Create a new session
-func (r *Repository) newServerSession(session model.ServerSession) (model.ServerSession, error) {
+func (r *Repository) newServerSession(session ServerSession) (ServerSession, error) {
 	tx, err := r.Base.DB.Begin()
 	if err != nil {
-		return model.ServerSession{}, err
+		return ServerSession{}, err
 	}
 
 	// Set server table for state worker
 	result, err := tx.Exec("UPDATE servers SET next_state = $1, time_last_on = $2, last_user = $3 WHERE server_group = $4", "on", time.Now().Unix(), session.Email, session.ServerGroup)
 	if err != nil {
 		tx.Rollback()
-		return model.ServerSession{}, err
+		return ServerSession{}, err
 	}
 
 	// Impact check
 	rows, err := result.RowsAffected()
 	if err != nil {
 		tx.Rollback()
-		return model.ServerSession{}, err
+		return ServerSession{}, err
 	}
 
 	if rows == 0 {
 		tx.Rollback()
-		return model.ServerSession{}, fmt.Errorf("No servers found for server_group: %s", session.ServerGroup)
+		return ServerSession{}, fmt.Errorf("No servers found for server_group: %s", session.ServerGroup)
 	}
 
 	sessionExpiry, err := util.GetExpiryFromDuration(0, session.Duration)
 	if err != nil {
 		tx.Rollback()
-		return model.ServerSession{}, err
+		return ServerSession{}, err
 	}
 
 	// Convert epoch to time and add to struct
@@ -76,37 +75,37 @@ func (r *Repository) newServerSession(session model.ServerSession) (model.Server
 
 	if _, err = tx.Exec("INSERT INTO server_sessions (token, email, server_group, expiry, to_notify, warning_notified, on_notified) VALUES ($1, $2, $3, $4, $5, $6, $7)", session.Token, session.Email, session.ServerGroup, sessionExpiry, 1, 0, 0); err != nil {
 		tx.Rollback()
-		return model.ServerSession{}, err
+		return ServerSession{}, err
 	}
 
 	if err = tx.Commit(); err != nil {
-		return model.ServerSession{}, err
+		return ServerSession{}, err
 	}
 
 	return session, nil
 }
 
 // Update existing session
-func (r *Repository) updateServerSession(session model.ServerSession) (bool, model.ServerSession, error) {
+func (r *Repository) updateServerSession(session ServerSession) (bool, ServerSession, error) {
 	newExpiry, err := util.GetExpiryFromDuration(0, session.Duration)
 	if err != nil {
-		return false, model.ServerSession{}, err
+		return false, ServerSession{}, err
 	}
 
 	result, err := r.Base.DB.Exec("UPDATE server_sessions SET expiry = $1, warning_notified = $2 WHERE token = $3 AND expiry > $4", newExpiry, 0, session.Token, time.Now().Unix())
 	if err != nil {
-		return false, model.ServerSession{}, err
+		return false, ServerSession{}, err
 	}
 
 	// Impact check
 	rows, err := result.RowsAffected()
 	if err != nil {
-		return false, model.ServerSession{}, err
+		return false, ServerSession{}, err
 	}
 
 	if rows == 0 {
 		session.Message = "Session not found"
-		return false, model.ServerSession{}, nil
+		return false, ServerSession{}, nil
 	}
 
 	// Convert epoch to time and add to struct
@@ -143,7 +142,7 @@ func (r *Repository) endServerSession(serverGroup string) error {
 }
 
 // Cleanup worker task
-func (r *Repository) cleanupServerSessions(sessionsForCleanup []model.ServerSession) {
+func (r *Repository) cleanupServerSessions(sessionsForCleanup []ServerSession) {
 	for _, session := range sessionsForCleanup {
 		r.Base.Logger.Debug("Cleanup Session", "session", session.Email)
 		tx, err := r.Base.DB.Begin()
@@ -179,7 +178,7 @@ func (r *Repository) cleanupServerSessions(sessionsForCleanup []model.ServerSess
 }
 
 // Find sessions where all relevant servers are in requested state (on or off)
-func (r *Repository) findServerSessionsForAction(toCleanup int, onNotified int, offNotified int, serverState string) ([]model.ServerSession, error) {
+func (r *Repository) findServerSessionsForAction(toCleanup int, onNotified int, offNotified int, serverState string) ([]ServerSession, error) {
 	query := `SELECT s.email, s.server_group, s.expiry
 			FROM server_sessions s
 			WHERE s.to_cleanup = $1 AND s.on_notified = $2 AND off_notified = $3
@@ -196,7 +195,7 @@ func (r *Repository) findServerSessionsForAction(toCleanup int, onNotified int, 
 
 	defer rows.Close()
 
-	sessionsForAction := []model.ServerSession{}
+	sessionsForAction := []ServerSession{}
 
 	for rows.Next() {
 		var email string
@@ -207,7 +206,7 @@ func (r *Repository) findServerSessionsForAction(toCleanup int, onNotified int, 
 			return nil, err
 		}
 
-		s := model.ServerSession{
+		s := ServerSession{
 			Email:       email,
 			ServerGroup: serverGroup,
 			Expiry:      time.Unix(expiryInt, 0).UTC(),

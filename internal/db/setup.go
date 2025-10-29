@@ -18,7 +18,7 @@ func (r *Repository) SetupDB() error {
 	}
 
 	// Create user table
-	_, err = r.DB.Exec("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, password_hash TEXT, is_active INTEGER)")
+	_, err = r.DB.Exec("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, password_hash TEXT, is_active INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1)), is_admin INTEGER NOT NULL DEFAULT 0 CHECK (is_admin IN (0, 1)), api_enabled INTEGER NOT NULL DEFAULT 0 CHECK (api_enabled IN (0, 1)), ui_enabled INTEGER NOT NULL DEFAULT 1 CHECK (ui_enabled IN (0, 1)))")
 	if err != nil {
 		return err
 	}

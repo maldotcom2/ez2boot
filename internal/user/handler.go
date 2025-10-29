@@ -3,7 +3,6 @@ package user
 import (
 	"encoding/json"
 	"errors"
-	"ez2boot/internal/model"
 	"ez2boot/internal/shared"
 	"net/http"
 	"time"
@@ -11,7 +10,7 @@ import (
 
 func (h *Handler) Login() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var u model.UserLogin
+		var u UserLogin
 		if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
 			h.Logger.Info("Malformed request", "email", u.Email, "error", err)
 			http.Error(w, "Malformed request", http.StatusBadRequest)
@@ -75,7 +74,7 @@ func (h *Handler) Logout() http.HandlerFunc {
 // Handler to register new user
 func (h *Handler) RegisterUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var u model.UserLogin
+		var u UserLogin
 		err := json.NewDecoder(r.Body).Decode(&u)
 
 		h.Logger.Info("Attempted registration", "email", u.Email)
@@ -98,7 +97,7 @@ func (h *Handler) RegisterUser() http.HandlerFunc {
 
 func (h *Handler) ChangePassword() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var c model.ChangePasswordRequest
+		var c ChangePasswordRequest
 		err := json.NewDecoder(r.Body).Decode(&c)
 
 		h.Logger.Info("Attempted password change", "email", c.Email)

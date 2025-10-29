@@ -3,7 +3,6 @@ package user
 import (
 	"database/sql"
 	"errors"
-	"ez2boot/internal/model"
 	"ez2boot/internal/shared"
 	"ez2boot/internal/util"
 	"fmt"
@@ -14,7 +13,7 @@ import (
 	"github.com/alexedwards/argon2id"
 )
 
-func (s *Service) LoginUser(u model.UserLogin) (string, error) {
+func (s *Service) LoginUser(u UserLogin) (string, error) {
 	// Authenticate
 	userID, ok, err := s.AuthenticateUser(u.Email, u.Password)
 	if err != nil {
@@ -53,7 +52,7 @@ func (s *Service) logoutUser(token string) error {
 	return nil
 }
 
-func (s *Service) validateAndCreateUser(u model.UserLogin) error {
+func (s *Service) validateAndCreateUser(u UserLogin) error {
 	// Validate password requirements
 	if err := validatePassword(u.Email, u.Password); err != nil {
 		return err
@@ -73,7 +72,7 @@ func (s *Service) validateAndCreateUser(u model.UserLogin) error {
 }
 
 // Change a password for authenticated user
-func (s *Service) changePasswordByUser(req model.ChangePasswordRequest) error {
+func (s *Service) changePasswordByUser(req ChangePasswordRequest) error {
 	// Check current password
 	_, isCurrentPassword, err := s.AuthenticateUser(req.Email, req.OldPassword)
 	if err != nil {
@@ -137,20 +136,20 @@ func (s *Service) AuthenticateUser(email string, password string) (int64, bool, 
 	return id, match, nil
 }
 
-func (s *Service) GetSessionInfo(token string) (model.UserSession, error) {
+func (s *Service) GetSessionInfo(token string) (UserSession, error) {
 	// Hash token from cookie
 	hash := util.HashToken(token)
 
 	u, err := s.Repo.findUserInfoByToken(hash)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return model.UserSession{}, shared.ErrSessionNotFound
+			return UserSession{}, shared.ErrSessionNotFound
 		}
-		return model.UserSession{}, err
+		return UserSession{}, err
 	}
 
 	if u.SessionExpiry < time.Now().Unix() {
-		return model.UserSession{}, shared.ErrSessionExpired
+		return UserSession{}, shared.ErrSessionExpired
 	}
 
 	return u, nil
