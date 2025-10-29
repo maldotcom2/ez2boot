@@ -152,6 +152,14 @@ func (s *Service) GetSessionInfo(token string) (UserSession, error) {
 		return UserSession{}, shared.ErrSessionExpired
 	}
 
+	if !u.UIEnabled {
+		return UserSession{}, shared.ErrAuthTypeDenied
+	}
+
+	if !u.IsActive {
+		return UserSession{}, shared.ErrUserNotActive
+	}
+
 	return u, nil
 }
 

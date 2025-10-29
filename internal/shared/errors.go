@@ -8,4 +8,6 @@ var (
 	ErrSessionNotFound      = errors.New("Supplied session token not found")
 	ErrSessionExpired       = errors.New("Session for supplied token has expired")
 	ErrUserNotFound         = errors.New("User not found")
+	ErrAuthTypeDenied       = errors.New("User not allowed to use this auth type")
+	ErrUserNotActive        = errors.New("User is not active")
 )

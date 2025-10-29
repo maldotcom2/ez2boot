@@ -65,13 +65,13 @@ func (r *Repository) changePassword(email string, newHash string) error {
 
 // Get user session info by session token
 func (r *Repository) findUserInfoByToken(token string) (UserSession, error) {
-	query := `SELECT user_sessions.session_expiry, user_sessions.user_id, users.email
+	query := `SELECT user_sessions.session_expiry, user_sessions.user_id, users.email, users.is_active, users.is_admin, users.ui_enabled
         	FROM user_sessions
         	JOIN users ON user_sessions.user_id = users.id
         	WHERE user_sessions.token_hash = $1`
 
 	var u UserSession
-	err := r.Base.DB.QueryRow(query, token).Scan(&u.SessionExpiry, &u.UserID, &u.Email)
+	err := r.Base.DB.QueryRow(query, token).Scan(&u.SessionExpiry, &u.UserID, &u.Email, &u.IsActive, &u.IsAdmin, &u.UIEnabled)
 	if err != nil {
 		return UserSession{}, err
 	}

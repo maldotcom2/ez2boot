@@ -39,4 +39,7 @@ type UserSession struct {
 	Email         string
 	Password      string
 	Token         string
+	IsActive      bool
+	IsAdmin       bool
+	UIEnabled     bool
 }

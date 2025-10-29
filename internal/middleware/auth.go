@@ -73,6 +73,18 @@ func (m *Middleware) SessionAuthMiddleware() mux.MiddlewareFunc {
 					return
 				}
 
+				if errors.Is(err, shared.ErrAuthTypeDenied) {
+					m.Logger.Info("Non-UI user attempted to login to UI", "email", u.Email, "error", err)
+					http.Error(w, "User not authorised for UI access", http.StatusForbidden)
+					return
+				}
+
+				if errors.Is(err, shared.ErrUserNotActive) {
+					m.Logger.Info("Inactive user attempted login", "email", u.Email, "error", err)
+					http.Error(w, "User is not active", http.StatusForbidden)
+					return
+				}
+
 				m.Logger.Error("An error occured while evaluating session", "email", u.Email, "error", err)
 				http.Error(w, "Error while evaluating session", http.StatusInternalServerError)
 				return
