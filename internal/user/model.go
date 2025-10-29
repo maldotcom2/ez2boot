@@ -34,12 +34,17 @@ type ChangePasswordRequest struct {
 }
 
 type UserSession struct {
-	SessionExpiry int64
 	UserID        string
+	SessionExpiry int64
 	Email         string
-	Password      string
 	Token         string
-	IsActive      bool
-	IsAdmin       bool
-	UIEnabled     bool
+}
+
+type UserAuth struct {
+	UserID     string
+	Email      string
+	IsActive   bool
+	IsAdmin    bool
+	APIEnabled bool
+	UIEnabled  bool
 }

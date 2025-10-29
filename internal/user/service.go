@@ -136,11 +136,11 @@ func (s *Service) AuthenticateUser(email string, password string) (int64, bool, 
 	return id, match, nil
 }
 
-func (s *Service) GetSessionInfo(token string) (UserSession, error) {
+func (s *Service) GetSessionStatus(token string) (UserSession, error) {
 	// Hash token from cookie
 	hash := util.HashToken(token)
 
-	u, err := s.Repo.findUserInfoByToken(hash)
+	u, err := s.Repo.findSessionStatus(hash)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return UserSession{}, shared.ErrSessionNotFound
@@ -152,12 +152,13 @@ func (s *Service) GetSessionInfo(token string) (UserSession, error) {
 		return UserSession{}, shared.ErrSessionExpired
 	}
 
-	if !u.UIEnabled {
-		return UserSession{}, shared.ErrAuthTypeDenied
-	}
+	return u, nil
+}
 
-	if !u.IsActive {
-		return UserSession{}, shared.ErrUserNotActive
+func (s *Service) GetUserAuthorisation(email string) (UserAuth, error) {
+	u, err := s.Repo.findUserAuthorisation(email)
+	if err != nil {
+		return UserAuth{}, nil
 	}
 
 	return u, nil
