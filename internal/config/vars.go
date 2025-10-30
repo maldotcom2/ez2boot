@@ -58,13 +58,6 @@ func GetEnvVars() (*model.Config, error) {
 		userNotifications = "disabled" //default
 	}
 
-	logLevelStr := os.Getenv("LOG_LEVEL")
-	if logLevelStr == "" {
-		logLevelStr = "info" //default
-	}
-
-	logLevel := ParseLogLevel(logLevelStr)
-
 	userSessionDurationStr := os.Getenv("USER_SESSION_DURATION")
 	if userSessionDurationStr == "" {
 		userSessionDurationStr = "6h" //default
@@ -74,6 +67,15 @@ func GetEnvVars() (*model.Config, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	logLevelStr := os.Getenv("LOG_LEVEL")
+	if logLevelStr == "" {
+		logLevelStr = "info" //default
+	}
+
+	logLevel := ParseLogLevel(logLevelStr)
+
+	encryptionKey := os.Getenv("ENCRYPTION_KEY") // optional
 
 	cfg := &model.Config{
 		CloudProvider:       cloudProvider,
@@ -85,6 +87,7 @@ func GetEnvVars() (*model.Config, error) {
 		UserNotifications:   userNotifications,
 		UserSessionDuration: userSessionDuration,
 		LogLevel:            logLevel,
+		EncryptionKey:       encryptionKey,
 	}
 
 	return cfg, nil

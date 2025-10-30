@@ -1,6 +1,8 @@
 package server
 
-import "ez2boot/internal/model"
+import (
+	"ez2boot/internal/model"
+)
 
 func (s *Service) GetServers() (map[string][]model.Server, error) {
 	servers, err := s.Repo.GetServers()

@@ -15,6 +15,7 @@ type Config struct {
 	UserNotifications   string
 	UserSessionDuration time.Duration
 	LogLevel            slog.Level
+	EncryptionKey       string
 	// Add more fields as needed
 }
 
