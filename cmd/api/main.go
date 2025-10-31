@@ -5,6 +5,8 @@ import (
 	"ez2boot/internal/config"
 	"ez2boot/internal/db"
 	"ez2boot/internal/middleware"
+	"ez2boot/internal/notification"
+	"ez2boot/internal/notification/email"
 	"ez2boot/internal/provider/aws"
 	"ez2boot/internal/server"
 	"ez2boot/internal/session"
@@ -118,6 +120,23 @@ func main() {
 		Logger:        logger,
 	}
 
+	// Email repo
+	emailRepo := &email.Repository{
+		Base: repo,
+	}
+
+	// Email service
+	emailService := &email.Service{
+		Repo:   emailRepo,
+		Logger: logger,
+	}
+
+	// Email handler
+	emailHandler := &email.Handler{
+		Service: emailService,
+		Logger:  logger,
+	}
+
 	// Setup DB
 	err = repo.SetupDB()
 	if err != nil {
@@ -129,7 +148,7 @@ func main() {
 	router := mux.NewRouter()
 
 	// Setup routes
-	SetupRoutes(router, mw, serverHandler, sessionHandler, userHandler)
+	SetupRoutes(router, mw, serverHandler, sessionHandler, userHandler, emailHandler)
 
 	// Set Go routine context
 	ctx, cancel := context.WithCancel(context.Background())
@@ -170,7 +189,14 @@ func main() {
 	}
 }
 
-func SetupRoutes(router *mux.Router, mw *middleware.Middleware, server *server.Handler, session *session.Handler, user *user.Handler) {
+func SetupRoutes(
+	router *mux.Router,
+	mw *middleware.Middleware,
+	server *server.Handler,
+	session *session.Handler,
+	user *user.Handler,
+	email *email.Handler,
+) {
 
 	// Public routes, no auth
 	publicRouter := router.PathPrefix("/ui").Subrouter()
@@ -203,4 +229,6 @@ func SetupRoutes(router *mux.Router, mw *middleware.Middleware, server *server.H
 	uiRouter.HandleFunc("/register", user.RegisterUser()).Methods("POST")
 	uiRouter.HandleFunc("/changepassword", user.ChangePassword()).Methods("PUT")
 	uiRouter.HandleFunc("/logout", user.Logout()).Methods("POST")
+	uiRouter.HandleFunc("/notification/sender", notification.GetNotificationTypes()).Methods("GET")
+	uiRouter.HandleFunc("/email/update", email.AddOrUpdate()).Methods("POST")
 }

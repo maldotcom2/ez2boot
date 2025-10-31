@@ -26,7 +26,7 @@ func (r *Repository) SetupDB() error {
 	}
 
 	// create table for notification queue
-	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS notification_queue (user_id PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, message TEXT NOT NULL, title TEXT NOT NULL)"); err != nil {
+	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS notification_queue (user_id PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, message TEXT NOT NULL, title TEXT NOT NULL, time_added INTEGER NOT NULL)"); err != nil {
 		return err
 	}
 

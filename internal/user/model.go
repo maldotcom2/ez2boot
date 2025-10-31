@@ -34,14 +34,14 @@ type ChangePasswordRequest struct {
 }
 
 type UserSession struct {
-	UserID        string
+	UserID        int64
 	SessionExpiry int64
 	Email         string
 	Token         string
 }
 
 type UserAuth struct {
-	UserID     string
+	UserID     int64
 	Email      string
 	IsActive   bool
 	IsAdmin    bool

@@ -69,7 +69,7 @@ func (r *Repository) addOrUpdate(servers []model.Server) {
 	const updateQuery = `INSERT INTO servers (unique_id, name, state, server_group, time_added) VALUES ($1, $2, $3, $4, $5) 
 						ON CONFLICT (unique_id, name) DO UPDATE 
 						SET state = EXCLUDED.state, server_group = EXCLUDED.server_group
-						WHERE servers.state IS NOT EXCLUDED.state OR servers.server_group IS NOT EXCLUDED.state`
+						WHERE servers.state <> EXCLUDED.state OR servers.server_group <> EXCLUDED.server_group`
 
 	for _, server := range servers {
 		_, err := r.Base.DB.Exec(updateQuery, server.UniqueID, server.Name, server.State, server.ServerGroup, server.TimeAdded)
