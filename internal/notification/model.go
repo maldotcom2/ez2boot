@@ -25,6 +25,7 @@ type Sender interface {
 }
 
 type Notification struct {
+	Id    int64
 	Msg   string
 	Title string
 	Type  string
