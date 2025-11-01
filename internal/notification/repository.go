@@ -1,5 +1,16 @@
 package notification
 
+// Create new notification
+func (r *Repository) queueNotification(userID int64, n Notification) error {
+	query := "INSERT INTO notification_queue (user_id, message, title, time_added) VALUES ($1, $2, $3, $4)"
+
+	if _, err := r.Base.DB.Exec(query, userID, n.Msg, n.Title, n.Time); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Find all pending notifications in queue and match to user config
 func (r *Repository) findPendingNotifications() ([]Notification, error) {
 	query := `SELECT nq.id, nq.message, nq.title, un.type, un.config

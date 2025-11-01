@@ -27,6 +27,16 @@ func SupportedTypes() []string {
 	return types
 }
 
+// Add new notification to queue
+func (s *Service) QueueNotification(userID int64, n Notification) error {
+	if err := s.Repo.queueNotification(userID, n); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Get all pending notifications
 func (s *Service) GetPendingNotifications() ([]Notification, error) {
 	notifications, err := s.Repo.findPendingNotifications()
 	if err != nil {
@@ -36,6 +46,7 @@ func (s *Service) GetPendingNotifications() ([]Notification, error) {
 	return notifications, nil
 }
 
+// Delete notification by notification ID
 func (s *Service) DeleteNotification(id int64) error {
 	rows, err := s.Repo.deleteNotificationFromQueue(id)
 	if err != nil {

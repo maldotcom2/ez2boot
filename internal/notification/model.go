@@ -29,5 +29,6 @@ type Notification struct {
 	Msg   string
 	Title string
 	Type  string
+	Time  int64
 	Cfg   string
 }
