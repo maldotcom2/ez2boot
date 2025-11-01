@@ -36,14 +36,14 @@ func (e *Service) AddOrUpdate(userID int64, cfg Config) error {
 	return nil
 }
 
-func (e *EmailNotification) Send(cfgStr string, msg string, subject string) error {
+func (e *EmailNotification) Send(msg string, title string, cfgStr string) error {
 
 	var cfg Config
 	if err := json.Unmarshal([]byte(cfgStr), &cfg); err != nil {
 		return err
 	}
 	// message string assembly
-	message := fmt.Sprintf("To: %s\r\nFrom: %s\r\nSubject: %s\r\n\r\n%s", cfg.To, cfg.From, subject, msg)
+	message := fmt.Sprintf("To: %s\r\nFrom: %s\r\nSubject: %s\r\n\r\n%s", cfg.To, cfg.From, title, msg)
 
 	// TODO option to set nil for unauthenticated
 	auth := smtp.PlainAuth("", cfg.User, cfg.Password, cfg.Host)

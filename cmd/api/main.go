@@ -120,6 +120,23 @@ func main() {
 		Logger:        logger,
 	}
 
+	// Notification repo
+	notificationRepo := &notification.Repository{
+		Base: repo,
+	}
+
+	// Notification service
+	notificationService := &notification.Service{
+		Repo:   notificationRepo,
+		Logger: logger,
+	}
+
+	// Notification handler
+	notificationHandler := &notification.Handler{
+		Service: notificationService,
+		Logger:  logger,
+	}
+
 	// Email repo
 	emailRepo := &email.Repository{
 		Base: repo,
@@ -148,7 +165,7 @@ func main() {
 	router := mux.NewRouter()
 
 	// Setup routes
-	SetupRoutes(router, mw, serverHandler, sessionHandler, userHandler, emailHandler)
+	SetupRoutes(router, mw, serverHandler, sessionHandler, userHandler, notificationHandler, emailHandler)
 
 	// Set Go routine context
 	ctx, cancel := context.WithCancel(context.Background())
@@ -164,11 +181,12 @@ func main() {
 
 	// worker
 	w := &worker.Worker{
-		ServerService:  serverService,
-		SessionService: sessionService,
-		UserService:    userService,
-		Config:         cfg,
-		Logger:         logger,
+		ServerService:       serverService,
+		SessionService:      sessionService,
+		UserService:         userService,
+		NotificationService: notificationService,
+		Config:              cfg,
+		Logger:              logger,
 	}
 
 	// Start scraper
@@ -179,6 +197,9 @@ func main() {
 
 	// Start user session cleanup
 	worker.StartExpiredUserSessionCleanup(*w, ctx)
+
+	// Start notification worker
+	worker.StartNotificationWorker(*w, ctx)
 
 	//Start server
 	logger.Info("Server is ready and listening", "port", cfg.Port)
@@ -195,6 +216,7 @@ func SetupRoutes(
 	server *server.Handler,
 	session *session.Handler,
 	user *user.Handler,
+	notification *notification.Handler,
 	email *email.Handler,
 ) {
 
@@ -229,6 +251,6 @@ func SetupRoutes(
 	uiRouter.HandleFunc("/register", user.RegisterUser()).Methods("POST")
 	uiRouter.HandleFunc("/changepassword", user.ChangePassword()).Methods("PUT")
 	uiRouter.HandleFunc("/logout", user.Logout()).Methods("POST")
-	uiRouter.HandleFunc("/notification/sender", notification.GetNotificationTypes()).Methods("GET")
+	//uiRouter.HandleFunc("/notification/sender", notification.GetNotificationTypes()).Methods("GET")
 	uiRouter.HandleFunc("/email/update", email.AddOrUpdate()).Methods("POST")
 }

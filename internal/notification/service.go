@@ -1,9 +1,9 @@
 package notification
 
-// In memory stare of available notification channels
+// In memory store of available notification channels
 var registry = map[string]Sender{}
 
-// Add sender to registry - called internally by package inits
+// Add sender to registry - notification packages register via their inits when imported
 func Register(sender Sender) {
 	registry[sender.Type()] = sender
 }
@@ -21,4 +21,13 @@ func SupportedTypes() []string {
 		types = append(types, k)
 	}
 	return types
+}
+
+func (s *Service) GetPendingNotifications() ([]Notification, error) {
+	notifications, err := s.Repo.findPendingNotifications()
+	if err != nil {
+		return nil, err
+	}
+
+	return notifications, nil
 }
