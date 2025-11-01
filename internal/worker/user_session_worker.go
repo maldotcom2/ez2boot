@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// Cleanup expired user sessions
+// Cleanup expired user login sessions
 func StartExpiredUserSessionCleanup(w Worker, ctx context.Context) {
 	go func() {
 		ticker := time.NewTicker(w.Config.InternalClock)

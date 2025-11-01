@@ -1,10 +1,10 @@
 package notification
 
 // Create new notification
-func (r *Repository) queueNotification(userID int64, n Notification) error {
+func (r *Repository) queueNotification(n NewNotification) error {
 	query := "INSERT INTO notification_queue (user_id, message, title, time_added) VALUES ($1, $2, $3, $4)"
 
-	if _, err := r.Base.DB.Exec(query, userID, n.Msg, n.Title, n.Time); err != nil {
+	if _, err := r.Base.DB.Exec(query, n.UserID, n.Msg, n.Title, n.Time); err != nil {
 		return err
 	}
 

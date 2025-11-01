@@ -2,6 +2,7 @@ package session
 
 import (
 	"encoding/json"
+	"ez2boot/internal/contextkey"
 	"ez2boot/internal/shared"
 	"net/http"
 )
@@ -26,9 +27,16 @@ func (h *Handler) GetServerSessions() http.HandlerFunc {
 
 func (h *Handler) NewServerSession() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Receive server_group, email and duration
+		userID, ok := r.Context().Value(contextkey.UserIDKey).(int64)
+		if !ok {
+			h.Logger.Error("User ID not found in context")
+			http.Error(w, "User ID not found in context", http.StatusUnauthorized)
+			return
+		}
+
 		var s ServerSession
 		json.NewDecoder(r.Body).Decode(&s)
+		s.UserID = userID
 
 		// Create the session
 		s, err := h.Service.newServerSession(s)

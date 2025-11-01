@@ -24,6 +24,13 @@ type Sender interface {
 	Send(msg string, title string, cfg string) error // Send the notification
 }
 
+type NewNotification struct {
+	UserID int64
+	Msg    string
+	Title  string
+	Time   int64
+}
+
 type Notification struct {
 	Id    int64
 	Msg   string

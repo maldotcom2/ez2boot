@@ -21,6 +21,7 @@ type Handler struct {
 }
 
 type ServerSession struct {
+	UserID      int64     // Context assigned
 	Email       string    `json:"email"`
 	ServerGroup string    `json:"server_group"`
 	Token       string    `json:"token"`

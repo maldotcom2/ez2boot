@@ -73,7 +73,7 @@ func (r *Repository) newServerSession(session ServerSession) (ServerSession, err
 	// Convert epoch to time and add to struct
 	session.Expiry = time.Unix(sessionExpiry, 0).UTC()
 
-	if _, err = tx.Exec("INSERT INTO server_sessions (token, email, server_group, expiry, to_notify, warning_notified, on_notified) VALUES ($1, $2, $3, $4, $5, $6, $7)", session.Token, session.Email, session.ServerGroup, sessionExpiry, 1, 0, 0); err != nil {
+	if _, err = tx.Exec("INSERT INTO server_sessions (id, token, email, server_group, expiry, to_notify, warning_notified, on_notified) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", session.UserID, session.Token, session.Email, session.ServerGroup, sessionExpiry, 1, 0, 0); err != nil {
 		tx.Rollback()
 		return ServerSession{}, err
 	}
@@ -179,7 +179,7 @@ func (r *Repository) cleanupServerSessions(sessionsForCleanup []ServerSession) {
 
 // Find sessions where all relevant servers are in requested state (on or off)
 func (r *Repository) findServerSessionsForAction(toCleanup int, onNotified int, offNotified int, serverState string) ([]ServerSession, error) {
-	query := `SELECT s.email, s.server_group, s.expiry
+	query := `SELECT s.id, s.email, s.server_group, s.expiry
 			FROM server_sessions s
 			WHERE s.to_cleanup = $1 AND s.on_notified = $2 AND off_notified = $3
 			AND NOT EXISTS (
@@ -198,15 +198,17 @@ func (r *Repository) findServerSessionsForAction(toCleanup int, onNotified int, 
 	sessionsForAction := []ServerSession{}
 
 	for rows.Next() {
+		var userID int64
 		var email string
 		var serverGroup string
 		var expiryInt int64
 
-		if err = rows.Scan(&email, &serverGroup, &expiryInt); err != nil {
+		if err = rows.Scan(&userID, &email, &serverGroup, &expiryInt); err != nil {
 			return nil, err
 		}
 
 		s := ServerSession{
+			UserID:      userID,
 			Email:       email,
 			ServerGroup: serverGroup,
 			Expiry:      time.Unix(expiryInt, 0).UTC(),

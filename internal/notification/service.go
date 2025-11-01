@@ -2,6 +2,7 @@ package notification
 
 import (
 	"ez2boot/internal/shared"
+	"time"
 )
 
 // In memory store of available notification channels
@@ -28,8 +29,9 @@ func SupportedTypes() []string {
 }
 
 // Add new notification to queue
-func (s *Service) QueueNotification(userID int64, n Notification) error {
-	if err := s.Repo.queueNotification(userID, n); err != nil {
+func (s *Service) QueueNotification(n NewNotification) error {
+	n.Time = time.Now().Unix()
+	if err := s.Repo.queueNotification(n); err != nil {
 		return err
 	}
 
