@@ -18,9 +18,7 @@ func StartServerSessionWorker(w Worker, ctx context.Context) {
 				return
 			case <-ticker.C:
 				// Process expired or aging sessions
-				if err := w.SessionService.ProcessServerSessions(); err != nil {
-					w.Logger.Error("Error while processing server sessions", "error", err)
-				}
+				w.SessionService.ProcessServerSessions()
 			}
 		}
 	}()

@@ -1,12 +1,10 @@
 package session
 
 import (
-	"database/sql"
 	"errors"
 	"ez2boot/internal/notification"
 	"ez2boot/internal/shared"
 	"fmt"
-	"time"
 )
 
 func (s *Service) getServerSessions() ([]ServerSession, error) {
@@ -56,65 +54,32 @@ func (s *Service) updateServerSession(session ServerSession) (ServerSession, err
 	return updatedSession, nil
 }
 
-// High level for processing server sessions in various states - called by go routine worker
-func (s *Service) ProcessServerSessions() error {
-	// Expired or aging sessions
-	if err := s.processExpiredOrAgingServerSessions(); err != nil {
-		return err
+// High level for processing server sessions in each state - called by go routine worker
+func (s *Service) ProcessServerSessions() {
+	// Ready-for-use sessions
+	if err := s.processReadyServerSessions(); err != nil {
+		s.Logger.Error("Error while processing ready server sessions", "error", err)
+	}
+
+	// Aging sessions
+	if err := s.processAgingServerSessions(); err != nil {
+		s.Logger.Error("Error while processing aging server sessions", "error", err)
+	}
+
+	// Expired sessions
+	if err := s.processExpiredServerSessions(); err != nil {
+		s.Logger.Error("Error while processing expired server sessions", "error", err)
 	}
 
 	// Terminated sessions
 	if err := s.processTerminatedServerSessions(); err != nil {
-		return err
+		s.Logger.Error("Error while processing terminated server sessions", "error", err)
 	}
-
-	// Ready-for-use sessions
-	if err := s.processReadyServerSessions(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s *Service) processExpiredOrAgingServerSessions() error {
-	expiredSessions, agingSessions, err := s.findExpiredOrAgingServerSessions()
-	if err != nil {
-		s.Logger.Error("Error when trying to find aging or expired server sessions", "error", err)
-	}
-
-	if len(expiredSessions) == 0 {
-		s.Logger.Debug("No expired server sessions")
-	} else {
-		s.processExpiredServerSessions(expiredSessions)
-	}
-
-	if len(agingSessions) == 0 {
-		s.Logger.Debug("No server sessions nearing expiry")
-	} else {
-		s.processAgingServerSessions(agingSessions) // ??
-	}
-
-	return nil
-}
-
-func (s *Service) processTerminatedServerSessions() error {
-	sessionsForCleanup, err := s.findServerSessionsForAction(1, 1, 1, "off")
-	if err != nil {
-		s.Logger.Error("Error while finding sessions for cleanup", "error", err)
-	}
-
-	if len(sessionsForCleanup) == 0 {
-		s.Logger.Debug("No sessions for cleanup")
-	} else {
-		s.Repo.cleanupServerSessions(sessionsForCleanup)
-	}
-
-	return nil
 }
 
 // Server sessions which are ready for use
 func (s *Service) processReadyServerSessions() error {
-	sessionsForUse, err := s.findServerSessionsForAction(0, 0, 0, "on")
+	sessionsForUse, err := s.Repo.findPendingOnServerSessions()
 	if err != nil {
 		s.Logger.Error("Error while finding sessions ready for use", "error", err)
 	}
@@ -146,7 +111,7 @@ func (s *Service) processReadyServerSessions() error {
 				continue
 			}
 
-			if err = s.SetOnNotifiedFlag(tx, 1, session.ServerGroup); err != nil {
+			if err = s.Repo.setOnNotifiedFlag(tx, 1, session.ServerGroup); err != nil {
 				s.Logger.Error("Failed up set flag for session notified on", "error", err)
 				tx.Rollback()
 				continue
@@ -159,40 +124,17 @@ func (s *Service) processReadyServerSessions() error {
 	return nil
 }
 
-// Find expired sessions
-func (s *Service) findExpiredOrAgingServerSessions() ([]ServerSession, []ServerSession, error) {
-	currentSessions, err := s.Repo.getServerSessions()
+func (s *Service) processAgingServerSessions() error {
+	agingSessions, err := s.Repo.getAgingServerSessions()
 	if err != nil {
-		return nil, nil, err
+		return err
 	}
 
-	var expiredSessions []ServerSession
-	var agingSessions []ServerSession
-	now := time.Now().UTC()
-	warningWindow := now.Add(15 * time.Minute) //TODO make adjustable
-
-	for _, session := range currentSessions {
-		if session.Expiry.Before(now) {
-			expiredSessions = append(expiredSessions, session)
-		} else if session.Expiry.Before(warningWindow) {
-			agingSessions = append(agingSessions, session)
-		}
+	if len(agingSessions) == 0 {
+		s.Logger.Debug("No aging server sessions")
+		return nil
 	}
 
-	return expiredSessions, agingSessions, nil
-}
-
-func (s *Service) processExpiredServerSessions(expiredSessions []ServerSession) {
-	s.Logger.Debug("Found expired sessions", "count", len(expiredSessions))
-
-	for _, session := range expiredSessions {
-		if err := s.Repo.endServerSession(session.ServerGroup); err != nil {
-			s.Logger.Error("Failed to cleanup expired session", "email", session.Email, "server_group", session.ServerGroup, "error", err)
-		}
-	}
-}
-
-func (s *Service) processAgingServerSessions(agingSessions []ServerSession) {
 	s.Logger.Debug("Found aging sessions", "count", len(agingSessions))
 
 	// Queue notification for each and set flag
@@ -225,28 +167,43 @@ func (s *Service) processAgingServerSessions(agingSessions []ServerSession) {
 
 		tx.Commit()
 	}
+
+	return nil
 }
 
-func (s *Service) findServerSessionsForAction(toCleanup int, onNotified int, offNotified int, serverState string) ([]ServerSession, error) {
-	sessions, err := s.Repo.findServerSessionsForAction(toCleanup, onNotified, offNotified, serverState)
+func (s *Service) processExpiredServerSessions() error {
+	expiredSessions, err := s.Repo.getExpiredServerSessions()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return sessions, nil
-}
+	if len(expiredSessions) == 0 {
+		s.Logger.Debug("No expired server sessions")
+		return nil
+	}
 
-func (s *Service) SetWarningNotifiedFlag(tx *sql.Tx, flagValue int, serverGroup string) error {
-	if err := s.Repo.setWarningNotifiedFlag(tx, flagValue, serverGroup); err != nil {
-		return err
+	s.Logger.Debug("Found expired sessions", "count", len(expiredSessions))
+
+	for _, session := range expiredSessions {
+		if err := s.Repo.endServerSession(session.ServerGroup); err != nil {
+			s.Logger.Error("Failed to cleanup expired session", "email", session.Email, "server_group", session.ServerGroup, "error", err)
+		}
 	}
 
 	return nil
 }
 
-func (s *Service) SetOnNotifiedFlag(tx *sql.Tx, flagValue int, serverGroup string) error {
-	if err := s.Repo.setOnNotifiedFlag(tx, flagValue, serverGroup); err != nil {
-		return err
+// Find sessions ready for cleanup
+func (s *Service) processTerminatedServerSessions() error {
+	sessionsForCleanup, err := s.Repo.findPendingOffServerSessions()
+	if err != nil {
+		s.Logger.Error("Error while finding sessions for cleanup", "error", err)
+	}
+
+	if len(sessionsForCleanup) == 0 {
+		s.Logger.Debug("No sessions for cleanup")
+	} else {
+		s.Repo.cleanupServerSessions(sessionsForCleanup)
 	}
 
 	return nil

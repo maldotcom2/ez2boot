@@ -35,6 +35,57 @@ func (r *Repository) getServerSessions() ([]ServerSession, error) {
 	return sessions, nil
 }
 
+func (r *Repository) getAgingServerSessions() ([]ServerSession, error) {
+	now := time.Now().UTC()
+	threshold := now.Add(15 * time.Minute)
+
+	rows, err := r.Base.DB.Query("SELECT user_id, server_group FROM server_sessions WHERE warning_notified = $1 AND expiry BETWEEN $2 AND $3", 0, now.Unix(), threshold.Unix())
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	sessions := []ServerSession{}
+
+	for rows.Next() {
+		var s ServerSession
+		err = rows.Scan(&s.UserID, &s.ServerGroup)
+		if err != nil {
+			return nil, err
+		}
+
+		sessions = append(sessions, s)
+	}
+
+	return sessions, nil
+}
+
+func (r *Repository) getExpiredServerSessions() ([]ServerSession, error) {
+	rows, err := r.Base.DB.Query("SELECT user_id, server_group FROM server_sessions WHERE expiry < $1 AND to_cleanup = $2", time.Now().Unix(), 0)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	sessions := []ServerSession{}
+
+	for rows.Next() {
+		var s ServerSession
+		err = rows.Scan(&s.UserID, &s.ServerGroup)
+		if err != nil {
+			return nil, err
+		}
+
+		sessions = append(sessions, s)
+	}
+
+	return sessions, nil
+}
+
 // Create a new session
 func (r *Repository) newServerSession(session ServerSession) (ServerSession, error) {
 	tx, err := r.Base.DB.Begin()
@@ -70,7 +121,7 @@ func (r *Repository) newServerSession(session ServerSession) (ServerSession, err
 	// Convert epoch to time and add to struct
 	session.Expiry = time.Unix(sessionExpiry, 0).UTC()
 
-	if _, err = tx.Exec("INSERT INTO server_sessions (user_id, server_group, expiry, to_notify, warning_notified, on_notified) VALUES ($1, $2, $3, $4, $5, $6)", session.UserID, session.ServerGroup, sessionExpiry, 1, 0, 0); err != nil {
+	if _, err = tx.Exec("INSERT INTO server_sessions (user_id, server_group, expiry, warning_notified, on_notified) VALUES ($1, $2, $3, $4, $5)", session.UserID, session.ServerGroup, sessionExpiry, 0, 0); err != nil {
 		tx.Rollback()
 		return ServerSession{}, err
 	}
@@ -172,19 +223,62 @@ func (r *Repository) cleanupServerSessions(sessionsForCleanup []ServerSession) {
 	}
 }
 
-// Find sessions where all relevant servers are in requested state (on or off)
-func (r *Repository) findServerSessionsForAction(toCleanup int, onNotified int, offNotified int, serverState string) ([]ServerSession, error) {
+// Find session states no longer matching server state
+func (r *Repository) findPendingOffServerSessions() ([]ServerSession, error) {
 	query := `SELECT s.id, u.email, s.server_group, s.expiry
 			FROM server_sessions s
 			JOIN users u ON s.user_id = u.id
-			WHERE s.to_cleanup = $1 AND s.on_notified = $2 AND off_notified = $3
+			WHERE s.to_cleanup = $1 AND s.off_notified = $2
 			AND NOT EXISTS (
 			SELECT 1
 			FROM servers srv
 			WHERE srv.server_group = s.server_group
-			AND (srv.state != $4 OR srv.next_state != $4))`
+			AND (srv.state != $4 OR srv.next_state != $3))`
 
-	rows, err := r.Base.DB.Query(query, toCleanup, onNotified, offNotified, serverState)
+	rows, err := r.Base.DB.Query(query, 1, 1, "off")
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	sessionsForAction := []ServerSession{}
+
+	for rows.Next() {
+		var userID int64
+		var email string
+		var serverGroup string
+		var expiryInt int64
+
+		if err = rows.Scan(&userID, &email, &serverGroup, &expiryInt); err != nil {
+			return nil, err
+		}
+
+		s := ServerSession{
+			UserID:      userID,
+			Email:       email,
+			ServerGroup: serverGroup,
+			Expiry:      time.Unix(expiryInt, 0).UTC(),
+		}
+
+		sessionsForAction = append(sessionsForAction, s)
+	}
+
+	return sessionsForAction, nil
+}
+
+func (r *Repository) findPendingOnServerSessions() ([]ServerSession, error) {
+	query := `SELECT s.id, u.email, s.server_group, s.expiry
+			FROM server_sessions s
+			JOIN users u ON s.user_id = u.id
+			WHERE s.to_cleanup = $1 AND s.on_notified = $2
+			AND NOT EXISTS (
+			SELECT 1
+			FROM servers srv
+			WHERE srv.server_group = s.server_group
+			AND (srv.state != $3 OR srv.next_state != $3))`
+
+	rows, err := r.Base.DB.Query(query, 0, 0, "on")
 	if err != nil {
 		return nil, err
 	}

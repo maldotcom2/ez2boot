@@ -11,7 +11,7 @@ func (r *Repository) SetupDB() error {
 	}
 
 	// Create table for server sessions
-	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS server_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL REFERENCES users(id), server_group TEXT UNIQUE NOT NULL, expiry INTEGER NOT NULL, to_cleanup INTEGER NOT NULL DEFAULT 0 CHECK (to_cleanup IN (0, 1)), to_notify INTEGER NOT NULL DEFAULT 0 CHECK (to_notify IN (0, 1)), warning_notified INTEGER NOT NULL DEFAULT 0 CHECK (warning_notified IN (0, 1)), on_notified INTEGER NOT NULL DEFAULT 0 CHECK (on_notified IN (0, 1)), off_notified INTEGER NOT NULL DEFAULT 0 CHECK (on_notified IN (0, 1)))"); err != nil {
+	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS server_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL REFERENCES users(id), server_group TEXT UNIQUE NOT NULL, expiry INTEGER NOT NULL, to_cleanup INTEGER NOT NULL DEFAULT 0 CHECK (to_cleanup IN (0, 1)), warning_notified INTEGER NOT NULL DEFAULT 0 CHECK (warning_notified IN (0, 1)), on_notified INTEGER NOT NULL DEFAULT 0 CHECK (on_notified IN (0, 1)), off_notified INTEGER NOT NULL DEFAULT 0 CHECK (off_notified IN (0, 1)))"); err != nil {
 		return err
 	}
 
