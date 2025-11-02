@@ -1,10 +1,6 @@
 package server
 
-import (
-	"ez2boot/internal/model"
-)
-
-func (s *Service) GetServers() (map[string][]model.Server, error) {
+func (s *Service) GetServers() (map[string][]Server, error) {
 	servers, err := s.Repo.GetServers()
 	if err != nil {
 		return nil, err
@@ -13,6 +9,6 @@ func (s *Service) GetServers() (map[string][]model.Server, error) {
 	return servers, nil
 }
 
-func (s *Service) UpdateServers(servers []model.Server) {
+func (s *Service) UpdateServers(servers []Server) {
 	s.Repo.UpdateServers(servers)
 }

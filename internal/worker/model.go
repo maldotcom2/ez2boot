@@ -1,7 +1,7 @@
 package worker
 
 import (
-	"ez2boot/internal/model"
+	"ez2boot/internal/config"
 	"ez2boot/internal/notification"
 	"ez2boot/internal/server"
 	"ez2boot/internal/session"
@@ -14,6 +14,6 @@ type Worker struct {
 	SessionService      *session.Service
 	UserService         *user.Service
 	NotificationService *notification.Service
-	Config              *model.Config
+	Config              *config.Config
 	Logger              *slog.Logger
 }

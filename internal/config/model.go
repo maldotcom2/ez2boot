@@ -1,4 +1,4 @@
-package model
+package config
 
 import (
 	"log/slog"
@@ -17,12 +17,4 @@ type Config struct {
 	LogLevel            slog.Level
 	EncryptionKey       string
 	// Add more fields as needed
-}
-
-type Server struct {
-	UniqueID    string `json:"unique_id"`
-	Name        string `json:"name"`
-	State       string `json:"state"`
-	ServerGroup string `json:"server_group"`
-	TimeAdded   int64  `json:"time_added"`
 }

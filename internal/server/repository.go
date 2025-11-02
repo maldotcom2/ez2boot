@@ -1,13 +1,12 @@
 package server
 
 import (
-	"ez2boot/internal/model"
 	"fmt"
 	"strings"
 )
 
 // Return all servers from catalogue - names and groups
-func (r *Repository) GetServers() (map[string][]model.Server, error) {
+func (r *Repository) GetServers() (map[string][]Server, error) {
 	rows, err := r.Base.DB.Query("SELECT unique_id, name, state, server_group FROM servers")
 	if err != nil {
 		return nil, err
@@ -15,9 +14,9 @@ func (r *Repository) GetServers() (map[string][]model.Server, error) {
 
 	defer rows.Close()
 
-	servers := make(map[string][]model.Server)
+	servers := make(map[string][]Server)
 	for rows.Next() {
-		var s model.Server
+		var s Server
 		err = rows.Scan(&s.UniqueID, &s.Name, &s.State, &s.ServerGroup)
 		if err != nil {
 			return nil, err
@@ -29,7 +28,7 @@ func (r *Repository) GetServers() (map[string][]model.Server, error) {
 }
 
 // Add or update servers. Errors are not returned here due to GO routine
-func (r *Repository) UpdateServers(servers []model.Server) {
+func (r *Repository) UpdateServers(servers []Server) {
 
 	err := r.deleteObsolete(servers)
 	if err != nil {
@@ -40,7 +39,7 @@ func (r *Repository) UpdateServers(servers []model.Server) {
 	r.addOrUpdate(servers)
 }
 
-func (r *Repository) deleteObsolete(servers []model.Server) error {
+func (r *Repository) deleteObsolete(servers []Server) error {
 	// Extract UniqueIDs into a slice of interface{}
 	ids := make([]interface{}, len(servers))
 	for i, s := range servers {
@@ -65,7 +64,7 @@ func (r *Repository) deleteObsolete(servers []model.Server) error {
 	return nil
 }
 
-func (r *Repository) addOrUpdate(servers []model.Server) {
+func (r *Repository) addOrUpdate(servers []Server) {
 	const updateQuery = `INSERT INTO servers (unique_id, name, state, server_group, time_added) VALUES ($1, $2, $3, $4, $5) 
 						ON CONFLICT (unique_id, name) DO UPDATE 
 						SET state = EXCLUDED.state, server_group = EXCLUDED.server_group

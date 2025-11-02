@@ -1,13 +1,12 @@
 package config
 
 import (
-	"ez2boot/internal/model"
 	"os"
 
 	"github.com/joho/godotenv"
 )
 
-func GetEnvVars() (*model.Config, error) {
+func GetEnvVars() (*Config, error) {
 	err := godotenv.Load()
 	if err != nil {
 		return nil, err
@@ -77,7 +76,7 @@ func GetEnvVars() (*model.Config, error) {
 
 	encryptionKey := os.Getenv("ENCRYPTION_KEY") // optional
 
-	cfg := &model.Config{
+	cfg := &Config{
 		CloudProvider:       cloudProvider,
 		Port:                port,
 		ScrapeInterval:      scrapeInterval,

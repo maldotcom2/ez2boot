@@ -2,7 +2,7 @@ package aws
 
 import (
 	"context"
-	"ez2boot/internal/model"
+	"ez2boot/internal/server"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -28,12 +28,12 @@ func (s *Service) GetEC2Instances() error {
 		return err
 	}
 
-	servers := []model.Server{}
+	servers := []server.Server{}
 	for _, reservation := range result.Reservations {
 		for _, inst := range reservation.Instances {
 
 			// Add to struct
-			var i = model.Server{
+			var i = server.Server{
 				UniqueID:    aws.ToString(inst.InstanceId),
 				Name:        getTagValue(inst, "Name"),
 				State:       string(inst.State.Name),

@@ -1,8 +1,8 @@
 package user
 
 import (
+	"ez2boot/internal/config"
 	"ez2boot/internal/db"
-	"ez2boot/internal/model"
 	"log/slog"
 )
 
@@ -13,7 +13,7 @@ type Repository struct {
 
 type Service struct {
 	Repo   *Repository
-	Config *model.Config
+	Config *config.Config
 	Logger *slog.Logger
 }
 
