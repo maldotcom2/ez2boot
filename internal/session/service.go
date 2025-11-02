@@ -1,9 +1,7 @@
 package session
 
 import (
-	"errors"
 	"ez2boot/internal/notification"
-	"ez2boot/internal/shared"
 	"fmt"
 )
 
@@ -17,8 +15,8 @@ func (s *Service) getServerSessions() ([]ServerSession, error) {
 }
 
 func (s *Service) newServerSession(session ServerSession) (ServerSession, error) {
-	if session.ServerGroup == "" || session.Duration == "" {
-		return ServerSession{}, errors.New("Server_group and duration required") //TODO Sentinel errors
+	if err := s.validateServerSession(session); err != nil {
+		return ServerSession{}, err
 	}
 
 	// Get email for user
@@ -38,17 +36,13 @@ func (s *Service) newServerSession(session ServerSession) (ServerSession, error)
 }
 
 func (s *Service) updateServerSession(session ServerSession) (ServerSession, error) {
-	if session.ServerGroup == "" || session.Duration == "" {
-		return ServerSession{}, errors.New("email, server_group, duration is required")
-	}
-
-	updated, updatedSession, err := s.Repo.updateServerSession(session)
-	if err != nil {
+	if err := s.validateServerSession(session); err != nil {
 		return ServerSession{}, err
 	}
 
-	if !updated {
-		return ServerSession{}, shared.ErrSessionNotFound
+	updatedSession, err := s.Repo.updateServerSession(session)
+	if err != nil {
+		return ServerSession{}, err
 	}
 
 	return updatedSession, nil
@@ -293,7 +287,7 @@ func (s *Service) processFinalisedServerSessions() error {
 
 		defer tx.Rollback()
 
-		if err := s.Repo.cleanupServerSessions(tx, session); err != nil {
+		if err := s.Repo.cleanupServerSession(tx, session); err != nil {
 			s.Logger.Error("Failed to cleanup server session", "email", session.Email, "server_group", session.ServerGroup, "error", err)
 			tx.Rollback()
 			continue

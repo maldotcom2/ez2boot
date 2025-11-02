@@ -2,6 +2,7 @@ package session
 
 import (
 	"database/sql"
+	"ez2boot/internal/shared"
 	"ez2boot/internal/util"
 	"fmt"
 	"time"
@@ -136,31 +137,31 @@ func (r *Repository) newServerSession(session ServerSession) (ServerSession, err
 }
 
 // Update existing session
-func (r *Repository) updateServerSession(session ServerSession) (bool, ServerSession, error) {
+func (r *Repository) updateServerSession(session ServerSession) (ServerSession, error) {
 	newExpiry, err := util.GetExpiryFromDuration(0, session.Duration)
 	if err != nil {
-		return false, ServerSession{}, err
+		return ServerSession{}, err
 	}
 
-	result, err := r.Base.DB.Exec("UPDATE server_sessions SET expiry = $1, warning_notified = $2 WHERE expiry > $3", newExpiry, 0, time.Now().Unix())
+	result, err := r.Base.DB.Exec("UPDATE server_sessions SET expiry = $1, warning_notified = $2 WHERE server_group = $3 AND user_id = $4 AND expiry > $5", newExpiry, 0, session.ServerGroup, session.UserID, time.Now().Unix())
 	if err != nil {
-		return false, ServerSession{}, err
+		return ServerSession{}, err
 	}
 
 	// Impact check
 	rows, err := result.RowsAffected()
 	if err != nil {
-		return false, ServerSession{}, err
+		return ServerSession{}, err
 	}
 
 	if rows == 0 {
-		return false, ServerSession{}, nil
+		return ServerSession{}, shared.ErrNoRowsUpdated
 	}
 
 	// Convert epoch to time and add to struct
 	session.Expiry = time.Unix(newExpiry, 0).UTC()
 
-	return true, session, nil
+	return session, nil
 }
 
 // Set servers next_state off and mark session for cleanup
@@ -178,8 +179,8 @@ func (r *Repository) endServerSession(tx *sql.Tx, serverGroup string) error {
 	return nil
 }
 
-// Called when servers in group are off and user has been notified
-func (r *Repository) cleanupServerSessions(tx *sql.Tx, session ServerSession) error {
+// Delete the server session and set server next state to null
+func (r *Repository) cleanupServerSession(tx *sql.Tx, session ServerSession) error {
 	r.Base.Logger.Debug("Cleanup Session", "session", session.Email)
 
 	// Delete session

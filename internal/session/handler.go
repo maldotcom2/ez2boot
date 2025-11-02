@@ -2,6 +2,7 @@ package session
 
 import (
 	"encoding/json"
+	"errors"
 	"ez2boot/internal/contextkey"
 	"ez2boot/internal/shared"
 	"net/http"
@@ -58,17 +59,27 @@ func (h *Handler) NewServerSession() http.HandlerFunc {
 
 func (h *Handler) UpdateServerSession() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Receive server_group, email and duration
+		userID, ok := r.Context().Value(contextkey.UserIDKey).(int64)
+		if !ok {
+			h.Logger.Error("User ID not found in context")
+			http.Error(w, "User ID not found in context", http.StatusUnauthorized)
+			return
+		}
+
 		var s ServerSession
 		json.NewDecoder(r.Body).Decode(&s)
+		s.UserID = userID
 
 		s, err := h.Service.updateServerSession(s)
 		if err != nil {
-			if err == shared.ErrSessionNotFound {
-				h.Logger.Error("Failed to find session", "error", err)
+			if errors.Is(shared.ErrNoRowsUpdated, err) {
+				h.Logger.Error("Requsted session for update was either not found or not owned", "error", err)
 				http.Error(w, "Failed to find session", http.StatusUnauthorized)
 				return
 			}
+			h.Logger.Error("Error while updating session", "error", err)
+			http.Error(w, "Error while updating session", http.StatusUnauthorized)
+			return
 		}
 
 		err = json.NewEncoder(w).Encode(s)

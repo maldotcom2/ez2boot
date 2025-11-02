@@ -11,4 +11,5 @@ var (
 	ErrAuthTypeDenied       = errors.New("User not allowed to use this auth type")
 	ErrUserNotActive        = errors.New("User is not active")
 	ErrNoRowsDeleted        = errors.New("No rows were deleted")
+	ErrNoRowsUpdated        = errors.New("No rows were updated")
 )
