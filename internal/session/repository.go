@@ -179,39 +179,20 @@ func (r *Repository) endServerSession(tx *sql.Tx, serverGroup string) error {
 }
 
 // Called when servers in group are off and user has been notified
-func (r *Repository) cleanupServerSessions(sessionsForCleanup []ServerSession) {
-	for _, session := range sessionsForCleanup {
-		r.Base.Logger.Debug("Cleanup Session", "session", session.Email)
-		tx, err := r.Base.DB.Begin()
-		if err != nil {
-			r.Base.Logger.Error("Failed to begin transaction", "email", session.Email, "server_group", session.ServerGroup, "error", err)
-			continue
-		}
+func (r *Repository) cleanupServerSessions(tx *sql.Tx, session ServerSession) error {
+	r.Base.Logger.Debug("Cleanup Session", "session", session.Email)
 
-		// Delete session
-		_, err = tx.Exec("DELETE from server_sessions where server_group = $1", session.ServerGroup)
-		if err != nil {
-			tx.Rollback()
-			r.Base.Logger.Error("Failed to cleanup expired session", "email", session.Email, "server_group", session.ServerGroup, "error", err)
-			continue
-		}
-
-		// Null next_state for all servers in group
-		r.Base.Logger.Debug(session.ServerGroup)
-		_, err = tx.Exec("UPDATE servers SET next_state = NULL where server_group = $1", session.ServerGroup)
-		if err != nil {
-			tx.Rollback()
-			r.Base.Logger.Error("Failed to null server next_state", "server_group", session.ServerGroup, "error", err)
-			continue
-		}
-
-		if err = tx.Commit(); err != nil {
-			r.Base.Logger.Error("Failed to commit transaction", "server_group", session.ServerGroup, "error", err)
-			continue
-		}
-
-		r.Base.Logger.Info("Session ended normally", "email", session.Email, "server_group", session.ServerGroup)
+	// Delete session
+	if _, err := tx.Exec("DELETE from server_sessions where server_group = $1", session.ServerGroup); err != nil {
+		return err
 	}
+
+	// Null next_state for all servers in group
+	if _, err := tx.Exec("UPDATE servers SET next_state = NULL where server_group = $1", session.ServerGroup); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Find sessions which are not marked for cleanup, and haven't been notified on yet

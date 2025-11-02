@@ -271,7 +271,7 @@ func (s *Service) processTerminatedServerSessions() error {
 	return nil
 }
 
-// Process sessions which are marked for cleanup and users have been notified server off state
+// Process sessions which are marked for cleanup and users have been notified server off state. Restores server group to state ready for new session.
 func (s *Service) processFinalisedServerSessions() error {
 	sessionsForFinalise, err := s.Repo.findFinalisedServerSessions()
 	if err != nil {
@@ -280,8 +280,26 @@ func (s *Service) processFinalisedServerSessions() error {
 
 	if len(sessionsForFinalise) == 0 {
 		s.Logger.Debug("No sessions for cleanup")
-	} else {
-		s.Repo.cleanupServerSessions(sessionsForFinalise)
+
+		return nil
+	}
+
+	for _, session := range sessionsForFinalise {
+		tx, err := s.Repo.Base.DB.Begin()
+		if err != nil {
+			s.Logger.Error("Failed to create transaction for finalise sessions", "email", session.Email, "server group", session.ServerGroup, "error", err)
+			continue
+		}
+
+		defer tx.Rollback()
+
+		if err := s.Repo.cleanupServerSessions(tx, session); err != nil {
+			s.Logger.Error("Failed to cleanup server session", "email", session.Email, "server_group", session.ServerGroup, "error", err)
+			tx.Rollback()
+			continue
+		}
+
+		tx.Commit()
 	}
 
 	return nil
