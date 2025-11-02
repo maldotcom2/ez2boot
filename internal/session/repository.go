@@ -35,11 +35,12 @@ func (r *Repository) getServerSessions() ([]ServerSession, error) {
 	return sessions, nil
 }
 
-func (r *Repository) getAgingServerSessions() ([]ServerSession, error) {
+// Get server sessions which will expire soon and user not yet notified
+func (r *Repository) findAgingServerSessions() ([]ServerSession, error) {
 	now := time.Now().UTC()
 	threshold := now.Add(15 * time.Minute)
 
-	rows, err := r.Base.DB.Query("SELECT user_id, server_group FROM server_sessions WHERE warning_notified = $1 AND expiry BETWEEN $2 AND $3", 0, now.Unix(), threshold.Unix())
+	rows, err := r.Base.DB.Query("SELECT user_id, server_group FROM server_sessions WHERE warning_notified = 0 AND expiry BETWEEN $1 AND $2", now.Unix(), threshold.Unix())
 
 	if err != nil {
 		return nil, err
@@ -62,8 +63,9 @@ func (r *Repository) getAgingServerSessions() ([]ServerSession, error) {
 	return sessions, nil
 }
 
-func (r *Repository) getExpiredServerSessions() ([]ServerSession, error) {
-	rows, err := r.Base.DB.Query("SELECT user_id, server_group FROM server_sessions WHERE expiry < $1 AND to_cleanup = $2", time.Now().Unix(), 0)
+// Get expired server session which haven't been processed yet
+func (r *Repository) findExpiredServerSessions() ([]ServerSession, error) {
+	rows, err := r.Base.DB.Query("SELECT user_id, server_group FROM server_sessions WHERE expiry < $1 AND to_cleanup = 0", time.Now().Unix())
 
 	if err != nil {
 		return nil, err
@@ -162,32 +164,21 @@ func (r *Repository) updateServerSession(session ServerSession) (bool, ServerSes
 }
 
 // Set servers next_state off and mark session for cleanup
-func (r *Repository) endServerSession(serverGroup string) error {
-	tx, err := r.Base.DB.Begin()
-	if err != nil {
-		return err
-	}
-
+func (r *Repository) endServerSession(tx *sql.Tx, serverGroup string) error {
 	// Set server next state
-	if _, err = tx.Exec("UPDATE servers SET next_state = $1, time_last_off = $2 WHERE server_group = $3", "off", time.Now().Unix(), serverGroup); err != nil {
-		tx.Rollback()
+	if _, err := tx.Exec("UPDATE servers SET next_state = $1, time_last_off = $2 WHERE server_group = $3", "off", time.Now().Unix(), serverGroup); err != nil {
 		return err
 	}
 
 	// Set cleanup flag on session
-	if _, err = tx.Exec("UPDATE server_sessions SET to_cleanup = $1 WHERE server_group = $2", 1, serverGroup); err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if err = tx.Commit(); err != nil {
+	if _, err := tx.Exec("UPDATE server_sessions SET to_cleanup = $1 WHERE server_group = $2", 1, serverGroup); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// Cleanup worker task
+// Called when servers in group are off and user has been notified
 func (r *Repository) cleanupServerSessions(sessionsForCleanup []ServerSession) {
 	for _, session := range sessionsForCleanup {
 		r.Base.Logger.Debug("Cleanup Session", "session", session.Email)
@@ -223,19 +214,19 @@ func (r *Repository) cleanupServerSessions(sessionsForCleanup []ServerSession) {
 	}
 }
 
-// Find session states no longer matching server state
-func (r *Repository) findPendingOffServerSessions() ([]ServerSession, error) {
-	query := `SELECT s.id, u.email, s.server_group, s.expiry
+// Find sessions which are not marked for cleanup, and haven't been notified on yet
+func (r *Repository) findPendingOnServerSessions() ([]ServerSession, error) {
+	query := `SELECT u.id, u.email, s.server_group, s.expiry
 			FROM server_sessions s
 			JOIN users u ON s.user_id = u.id
-			WHERE s.to_cleanup = $1 AND s.off_notified = $2
+			WHERE s.to_cleanup = 0 AND s.on_notified = 0
 			AND NOT EXISTS (
 			SELECT 1
 			FROM servers srv
 			WHERE srv.server_group = s.server_group
-			AND (srv.state != $4 OR srv.next_state != $3))`
+			AND (srv.state != 'on' OR srv.next_state != 'on'))`
 
-	rows, err := r.Base.DB.Query(query, 1, 1, "off")
+	rows, err := r.Base.DB.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -267,18 +258,63 @@ func (r *Repository) findPendingOffServerSessions() ([]ServerSession, error) {
 	return sessionsForAction, nil
 }
 
-func (r *Repository) findPendingOnServerSessions() ([]ServerSession, error) {
-	query := `SELECT s.id, u.email, s.server_group, s.expiry
+// Find sessions which have been marked for cleanup and not yet notified
+func (r *Repository) findTerminatedServerSessions() ([]ServerSession, error) {
+	query := `SELECT u.id AS user_id, u.email, s.server_group, s.expiry
 			FROM server_sessions s
 			JOIN users u ON s.user_id = u.id
-			WHERE s.to_cleanup = $1 AND s.on_notified = $2
+			WHERE s.to_cleanup = 1 AND s.off_notified = 0
 			AND NOT EXISTS (
 			SELECT 1
 			FROM servers srv
 			WHERE srv.server_group = s.server_group
-			AND (srv.state != $3 OR srv.next_state != $3))`
+			AND (srv.state != 'off' OR srv.next_state != 'off'))`
 
-	rows, err := r.Base.DB.Query(query, 0, 0, "on")
+	rows, err := r.Base.DB.Query(query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	sessionsForAction := []ServerSession{}
+
+	for rows.Next() {
+		var userID int64
+		var email string
+		var serverGroup string
+		var expiryInt int64
+
+		if err = rows.Scan(&userID, &email, &serverGroup, &expiryInt); err != nil {
+			return nil, err
+		}
+
+		s := ServerSession{
+			UserID:      userID,
+			Email:       email,
+			ServerGroup: serverGroup,
+			Expiry:      time.Unix(expiryInt, 0).UTC(),
+		}
+
+		sessionsForAction = append(sessionsForAction, s)
+	}
+
+	return sessionsForAction, nil
+}
+
+// Find sessions which are marked for cleanup and user has been notified of servers off state
+func (r *Repository) findFinalisedServerSessions() ([]ServerSession, error) {
+	query := `SELECT u.id, u.email, s.server_group, s.expiry
+			FROM server_sessions s
+			JOIN users u ON s.user_id = u.id
+			WHERE s.to_cleanup = 1 AND s.off_notified = 1
+			AND NOT EXISTS (
+			SELECT 1
+			FROM servers srv
+			WHERE srv.server_group = s.server_group
+			AND (srv.state != 'off' OR srv.next_state != 'off'))`
+
+	rows, err := r.Base.DB.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -323,6 +359,16 @@ func (r *Repository) setWarningNotifiedFlag(tx *sql.Tx, flagValue int, serverGro
 // Set on notified flag - called with notification queuing so runs as a transaction
 func (r *Repository) setOnNotifiedFlag(tx *sql.Tx, flagValue int, serverGroup string) error {
 	_, err := tx.Exec("UPDATE server_sessions SET on_notified = $1 WHERE server_group = $2", flagValue, serverGroup)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Set off notified flag - called with notification queuing so runs as a transaction
+func (r *Repository) setOffNotifiedFlag(tx *sql.Tx, flagValue int, serverGroup string) error {
+	_, err := tx.Exec("UPDATE server_sessions SET off_notified = $1 WHERE server_group = $2", flagValue, serverGroup)
 	if err != nil {
 		return err
 	}

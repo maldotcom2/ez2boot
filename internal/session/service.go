@@ -75,6 +75,11 @@ func (s *Service) ProcessServerSessions() {
 	if err := s.processTerminatedServerSessions(); err != nil {
 		s.Logger.Error("Error while processing terminated server sessions", "error", err)
 	}
+
+	// Finalised sessions
+	if err := s.processFinalisedServerSessions(); err != nil {
+		s.Logger.Error("Error while processing terminated server sessions", "error", err)
+	}
 }
 
 // Server sessions which are ready for use
@@ -124,8 +129,9 @@ func (s *Service) processReadyServerSessions() error {
 	return nil
 }
 
+// Process server sessions which will expire soon and user not yet notified
 func (s *Service) processAgingServerSessions() error {
-	agingSessions, err := s.Repo.getAgingServerSessions()
+	agingSessions, err := s.Repo.findAgingServerSessions()
 	if err != nil {
 		return err
 	}
@@ -140,7 +146,7 @@ func (s *Service) processAgingServerSessions() error {
 	// Queue notification for each and set flag
 	for _, session := range agingSessions {
 		n := notification.NewNotification{
-			UserID: session.UserID, // Not working
+			UserID: session.UserID,
 			Msg:    fmt.Sprintf("Session is expiring soon for Server Group %s and can be extended", session.ServerGroup),
 			Title:  fmt.Sprintf("Session for Server Group %s expiring", session.ServerGroup),
 		}
@@ -171,8 +177,9 @@ func (s *Service) processAgingServerSessions() error {
 	return nil
 }
 
+// Process expired server session which haven't been processed yet
 func (s *Service) processExpiredServerSessions() error {
-	expiredSessions, err := s.Repo.getExpiredServerSessions()
+	expiredSessions, err := s.Repo.findExpiredServerSessions()
 	if err != nil {
 		return err
 	}
@@ -184,26 +191,97 @@ func (s *Service) processExpiredServerSessions() error {
 
 	s.Logger.Debug("Found expired sessions", "count", len(expiredSessions))
 
+	// TODO Add expired notification
 	for _, session := range expiredSessions {
-		if err := s.Repo.endServerSession(session.ServerGroup); err != nil {
-			s.Logger.Error("Failed to cleanup expired session", "email", session.Email, "server_group", session.ServerGroup, "error", err)
+		n := notification.NewNotification{
+			UserID: session.UserID,
+			Msg:    fmt.Sprintf("Your server session has expired for Server Group %s. Servers will power off", session.ServerGroup),
+			Title:  fmt.Sprintf("Session expired for server group %s.", session.ServerGroup),
 		}
+
+		tx, err := s.Repo.Base.DB.Begin()
+		if err != nil {
+			s.Logger.Error("Failed to create transaction for expired sessions", "email", session.Email, "server group", session.ServerGroup, "error", err)
+			continue
+		}
+
+		defer tx.Rollback()
+
+		if err := s.NotificationService.QueueNotification(tx, n); err != nil {
+			s.Logger.Error("Failed to queue expired session notification", "email", session.Email, "server group", session.ServerGroup, "error", err)
+			tx.Rollback()
+			continue
+		}
+
+		if err := s.Repo.endServerSession(tx, session.ServerGroup); err != nil {
+			s.Logger.Error("Failed to end expired session", "email", session.Email, "server_group", session.ServerGroup, "error", err)
+			tx.Rollback()
+			continue
+		}
+
+		tx.Commit()
 	}
 
 	return nil
 }
 
-// Find sessions ready for cleanup
+// Process sessions which have been marked for cleanup and users not yet notified
 func (s *Service) processTerminatedServerSessions() error {
-	sessionsForCleanup, err := s.Repo.findPendingOffServerSessions()
+	terminatedSessions, err := s.Repo.findTerminatedServerSessions()
+	if err != nil {
+		s.Logger.Error("Error while finding terminated server sessions", "error", err)
+	}
+
+	if len(terminatedSessions) == 0 {
+		s.Logger.Debug("No terminated server sessions")
+		return nil
+	}
+
+	for _, session := range terminatedSessions {
+		n := notification.NewNotification{
+			UserID: session.UserID,
+			Msg:    fmt.Sprintf("Your session has ended normally for Server Group %s. Servers are now off", session.ServerGroup),
+			Title:  fmt.Sprintf("Session ended for server group %s.", session.ServerGroup),
+		}
+
+		tx, err := s.Repo.Base.DB.Begin()
+		if err != nil {
+			s.Logger.Error("Failed to create transaction for terminated sessions", "email", session.Email, "server group", session.ServerGroup, "error", err)
+			continue
+		}
+
+		defer tx.Rollback()
+
+		if err := s.NotificationService.QueueNotification(tx, n); err != nil {
+			s.Logger.Error("Failed to queue aging session notification", "email", session.Email, "server group", session.ServerGroup, "error", err)
+			tx.Rollback()
+			continue
+		}
+
+		if err := s.Repo.setOffNotifiedFlag(tx, 1, session.ServerGroup); err != nil {
+			s.Logger.Error("Failed to set session as notified", "email", session.Email, "server_group", session.ServerGroup, "error", err)
+			tx.Rollback()
+			continue
+		}
+
+		tx.Commit()
+
+	}
+
+	return nil
+}
+
+// Process sessions which are marked for cleanup and users have been notified server off state
+func (s *Service) processFinalisedServerSessions() error {
+	sessionsForFinalise, err := s.Repo.findFinalisedServerSessions()
 	if err != nil {
 		s.Logger.Error("Error while finding sessions for cleanup", "error", err)
 	}
 
-	if len(sessionsForCleanup) == 0 {
+	if len(sessionsForFinalise) == 0 {
 		s.Logger.Debug("No sessions for cleanup")
 	} else {
-		s.Repo.cleanupServerSessions(sessionsForCleanup)
+		s.Repo.cleanupServerSessions(sessionsForFinalise)
 	}
 
 	return nil
