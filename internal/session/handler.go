@@ -47,7 +47,6 @@ func (h *Handler) NewServerSession() http.HandlerFunc {
 		}
 
 		// Return to client
-		s.Message = "Success"
 		err = json.NewEncoder(w).Encode(s)
 		if err != nil {
 			h.Logger.Error("Failed to encode JSON response", "error", err)

@@ -1,6 +1,7 @@
 package session
 
 import (
+	"database/sql"
 	"ez2boot/internal/util"
 	"fmt"
 	"time"
@@ -8,7 +9,7 @@ import (
 
 // Return currently active sessions
 func (r *Repository) getServerSessions() ([]ServerSession, error) {
-	rows, err := r.Base.DB.Query("SELECT email, server_group, expiry FROM server_sessions")
+	rows, err := r.Base.DB.Query("SELECT user_id, server_group, expiry FROM server_sessions")
 	if err != nil {
 		return nil, err
 	}
@@ -18,20 +19,16 @@ func (r *Repository) getServerSessions() ([]ServerSession, error) {
 	sessions := []ServerSession{}
 
 	for rows.Next() {
-		var email string
-		var serverGroup string
+		var s ServerSession
 		var expiryInt int64
-
-		err = rows.Scan(&email, &serverGroup, &expiryInt)
+		err = rows.Scan(&s.UserID, &s.ServerGroup, &expiryInt)
 		if err != nil {
 			return nil, err
 		}
 
-		s := ServerSession{
-			Email:       email,
-			ServerGroup: serverGroup,
-			Expiry:      time.Unix(expiryInt, 0).UTC(),
-		}
+		// Convert epoch to time
+		s.Expiry = time.Unix(expiryInt, 0).UTC()
+
 		sessions = append(sessions, s)
 	}
 
@@ -46,7 +43,7 @@ func (r *Repository) newServerSession(session ServerSession) (ServerSession, err
 	}
 
 	// Set server table for state worker
-	result, err := tx.Exec("UPDATE servers SET next_state = $1, time_last_on = $2, last_user = $3 WHERE server_group = $4", "on", time.Now().Unix(), session.Email, session.ServerGroup)
+	result, err := tx.Exec("UPDATE servers SET next_state = $1, time_last_on = $2, last_user_id = $3 WHERE server_group = $4", "on", time.Now().Unix(), session.UserID, session.ServerGroup)
 	if err != nil {
 		tx.Rollback()
 		return ServerSession{}, err
@@ -73,7 +70,7 @@ func (r *Repository) newServerSession(session ServerSession) (ServerSession, err
 	// Convert epoch to time and add to struct
 	session.Expiry = time.Unix(sessionExpiry, 0).UTC()
 
-	if _, err = tx.Exec("INSERT INTO server_sessions (id, token, email, server_group, expiry, to_notify, warning_notified, on_notified) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", session.UserID, session.Token, session.Email, session.ServerGroup, sessionExpiry, 1, 0, 0); err != nil {
+	if _, err = tx.Exec("INSERT INTO server_sessions (user_id, server_group, expiry, to_notify, warning_notified, on_notified) VALUES ($1, $2, $3, $4, $5, $6)", session.UserID, session.ServerGroup, sessionExpiry, 1, 0, 0); err != nil {
 		tx.Rollback()
 		return ServerSession{}, err
 	}
@@ -92,7 +89,7 @@ func (r *Repository) updateServerSession(session ServerSession) (bool, ServerSes
 		return false, ServerSession{}, err
 	}
 
-	result, err := r.Base.DB.Exec("UPDATE server_sessions SET expiry = $1, warning_notified = $2 WHERE token = $3 AND expiry > $4", newExpiry, 0, session.Token, time.Now().Unix())
+	result, err := r.Base.DB.Exec("UPDATE server_sessions SET expiry = $1, warning_notified = $2 WHERE expiry > $3", newExpiry, 0, time.Now().Unix())
 	if err != nil {
 		return false, ServerSession{}, err
 	}
@@ -104,14 +101,12 @@ func (r *Repository) updateServerSession(session ServerSession) (bool, ServerSes
 	}
 
 	if rows == 0 {
-		session.Message = "Session not found"
 		return false, ServerSession{}, nil
 	}
 
 	// Convert epoch to time and add to struct
 	session.Expiry = time.Unix(newExpiry, 0).UTC()
 
-	session.Message = "Successfully updated session"
 	return true, session, nil
 }
 
@@ -179,8 +174,9 @@ func (r *Repository) cleanupServerSessions(sessionsForCleanup []ServerSession) {
 
 // Find sessions where all relevant servers are in requested state (on or off)
 func (r *Repository) findServerSessionsForAction(toCleanup int, onNotified int, offNotified int, serverState string) ([]ServerSession, error) {
-	query := `SELECT s.id, s.email, s.server_group, s.expiry
+	query := `SELECT s.id, u.email, s.server_group, s.expiry
 			FROM server_sessions s
+			JOIN users u ON s.user_id = u.id
 			WHERE s.to_cleanup = $1 AND s.on_notified = $2 AND off_notified = $3
 			AND NOT EXISTS (
 			SELECT 1
@@ -220,8 +216,9 @@ func (r *Repository) findServerSessionsForAction(toCleanup int, onNotified int, 
 	return sessionsForAction, nil
 }
 
-func (r *Repository) setWarningNotifiedFlag(value int, serverGroup string) error {
-	_, err := r.Base.DB.Exec("UPDATE server_sessions SET warning_notified = $1 WHERE server_group = $2", value, serverGroup)
+// Set warning notified flag - called with notification queuing so runs as a transaction
+func (r *Repository) setWarningNotifiedFlag(tx *sql.Tx, flagValue int, serverGroup string) error {
+	_, err := tx.Exec("UPDATE server_sessions SET warning_notified = $1 WHERE server_group = $2", flagValue, serverGroup)
 	if err != nil {
 		return err
 	}
@@ -229,8 +226,9 @@ func (r *Repository) setWarningNotifiedFlag(value int, serverGroup string) error
 	return nil
 }
 
-func (r *Repository) setOnNotifiedFlag(value int, serverGroup string) error {
-	_, err := r.Base.DB.Exec("UPDATE server_sessions SET on_notified = $1 WHERE server_group = $2", value, serverGroup)
+// Set on notified flag - called with notification queuing so runs as a transaction
+func (r *Repository) setOnNotifiedFlag(tx *sql.Tx, flagValue int, serverGroup string) error {
+	_, err := tx.Exec("UPDATE server_sessions SET on_notified = $1 WHERE server_group = $2", flagValue, serverGroup)
 	if err != nil {
 		return err
 	}

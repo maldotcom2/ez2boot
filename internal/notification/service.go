@@ -1,6 +1,7 @@
 package notification
 
 import (
+	"database/sql"
 	"ez2boot/internal/shared"
 	"time"
 )
@@ -29,9 +30,9 @@ func SupportedTypes() []string {
 }
 
 // Add new notification to queue
-func (s *Service) QueueNotification(n NewNotification) error {
+func (s *Service) QueueNotification(tx *sql.Tx, n NewNotification) error {
 	n.Time = time.Now().Unix()
-	if err := s.Repo.queueNotification(n); err != nil {
+	if err := s.Repo.queueNotification(tx, n); err != nil {
 		return err
 	}
 

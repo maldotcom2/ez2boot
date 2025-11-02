@@ -2,6 +2,8 @@ package session
 
 import (
 	"ez2boot/internal/db"
+	"ez2boot/internal/notification"
+	"ez2boot/internal/user"
 	"log/slog"
 	"time"
 )
@@ -11,8 +13,10 @@ type Repository struct {
 }
 
 type Service struct {
-	Repo   *Repository
-	Logger *slog.Logger
+	Repo                *Repository
+	NotificationService *notification.Service
+	UserService         *user.Service
+	Logger              *slog.Logger
 }
 
 type Handler struct {
@@ -21,11 +25,10 @@ type Handler struct {
 }
 
 type ServerSession struct {
-	UserID      int64     // Context assigned
-	Email       string    `json:"email"`
+	Id          int64
+	UserID      int64
+	Email       string
 	ServerGroup string    `json:"server_group"`
-	Token       string    `json:"token"`
 	Duration    string    `json:"duration"`
 	Expiry      time.Time `json:"expiry"`
-	Message     string    `json:"message"`
 }

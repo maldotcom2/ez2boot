@@ -50,6 +50,23 @@ func main() {
 	// Shared base repo
 	repo := db.NewRepository(conn, logger)
 
+	// Notification repo
+	notificationRepo := &notification.Repository{
+		Base: repo,
+	}
+
+	// Notification service
+	notificationService := &notification.Service{
+		Repo:   notificationRepo,
+		Logger: logger,
+	}
+
+	// Notification handler
+	notificationHandler := &notification.Handler{
+		Service: notificationService,
+		Logger:  logger,
+	}
+
 	// Server repo
 	serverRepo := &server.Repository{
 		Base: repo,
@@ -64,22 +81,7 @@ func main() {
 	// Server handler
 	serverHandler := &server.Handler{
 		Service: serverService,
-	}
-
-	// Session repo
-	sessionRepo := &session.Repository{
-		Base: repo,
-	}
-
-	// Session service
-	sessionService := &session.Service{
-		Repo:   sessionRepo,
-		Logger: logger,
-	}
-
-	// Session handler
-	sessionHandler := &session.Handler{
-		Service: sessionService,
+		Logger:  logger,
 	}
 
 	// User repo
@@ -101,6 +103,25 @@ func main() {
 		Logger:  logger,
 	}
 
+	// Session repo
+	sessionRepo := &session.Repository{
+		Base: repo,
+	}
+
+	// Session service
+	sessionService := &session.Service{
+		Repo:                sessionRepo,
+		NotificationService: notificationService,
+		UserService:         userService,
+		Logger:              logger,
+	}
+
+	// Session handler
+	sessionHandler := &session.Handler{
+		Service: sessionService,
+		Logger:  logger,
+	}
+
 	// Middlware
 	mw := &middleware.Middleware{
 		UserService: userService,
@@ -118,23 +139,6 @@ func main() {
 		Config:        cfg,
 		ServerService: serverService,
 		Logger:        logger,
-	}
-
-	// Notification repo
-	notificationRepo := &notification.Repository{
-		Base: repo,
-	}
-
-	// Notification service
-	notificationService := &notification.Service{
-		Repo:   notificationRepo,
-		Logger: logger,
-	}
-
-	// Notification handler
-	notificationHandler := &notification.Handler{
-		Service: notificationService,
-		Logger:  logger,
 	}
 
 	// Email repo

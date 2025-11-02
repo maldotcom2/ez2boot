@@ -44,6 +44,15 @@ func (r *Repository) findUserIDHashByEmail(email string) (int64, string, error) 
 	return id, passwordHash, nil
 }
 
+func (r *Repository) findEmailFromUserID(userID int64) (string, error) {
+	var email string
+	if err := r.Base.DB.QueryRow("SELECT email from users WHERE id = $1", userID).Scan(&email); err != nil {
+		return "", err
+	}
+
+	return email, nil
+}
+
 // Change password for user
 func (r *Repository) changePassword(email string, newHash string) error {
 	result, err := r.Base.DB.Exec("UPDATE users SET password_hash = $1 WHERE email = $2", newHash, email)

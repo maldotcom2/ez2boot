@@ -174,3 +174,12 @@ func (s *Service) CleanupExpiredSessions() (sql.Result, error) {
 
 	return result, nil
 }
+
+func (s *Service) FindEmailFromUserID(userID int64) (string, error) {
+	email, err := s.Repo.findEmailFromUserID(userID)
+	if err != nil {
+		return "", err
+	}
+
+	return email, nil
+}

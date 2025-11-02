@@ -6,12 +6,12 @@ import (
 
 func (r *Repository) SetupDB() error {
 	// Create servers table
-	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS servers (id INTEGER PRIMARY KEY AUTOINCREMENT, unique_id TEXT UNIQUE NOT NULL, name TEXT UNIQUE NOT NULL, state TEXT NOT NULL, next_state TEXT, server_group TEXT NOT NULL, time_added INTEGER NOT NULL, time_last_on INTEGER, time_last_off INTEGER, last_user TEXT)"); err != nil {
+	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS servers (id INTEGER PRIMARY KEY AUTOINCREMENT, unique_id TEXT UNIQUE NOT NULL, name TEXT UNIQUE NOT NULL, state TEXT NOT NULL, next_state TEXT, server_group TEXT NOT NULL, time_added INTEGER NOT NULL, time_last_on INTEGER, time_last_off INTEGER, last_user_id INTEGER)"); err != nil {
 		return err
 	}
 
-	// Create sessions table
-	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS server_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, token TEXT NOT NULL, email TEXT NOT NULL, server_group TEXT UNIQUE NOT NULL, expiry INTEGER NOT NULL, to_cleanup INTEGER NOT NULL DEFAULT 0 CHECK (to_cleanup IN (0, 1)), to_notify INTEGER NOT NULL DEFAULT 0 CHECK (to_notify IN (0, 1)), warning_notified INTEGER NOT NULL DEFAULT 0 CHECK (warning_notified IN (0, 1)), on_notified INTEGER NOT NULL DEFAULT 0 CHECK (on_notified IN (0, 1)), off_notified INTEGER NOT NULL DEFAULT 0 CHECK (on_notified IN (0, 1)))"); err != nil {
+	// Create table for server sessions
+	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS server_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL REFERENCES users(id), server_group TEXT UNIQUE NOT NULL, expiry INTEGER NOT NULL, to_cleanup INTEGER NOT NULL DEFAULT 0 CHECK (to_cleanup IN (0, 1)), to_notify INTEGER NOT NULL DEFAULT 0 CHECK (to_notify IN (0, 1)), warning_notified INTEGER NOT NULL DEFAULT 0 CHECK (warning_notified IN (0, 1)), on_notified INTEGER NOT NULL DEFAULT 0 CHECK (on_notified IN (0, 1)), off_notified INTEGER NOT NULL DEFAULT 0 CHECK (on_notified IN (0, 1)))"); err != nil {
 		return err
 	}
 

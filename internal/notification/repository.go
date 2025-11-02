@@ -1,10 +1,12 @@
 package notification
 
-// Create new notification
-func (r *Repository) queueNotification(n NewNotification) error {
+import "database/sql"
+
+// Create new notification - usually run in conjunction with flag setting so runs as a transaction
+func (r *Repository) queueNotification(tx *sql.Tx, n NewNotification) error {
 	query := "INSERT INTO notification_queue (user_id, message, title, time_added) VALUES ($1, $2, $3, $4)"
 
-	if _, err := r.Base.DB.Exec(query, n.UserID, n.Msg, n.Title, n.Time); err != nil {
+	if _, err := tx.Exec(query, n.UserID, n.Msg, n.Title, n.Time); err != nil {
 		return err
 	}
 
