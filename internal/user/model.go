@@ -28,7 +28,8 @@ type UserLogin struct {
 }
 
 type ChangePasswordRequest struct {
-	Email       string `json:"email"`
+	UserID      int64
+	Email       string
 	OldPassword string `json:"old_password"`
 	NewPassword string `json:"new_password"`
 }

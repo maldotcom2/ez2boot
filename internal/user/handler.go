@@ -3,6 +3,7 @@ package user
 import (
 	"encoding/json"
 	"errors"
+	"ez2boot/internal/contextkey"
 	"ez2boot/internal/shared"
 	"net/http"
 	"time"
@@ -19,7 +20,7 @@ func (h *Handler) Login() http.HandlerFunc {
 
 		h.Logger.Info("Login attempted", "email", u.Email)
 
-		token, err := h.Service.LoginUser(u)
+		token, err := h.Service.loginUser(u)
 		if err != nil {
 			if errors.Is(err, shared.ErrAuthenticationFailed) {
 				h.Logger.Info("Invalid email or password", "email", u.Email, "error", err)
@@ -71,8 +72,8 @@ func (h *Handler) Logout() http.HandlerFunc {
 	}
 }
 
-// Handler to register new user
-func (h *Handler) RegisterUser() http.HandlerFunc {
+// Handler to create new user
+func (h *Handler) CreateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var u UserLogin
 		err := json.NewDecoder(r.Body).Decode(&u)
@@ -85,7 +86,7 @@ func (h *Handler) RegisterUser() http.HandlerFunc {
 			return
 		}
 
-		if err = h.Service.validateAndCreateUser(u); err != nil {
+		if err = h.Service.createUser(u); err != nil {
 			h.Logger.Info("Failed to create user", "email", u.Email, "error", err)
 			http.Error(w, "Failed to create user", http.StatusInternalServerError)
 			return
@@ -97,19 +98,23 @@ func (h *Handler) RegisterUser() http.HandlerFunc {
 
 func (h *Handler) ChangePassword() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		userID, ok := r.Context().Value(contextkey.UserIDKey).(int64)
+		if !ok {
+			h.Logger.Error("User ID not found in context")
+			http.Error(w, "User ID not found in context", http.StatusUnauthorized)
+			return
+		}
+
 		var c ChangePasswordRequest
-		err := json.NewDecoder(r.Body).Decode(&c)
-
-		h.Logger.Info("Attempted password change", "email", c.Email)
-
-		if err != nil {
-			h.Logger.Error("Malformed request", "email", c.Email)
+		if err := json.NewDecoder(r.Body).Decode(&c); err != nil {
+			h.Logger.Error("Malformed request", "userid", userID)
 			http.Error(w, "Malformed request", http.StatusBadRequest)
 			return
 		}
 
-		// TODO add sentinel error context
-		if err = h.Service.changePasswordByUser(c); err != nil {
+		c.UserID = userID
+
+		if err := h.Service.changePassword(c); err != nil {
 			if errors.Is(err, shared.ErrAuthenticationFailed) {
 				h.Logger.Error("Failed to change password for user")
 				http.Error(w, "Authentication failed", http.StatusUnauthorized)
@@ -124,7 +129,5 @@ func (h *Handler) ChangePassword() http.HandlerFunc {
 				return
 			}
 		}
-
-		w.WriteHeader(http.StatusOK)
 	}
 }

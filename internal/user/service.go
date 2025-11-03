@@ -13,7 +13,7 @@ import (
 	"github.com/alexedwards/argon2id"
 )
 
-func (s *Service) LoginUser(u UserLogin) (string, error) {
+func (s *Service) loginUser(u UserLogin) (string, error) {
 	// Authenticate
 	userID, ok, err := s.AuthenticateUser(u.Email, u.Password)
 	if err != nil {
@@ -52,7 +52,7 @@ func (s *Service) logoutUser(token string) error {
 	return nil
 }
 
-func (s *Service) validateAndCreateUser(u UserLogin) error {
+func (s *Service) createUser(u UserLogin) error {
 	// Validate password requirements
 	if err := validatePassword(u.Email, u.Password); err != nil {
 		return err
@@ -72,9 +72,21 @@ func (s *Service) validateAndCreateUser(u UserLogin) error {
 }
 
 // Change a password for authenticated user
-func (s *Service) changePasswordByUser(req ChangePasswordRequest) error {
+func (s *Service) changePassword(req ChangePasswordRequest) error {
+	// Get email of authenticated user
+	email, err := s.FindEmailFromUserID(req.UserID)
+	if err != nil {
+		return err
+	}
+
+	req.Email = email
+
+	if err = s.validateChangePassword(req); err != nil {
+		return err
+	}
+
 	// Check current password
-	_, isCurrentPassword, err := s.AuthenticateUser(req.Email, req.OldPassword)
+	_, isCurrentPassword, err := s.AuthenticateUser(email, req.OldPassword)
 	if err != nil {
 		return err
 	}
@@ -84,7 +96,7 @@ func (s *Service) changePasswordByUser(req ChangePasswordRequest) error {
 	}
 
 	//Validate complexity
-	if err := validatePassword(req.Email, req.NewPassword); err != nil {
+	if err := validatePassword(email, req.NewPassword); err != nil {
 		return fmt.Errorf("%w: %v", shared.ErrInvalidPassword, err)
 	}
 
@@ -119,6 +131,7 @@ func validatePassword(email string, password string) error {
 	return nil
 }
 
+// Authenticate user and return userID and match bool
 func (s *Service) AuthenticateUser(email string, password string) (int64, bool, error) {
 	id, hash, err := s.Repo.findUserIDHashByEmail(email)
 	if err != nil {

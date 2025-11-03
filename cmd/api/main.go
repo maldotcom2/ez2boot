@@ -228,33 +228,40 @@ func SetupRoutes(
 	publicRouter := router.PathPrefix("/ui").Subrouter()
 	publicRouter.Use(middleware.JsonContentTypeMiddleware)
 	publicRouter.Use(middleware.CORSMiddleware)
-	publicRouter.HandleFunc("/login", user.Login()).Methods("POST")
-	publicRouter.HandleFunc("/register", user.RegisterUser()).Methods("POST") //TODO remove
+	publicRouter.HandleFunc("user/login", user.Login()).Methods("POST")
+	publicRouter.HandleFunc("user/new", user.CreateUser()).Methods("POST") //TODO remove
 
 	// API subrouter and routes
 	apiRouter := router.PathPrefix("/api").Subrouter()
 	apiRouter.Use(mw.BasicAuthMiddleware())
 	apiRouter.Use(middleware.JsonContentTypeMiddleware)
 	apiRouter.Use(middleware.CORSMiddleware)
+	//// Servers
 	apiRouter.HandleFunc("/servers", server.GetServers()).Methods("GET")
+	//// Server sessions
 	apiRouter.HandleFunc("/sessions", session.GetServerSessions()).Methods("GET")
 	apiRouter.HandleFunc("/sessions", session.NewServerSession()).Methods("POST")
 	apiRouter.HandleFunc("/sessions", session.UpdateServerSession()).Methods("PUT")
-	apiRouter.HandleFunc("/register", user.RegisterUser()).Methods("POST")
-	apiRouter.HandleFunc("/changepassword", user.ChangePassword()).Methods("PUT")
+	//// Users
+	apiRouter.HandleFunc("/user/new", user.CreateUser()).Methods("POST")
+	apiRouter.HandleFunc("/user/changepassword", user.ChangePassword()).Methods("PUT")
 
 	// UI subrouter and routes
 	uiRouter := router.PathPrefix("/ui").Subrouter()
 	uiRouter.Use(mw.SessionAuthMiddleware())
 	uiRouter.Use(middleware.JsonContentTypeMiddleware)
 	uiRouter.Use(middleware.CORSMiddleware)
+	//// Servers
 	uiRouter.HandleFunc("/servers", server.GetServers()).Methods("GET")
+	//// Server Sessions
 	uiRouter.HandleFunc("/sessions", session.GetServerSessions()).Methods("GET")
 	uiRouter.HandleFunc("/sessions", session.NewServerSession()).Methods("POST")
 	uiRouter.HandleFunc("/sessions", session.UpdateServerSession()).Methods("PUT")
-	uiRouter.HandleFunc("/register", user.RegisterUser()).Methods("POST")
-	uiRouter.HandleFunc("/changepassword", user.ChangePassword()).Methods("PUT")
-	uiRouter.HandleFunc("/logout", user.Logout()).Methods("POST")
+	//// Users
+	uiRouter.HandleFunc("/user/new", user.CreateUser()).Methods("POST")
+	uiRouter.HandleFunc("/user/changepassword", user.ChangePassword()).Methods("PUT")
+	uiRouter.HandleFunc("/user/logout", user.Logout()).Methods("POST")
 	//uiRouter.HandleFunc("/notification/sender", notification.GetNotificationTypes()).Methods("GET")
+	/// Notification channels
 	uiRouter.HandleFunc("/email/update", email.AddOrUpdate()).Methods("POST")
 }

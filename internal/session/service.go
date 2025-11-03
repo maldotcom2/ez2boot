@@ -185,7 +185,6 @@ func (s *Service) processExpiredServerSessions() error {
 
 	s.Logger.Debug("Found expired sessions", "count", len(expiredSessions))
 
-	// TODO Add expired notification
 	for _, session := range expiredSessions {
 		n := notification.NewNotification{
 			UserID: session.UserID,
