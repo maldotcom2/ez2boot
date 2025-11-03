@@ -21,7 +21,7 @@ func (s *Service) GetEC2Instances() error {
 
 	input := getDescribeInstancesInput(s.Config.TagKey)
 
-	// Max 1000 responses without pagination
+	// Describe instances from AWS. Max 1000 responses without pagination
 	result, err := ec2Client.DescribeInstances(context.TODO(), input)
 	if err != nil {
 		s.Logger.Error("Failed to describe EC2 instances", "error", err)
@@ -33,7 +33,7 @@ func (s *Service) GetEC2Instances() error {
 		for _, inst := range reservation.Instances {
 
 			// Add to struct
-			var i = server.Server{
+			var s = server.Server{
 				UniqueID:    aws.ToString(inst.InstanceId),
 				Name:        getTagValue(inst, "Name"),
 				State:       string(inst.State.Name),
@@ -41,16 +41,16 @@ func (s *Service) GetEC2Instances() error {
 				TimeAdded:   time.Now().Unix(),
 			}
 
-			servers = append(servers, i)
+			servers = append(servers, s)
 		}
 	}
 
 	// Check number of servers returned from scrape
 	if len(servers) > 0 {
-		s.Logger.Info("Scraper found matching servers", "count", len(servers))
+		s.Logger.Debug("Scraper found matching servers", "count", len(servers))
 		s.ServerService.UpdateServers(servers)
 	} else {
-		s.Logger.Info("Scraper found no matching servers")
+		s.Logger.Debug("Scraper found no matching servers")
 	}
 
 	return nil
