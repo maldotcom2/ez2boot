@@ -10,7 +10,8 @@ import (
 )
 
 // Returned error is consumed only when called from endpoint, not Go routine
-func (s *Service) GetEC2Instances() error {
+func (s *Service) Scrape() error {
+	s.Logger.Debug("Scraping AWS")
 	awsCFG, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(s.Config.AWSRegion))
 	if err != nil {
 		s.Logger.Error("Failed to load AWS config", "error", err)

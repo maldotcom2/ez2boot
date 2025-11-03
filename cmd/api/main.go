@@ -7,11 +7,13 @@ import (
 	"ez2boot/internal/middleware"
 	"ez2boot/internal/notification"
 	"ez2boot/internal/notification/email"
+	"ez2boot/internal/provider"
 	"ez2boot/internal/provider/aws"
 	"ez2boot/internal/server"
 	"ez2boot/internal/session"
 	"ez2boot/internal/user"
 	"ez2boot/internal/worker"
+	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
@@ -175,13 +177,16 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	var scrapeFunc func() error
+	// Assign scrape implementation based off configured cloud provider
+	var scraper provider.Scraper
 	switch cfg.CloudProvider {
 	case "aws":
-		scrapeFunc = awsService.GetEC2Instances
+		scraper = awsService
 	default:
 		logger.Error("Unsupported provider", "provider", cfg.CloudProvider)
 	}
+
+	logger.Info("Scraper type", "type", fmt.Sprintf("%T", scraper))
 
 	// worker
 	w := &worker.Worker{
@@ -194,7 +199,7 @@ func main() {
 	}
 
 	// Start scraper
-	worker.StartScrapeRoutine(*w, ctx, scrapeFunc)
+	worker.StartScrapeRoutine(*w, ctx, scraper)
 
 	// Start session worker
 	worker.StartServerSessionWorker(*w, ctx)
