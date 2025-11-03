@@ -6,9 +6,7 @@ import (
 	"ez2boot/internal/shared"
 	"ez2boot/internal/util"
 	"fmt"
-	"strings"
 	"time"
-	"unicode/utf8"
 
 	"github.com/alexedwards/argon2id"
 )
@@ -53,6 +51,11 @@ func (s *Service) logoutUser(token string) error {
 }
 
 func (s *Service) createUser(u UserLogin) error {
+	// Check email
+	if err := s.validateEmail(u.Email); err != nil {
+		return err
+	}
+
 	// Validate password requirements
 	if err := validatePassword(u.Email, u.Password); err != nil {
 		return err
@@ -108,24 +111,6 @@ func (s *Service) changePassword(req ChangePasswordRequest) error {
 
 	if err = s.Repo.changePassword(req.Email, newHash); err != nil {
 		return err
-	}
-
-	return nil
-}
-
-func validatePassword(email string, password string) error {
-	length := utf8.RuneCountInString(password)
-
-	if length < 14 {
-		return errors.New("Password must be 14 characters or more")
-	}
-
-	if strings.Contains(password, email) {
-		return errors.New("Password cannot contain the email")
-	}
-
-	if strings.Contains(password, email) {
-		return errors.New("email cannot contain the password")
 	}
 
 	return nil

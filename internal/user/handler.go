@@ -81,13 +81,13 @@ func (h *Handler) CreateUser() http.HandlerFunc {
 		h.Logger.Info("Attempted registration", "email", u.Email)
 
 		if err != nil {
-			h.Logger.Info("Malformed request", "email", u.Email)
+			h.Logger.Error("Malformed request", "email", u.Email)
 			http.Error(w, "Malformed request", http.StatusBadRequest)
 			return
 		}
 
 		if err = h.Service.createUser(u); err != nil {
-			h.Logger.Info("Failed to create user", "email", u.Email, "error", err)
+			h.Logger.Error("Failed to create user", "email", u.Email, "error", err)
 			http.Error(w, "Failed to create user", http.StatusInternalServerError)
 			return
 		}
