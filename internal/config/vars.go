@@ -2,12 +2,23 @@ package config
 
 import (
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
 
 func GetEnvVars() (*Config, error) {
 	err := godotenv.Load()
+	if err != nil {
+		return nil, err
+	}
+
+	val := os.Getenv("TRUST_PROXY_HEADERS")
+	if val == "" {
+		val = "true" // default
+	}
+
+	trustProxyHeaders, err := strconv.ParseBool(val)
 	if err != nil {
 		return nil, err
 	}
@@ -77,14 +88,13 @@ func GetEnvVars() (*Config, error) {
 	encryptionKey := os.Getenv("ENCRYPTION_KEY") // optional
 
 	cfg := &Config{
-		TrustProxyHeaders:   true,
+		TrustProxyHeaders:   trustProxyHeaders,
 		CloudProvider:       cloudProvider,
 		Port:                port,
 		ScrapeInterval:      scrapeInterval,
 		InternalClock:       internalClock,
 		TagKey:              tagKey,
 		AWSRegion:           awsRegion,
-		UserNotifications:   userNotifications,
 		UserSessionDuration: userSessionDuration,
 		LogLevel:            logLevel,
 		EncryptionKey:       encryptionKey,

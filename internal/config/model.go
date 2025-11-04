@@ -6,17 +6,16 @@ import (
 )
 
 type Config struct {
-	SetupMode           bool
-	TrustProxyHeaders   bool
-	CloudProvider       string
-	Port                string
-	ScrapeInterval      time.Duration
-	InternalClock       time.Duration
-	TagKey              string
-	AWSRegion           string
-	UserNotifications   string
-	UserSessionDuration time.Duration
-	LogLevel            slog.Level
-	EncryptionKey       string
+	SetupMode           bool          // Mode which allows initial user bootstrap, not manually setable
+	TrustProxyHeaders   bool          // Affects source IP address recognition within middleware
+	CloudProvider       string        // Cloud provider eg aws, azure
+	Port                string        // Listener port for this application
+	ScrapeInterval      time.Duration // Interval for scraping cloud provider
+	InternalClock       time.Duration // Interval for all other background workers
+	TagKey              string        // Tag Key used to itentify target servers, where the values are the server groups
+	AWSRegion           string        // AWS Region, AWS scrape specific
+	UserSessionDuration time.Duration // Duration for user UI authenticated session, not related to server session duration
+	LogLevel            slog.Level    // Logging level, use info unless debugging
+	EncryptionKey       string        // Implementation specific encryption key used to encrypt sensitive credentials within the app (TBC)
 	// Add more fields as needed
 }
