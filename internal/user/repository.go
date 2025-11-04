@@ -25,9 +25,19 @@ func (r *Repository) deleteUserSession(tokenHash string) error {
 	return nil
 }
 
+// Database contains users true or false
+func (r *Repository) hasUsers() (bool, error) {
+	var count int64
+	if err := r.Base.DB.QueryRow("SELECT COUNT(*) FROM users").Scan(&count); err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
 // Create new user
-func (r *Repository) createUser(email string, passwordHash string) error {
-	if _, err := r.Base.DB.Exec("INSERT INTO users (email, password_hash, is_active) VALUES ($1, $2, $3)", email, passwordHash, 1); err != nil {
+func (r *Repository) createUser(u CreateUser) error {
+	if _, err := r.Base.DB.Exec("INSERT INTO users (email, password_hash, is_active, is_admin, api_enabled, ui_enabled) VALUES ($1, $2, $3, $4, $5, $6)", u.Email, u.PasswordHash, u.IsActive, u.IsAdmin, u.APIEnabled, u.UIEnabled); err != nil {
 		return err
 	}
 	return nil
@@ -97,12 +107,12 @@ func (r *Repository) deleteExpiredSessions(now int64) (sql.Result, error) {
 	return result, nil
 }
 
-func (r *Repository) findUserAuthorisation(email string) (UserAuth, error) {
+func (r *Repository) findUserAuthorisation(email string) (User, error) {
 	query := `SELECT id, email, is_active, is_admin, api_enabled, ui_enabled FROM users WHERE email = $1`
 
-	var u UserAuth
+	var u User
 	if err := r.Base.DB.QueryRow(query, email).Scan(&u.UserID, &u.Email, &u.IsActive, &u.IsAdmin, &u.APIEnabled, &u.UIEnabled); err != nil {
-		return UserAuth{}, err
+		return User{}, err
 	}
 
 	return u, nil

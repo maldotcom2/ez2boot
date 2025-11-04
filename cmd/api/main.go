@@ -13,7 +13,6 @@ import (
 	"ez2boot/internal/session"
 	"ez2boot/internal/user"
 	"ez2boot/internal/worker"
-	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
@@ -161,17 +160,26 @@ func main() {
 	}
 
 	// Setup DB
-	err = repo.SetupDB()
-	if err != nil {
+	if err := repo.SetupDB(); err != nil {
 		logger.Error("Failed to setup tables in database", "error", err)
 		os.Exit(1)
 	}
+
+	// Set the runtime mode, if no users SetupMode is on
+	setupMode, err := userService.HasUsers()
+	if err != nil {
+		logger.Error("Failed to check database for existing users", "error", err)
+		os.Exit(1)
+	}
+
+	// No users = setup mode
+	cfg.SetupMode = !setupMode
 
 	// Create router
 	router := mux.NewRouter()
 
 	// Setup routes
-	SetupRoutes(router, mw, serverHandler, sessionHandler, userHandler, notificationHandler, emailHandler)
+	SetupRoutes(cfg, router, mw, serverHandler, sessionHandler, userHandler, notificationHandler, emailHandler)
 
 	// Set Go routine context
 	ctx, cancel := context.WithCancel(context.Background())
@@ -185,8 +193,6 @@ func main() {
 	default:
 		logger.Error("Unsupported provider", "provider", cfg.CloudProvider)
 	}
-
-	logger.Info("Scraper type", "type", fmt.Sprintf("%T", scraper))
 
 	// worker
 	w := &worker.Worker{
@@ -220,6 +226,7 @@ func main() {
 }
 
 func SetupRoutes(
+	cfg *config.Config,
 	router *mux.Router,
 	mw *middleware.Middleware,
 	server *server.Handler,
@@ -233,8 +240,11 @@ func SetupRoutes(
 	publicRouter := router.PathPrefix("/ui").Subrouter()
 	publicRouter.Use(middleware.JsonContentTypeMiddleware)
 	publicRouter.Use(middleware.CORSMiddleware)
-	publicRouter.HandleFunc("user/login", user.Login()).Methods("POST")
-	publicRouter.HandleFunc("user/new", user.CreateUser()).Methods("POST") //TODO remove
+	publicRouter.HandleFunc("/user/login", user.Login()).Methods("POST")
+	publicRouter.HandleFunc("/mode", user.CheckMode()).Methods("GET")
+	if cfg.SetupMode {
+		publicRouter.HandleFunc("/setup", user.CreateFirstTimeUser()).Methods("POST")
+	}
 
 	// API subrouter and routes
 	apiRouter := router.PathPrefix("/api").Subrouter()
@@ -256,6 +266,7 @@ func SetupRoutes(
 	uiRouter.Use(mw.SessionAuthMiddleware())
 	uiRouter.Use(middleware.JsonContentTypeMiddleware)
 	uiRouter.Use(middleware.CORSMiddleware)
+
 	//// Servers
 	uiRouter.HandleFunc("/servers", server.GetServers()).Methods("GET")
 	//// Server Sessions

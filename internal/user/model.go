@@ -41,7 +41,27 @@ type UserSession struct {
 	Token         string
 }
 
-type UserAuth struct {
+type CreateUserRequest struct {
+	UserID     int64
+	Email      string `json:"email"`
+	Password   string `json:"password"`
+	IsActive   bool   `json:"is_active"`
+	IsAdmin    bool   `json:"is_admin"`
+	APIEnabled bool   `json:"api_enabled"`
+	UIEnabled  bool   `json:"ui_enabled"`
+}
+
+type CreateUser struct {
+	UserID       int64
+	Email        string
+	PasswordHash string
+	IsActive     bool
+	IsAdmin      bool
+	APIEnabled   bool
+	UIEnabled    bool
+}
+
+type User struct {
 	UserID     int64
 	Email      string
 	IsActive   bool

@@ -6,6 +6,7 @@ import (
 )
 
 type Config struct {
+	SetupMode           bool
 	CloudProvider       string
 	Port                string
 	ScrapeInterval      time.Duration

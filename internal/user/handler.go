@@ -9,6 +9,19 @@ import (
 	"time"
 )
 
+// UI endpoint for runtime state and bootstrap flow
+func (h *Handler) CheckMode() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		setupMode := h.Service.Config.SetupMode
+
+		response := map[string]bool{
+			"setup_mode": setupMode,
+		}
+
+		json.NewEncoder(w).Encode(response)
+	}
+}
+
 func (h *Handler) Login() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var u UserLogin
@@ -75,22 +88,59 @@ func (h *Handler) Logout() http.HandlerFunc {
 // Handler to create new user
 func (h *Handler) CreateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var u UserLogin
-		err := json.NewDecoder(r.Body).Decode(&u)
+		var req CreateUserRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
 
-		h.Logger.Info("Attempted registration", "email", u.Email)
+		h.Logger.Info("Attempted user creation", "email", req.Email)
 
 		if err != nil {
-			h.Logger.Error("Malformed request", "email", u.Email)
+			h.Logger.Error("Malformed request", "email", req.Email)
 			http.Error(w, "Malformed request", http.StatusBadRequest)
 			return
 		}
 
-		if err = h.Service.createUser(u); err != nil {
-			h.Logger.Error("Failed to create user", "email", u.Email, "error", err)
+		if err = h.Service.createUser(req); err != nil {
+			h.Logger.Error("Failed to create user", "email", req.Email, "error", err)
 			http.Error(w, "Failed to create user", http.StatusInternalServerError)
 			return
 		}
+
+		w.WriteHeader(http.StatusCreated)
+	}
+}
+
+// Handler to bootstrap initial user creation - username and password input
+func (h *Handler) CreateFirstTimeUser() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Block subsequent requests
+		if h.Service.Config.SetupMode == false {
+			h.Logger.Error("First time user creation blocked")
+			http.Error(w, "First time user creation blocked", http.StatusForbidden)
+			return
+		}
+
+		var req CreateUserRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			h.Logger.Error("Malformed request", "email", req.Email)
+			http.Error(w, "Malformed request", http.StatusBadRequest)
+			return
+		}
+
+		h.Logger.Info("First time user creation", "email", req.Email)
+
+		req.IsActive = true
+		req.IsAdmin = true
+		req.APIEnabled = true
+		req.UIEnabled = true
+
+		if err := h.Service.createUser(req); err != nil {
+			h.Logger.Error("Failed to create user", "email", req.Email, "error", err)
+			http.Error(w, "Failed to create user", http.StatusInternalServerError)
+			return
+		}
+
+		// Disable setup mode
+		h.Service.Config.SetupMode = false
 
 		w.WriteHeader(http.StatusCreated)
 	}

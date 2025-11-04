@@ -50,24 +50,45 @@ func (s *Service) logoutUser(token string) error {
 	return nil
 }
 
-func (s *Service) createUser(u UserLogin) error {
+// Check if any users exist
+func (s *Service) HasUsers() (bool, error) {
+	hasUsers, err := s.Repo.hasUsers()
+	if err != nil {
+		return false, err
+	}
+
+	return hasUsers, nil
+}
+
+// TODO improve validation here
+func (s *Service) createUser(req CreateUserRequest) error {
 	// Check email
-	if err := s.validateEmail(u.Email); err != nil {
+	if err := s.validateEmail(req.Email); err != nil {
 		return err
 	}
 
 	// Validate password requirements
-	if err := validatePassword(u.Email, u.Password); err != nil {
+	if err := validatePassword(req.Email, req.Password); err != nil {
 		return err
 	}
 
 	// Hash password here
-	passwordHash, err := util.HashPassword(u.Password)
+	passwordHash, err := util.HashPassword(req.Password)
 	if err != nil {
 		return err
 	}
 
-	if err := s.Repo.createUser(u.Email, passwordHash); err != nil {
+	u := CreateUser{
+		UserID:       req.UserID,
+		Email:        req.Email,
+		PasswordHash: passwordHash,
+		IsActive:     req.IsActive,
+		IsAdmin:      req.IsAdmin,
+		APIEnabled:   req.APIEnabled,
+		UIEnabled:    req.UIEnabled,
+	}
+
+	if err := s.Repo.createUser(u); err != nil {
 		return err
 	}
 
@@ -153,10 +174,10 @@ func (s *Service) GetSessionStatus(token string) (UserSession, error) {
 	return u, nil
 }
 
-func (s *Service) GetUserAuthorisation(email string) (UserAuth, error) {
+func (s *Service) GetUserAuthorisation(email string) (User, error) {
 	u, err := s.Repo.findUserAuthorisation(email)
 	if err != nil {
-		return UserAuth{}, nil
+		return User{}, nil
 	}
 
 	return u, nil
