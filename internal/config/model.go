@@ -7,6 +7,7 @@ import (
 
 type Config struct {
 	SetupMode           bool
+	TrustProxyHeaders   bool
 	CloudProvider       string
 	Port                string
 	ScrapeInterval      time.Duration

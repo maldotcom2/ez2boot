@@ -126,6 +126,7 @@ func main() {
 	// Middlware
 	mw := &middleware.Middleware{
 		UserService: userService,
+		Config:      cfg,
 		Logger:      logger,
 	}
 
@@ -238,8 +239,10 @@ func SetupRoutes(
 
 	// Public routes, no auth
 	publicRouter := router.PathPrefix("/ui").Subrouter()
-	publicRouter.Use(middleware.JsonContentTypeMiddleware)
 	publicRouter.Use(middleware.CORSMiddleware)
+	publicRouter.Use(mw.LimitMiddleware)
+	publicRouter.Use(middleware.JsonContentTypeMiddleware)
+
 	publicRouter.HandleFunc("/user/login", user.Login()).Methods("POST")
 	publicRouter.HandleFunc("/mode", user.CheckMode()).Methods("GET")
 	if cfg.SetupMode {
@@ -248,9 +251,11 @@ func SetupRoutes(
 
 	// API subrouter and routes
 	apiRouter := router.PathPrefix("/api").Subrouter()
-	apiRouter.Use(mw.BasicAuthMiddleware())
-	apiRouter.Use(middleware.JsonContentTypeMiddleware)
 	apiRouter.Use(middleware.CORSMiddleware)
+	apiRouter.Use(mw.LimitMiddleware)
+	apiRouter.Use(middleware.JsonContentTypeMiddleware)
+	apiRouter.Use(mw.BasicAuthMiddleware())
+
 	//// Servers
 	apiRouter.HandleFunc("/servers", server.GetServers()).Methods("GET")
 	//// Server sessions
@@ -263,9 +268,10 @@ func SetupRoutes(
 
 	// UI subrouter and routes
 	uiRouter := router.PathPrefix("/ui").Subrouter()
-	uiRouter.Use(mw.SessionAuthMiddleware())
-	uiRouter.Use(middleware.JsonContentTypeMiddleware)
 	uiRouter.Use(middleware.CORSMiddleware)
+	uiRouter.Use(mw.LimitMiddleware)
+	uiRouter.Use(middleware.JsonContentTypeMiddleware)
+	uiRouter.Use(mw.SessionAuthMiddleware())
 
 	//// Servers
 	uiRouter.HandleFunc("/servers", server.GetServers()).Methods("GET")

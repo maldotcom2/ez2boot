@@ -77,6 +77,7 @@ func GetEnvVars() (*Config, error) {
 	encryptionKey := os.Getenv("ENCRYPTION_KEY") // optional
 
 	cfg := &Config{
+		TrustProxyHeaders:   true,
 		CloudProvider:       cloudProvider,
 		Port:                port,
 		ScrapeInterval:      scrapeInterval,
