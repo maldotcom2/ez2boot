@@ -5,7 +5,7 @@ import (
 )
 
 // Return all servers from catalogue - names and groups
-func (r *Repository) GetServers() (map[string][]Server, error) {
+func (r *Repository) getServers() (map[string][]Server, error) {
 	rows, err := r.Base.DB.Query("SELECT unique_id, name, state, server_group FROM servers")
 	if err != nil {
 		return nil, err
@@ -48,4 +48,28 @@ func (r *Repository) addOrUpdate(server Server) error {
 	}
 
 	return nil
+}
+
+// Get server IDs which are pending a state change
+func (r *Repository) getPending(currentState string, nextState string) ([]string, error) {
+	rows, err := r.Base.DB.Query(`SELECT unique_id FROM servers WHERE state = $1 AND next_state = $2`, currentState, nextState)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	serverIDs := []string{}
+
+	for rows.Next() {
+		var s string
+		err = rows.Scan(&s)
+		if err != nil {
+			return nil, err
+		}
+
+		serverIDs = append(serverIDs, s)
+	}
+
+	return serverIDs, nil
 }

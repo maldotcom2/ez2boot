@@ -7,7 +7,7 @@ import (
 
 // Returns map of servers for each server group
 func (s *Service) GetServers() (map[string][]Server, error) {
-	servers, err := s.Repo.GetServers()
+	servers, err := s.Repo.getServers()
 	if err != nil {
 		return nil, err
 	}
@@ -48,4 +48,13 @@ func (s *Service) UpdateServers(servers []Server) {
 			continue
 		}
 	}
+}
+
+func (s *Service) GetPending(currentState string, nextState string) ([]string, error) {
+	serverIDs, err := s.Repo.getPending(currentState, nextState)
+	if err != nil {
+		return nil, err
+	}
+
+	return serverIDs, nil
 }

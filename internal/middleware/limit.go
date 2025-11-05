@@ -10,7 +10,8 @@ import (
 	"golang.org/x/time/rate"
 )
 
-//www.alexedwards.net/blog/how-to-rate-limit-http-requests/
+// Based on:
+// www.alexedwards.net/blog/how-to-rate-limit-http-requests/
 
 // Create a custom visitor struct which holds the rate limiter for each
 // visitor and the last time that the visitor was seen.

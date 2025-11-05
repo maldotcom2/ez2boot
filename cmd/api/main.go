@@ -188,9 +188,12 @@ func main() {
 
 	// Assign scrape implementation based off configured cloud provider
 	var scraper provider.Scraper
+	var manager provider.Manager
+
 	switch cfg.CloudProvider {
 	case "aws":
 		scraper = awsService
+		manager = awsService
 	default:
 		logger.Error("Unsupported provider", "provider", cfg.CloudProvider)
 	}
@@ -207,6 +210,9 @@ func main() {
 
 	// Start scraper
 	worker.StartScrapeRoutine(*w, ctx, scraper)
+
+	// Start manager
+	worker.StartManageRoutine(*w, ctx, manager)
 
 	// Start session worker
 	worker.StartServerSessionWorker(*w, ctx)
