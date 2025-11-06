@@ -146,16 +146,22 @@ func (s *Service) changePassword(req ChangePasswordRequest) error {
 // Authenticate user, return userID for use in context and match bool
 func (s *Service) AuthenticateUser(email string, password string) (int64, bool, error) {
 	id, hash, err := s.Repo.findUserIDHashByEmail(email)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return 0, false, shared.ErrUserNotFound
-		}
-		return 0, false, err
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return 0, false, shared.ErrUserNotFound
+	}
+
+	if errors.Is(err, sql.ErrNoRows) {
+		hash = "$argon2id$v=19$m=131072,t=4,p=1$fCSLCAorTbr9UeFcmUW3Jg$q8wabA06xx+zN8j80pwmxTMk0b/T88R+M3ycbFWZPlc" // dummy
+		id = 0
 	}
 
 	match, err := argon2id.ComparePasswordAndHash(password, hash)
 	if err != nil {
 		return 0, false, err
+	}
+
+	if id == 0 { // User doesn't exist
+		return 0, false, shared.ErrUserNotFound
 	}
 
 	return id, match, nil
