@@ -12,7 +12,7 @@ func GetNotificationTypes() http.HandlerFunc {
 		sender, ok := GetSender("email") // Testing
 		log.Print(ok)
 		if ok {
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: sender})
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: sender}) // This might not work here
 		}
 	}
 }

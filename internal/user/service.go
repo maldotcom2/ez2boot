@@ -11,17 +11,8 @@ import (
 	"github.com/alexedwards/argon2id"
 )
 
+// Attempt user login using even-time
 func (s *Service) loginUser(u UserLogin) (string, error) {
-	// Authenticate
-	userID, ok, err := s.AuthenticateUser(u.Email, u.Password)
-	if err != nil {
-		return "", err
-	}
-
-	if !ok {
-		return "", shared.ErrAuthenticationFailed
-	}
-
 	// Create session token
 	token, err := util.GenerateRandomString(32)
 	if err != nil {
@@ -34,7 +25,17 @@ func (s *Service) loginUser(u UserLogin) (string, error) {
 	// Set expiry
 	sessionExpiry := time.Now().Add(s.Config.UserSessionDuration).Unix()
 
-	// Store it
+	// Authenticate
+	userID, authenticated, err := s.AuthenticateUser(u.Email, u.Password)
+	if err != nil {
+		return "", err
+	}
+
+	if !authenticated {
+		return "", shared.ErrAuthenticationFailed
+	}
+
+	// Store hash
 	if err = s.Repo.createUserSession(hash, sessionExpiry, userID); err != nil {
 		return "", err
 	}
