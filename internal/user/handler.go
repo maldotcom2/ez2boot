@@ -180,29 +180,29 @@ func (h *Handler) ChangePassword() http.HandlerFunc {
 			return
 		}
 
-		var c ChangePasswordRequest
-		if err := json.NewDecoder(r.Body).Decode(&c); err != nil {
+		var req ChangePasswordRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			h.Logger.Error("Malformed request", "userid", userID)
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
 			return
 		}
 
-		c.UserID = userID
+		req.UserID = userID
 
-		if err := h.Service.changePassword(c); err != nil {
+		if err := h.Service.changePassword(req); err != nil {
 			if errors.Is(err, shared.ErrAuthenticationFailed) {
-				h.Logger.Error("Failed to change password for user, authentication failed", "email", c.Email)
+				h.Logger.Error("Failed to change password for user, authentication failed", "email", req.Email)
 				w.WriteHeader(http.StatusUnauthorized)
 				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Authentication failed"})
 				return
 			} else if errors.Is(err, shared.ErrInvalidPassword) {
-				h.Logger.Error("Failed to change password for user, password did not match complexity requirements", "email", c.Email)
+				h.Logger.Error("Failed to change password for user, password did not match complexity requirements", "email", req.Email)
 				w.WriteHeader(http.StatusBadRequest)
 				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Password did not match complexity requirements"})
 				return
 			} else {
-				h.Logger.Error("Failed to change password for user", "email", c.Email, "error", err)
+				h.Logger.Error("Failed to change password for user", "email", req.Email, "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to change password"})
 				return

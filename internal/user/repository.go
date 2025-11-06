@@ -98,7 +98,7 @@ func (r *Repository) findSessionStatus(hash string) (UserSession, error) {
 	return u, nil
 }
 
-func (r *Repository) deleteExpiredSessions(now int64) (sql.Result, error) {
+func (r *Repository) deleteExpiredUserSessions(now int64) (sql.Result, error) {
 	result, err := r.Base.DB.Exec("DELETE FROM user_sessions WHERE session_expiry < $1", now)
 	if err != nil {
 		return nil, err

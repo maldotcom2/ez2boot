@@ -115,7 +115,8 @@ func (r *Repository) newServerSession(session ServerSession) (ServerSession, err
 		return ServerSession{}, fmt.Errorf("No servers found for server_group: %s", session.ServerGroup)
 	}
 
-	sessionExpiry, err := util.GetExpiryFromDuration(0, session.Duration)
+	// Get expiry
+	sessionExpiry, err := util.GetExpiryFromDuration(session.Duration)
 	if err != nil {
 		tx.Rollback()
 		return ServerSession{}, err
@@ -138,7 +139,7 @@ func (r *Repository) newServerSession(session ServerSession) (ServerSession, err
 
 // Update existing session
 func (r *Repository) updateServerSession(session ServerSession) (ServerSession, error) {
-	newExpiry, err := util.GetExpiryFromDuration(0, session.Duration)
+	newExpiry, err := util.GetExpiryFromDuration(session.Duration)
 	if err != nil {
 		return ServerSession{}, err
 	}

@@ -231,7 +231,7 @@ func (s *Service) processTerminatedServerSessions() error {
 	}
 
 	for _, session := range terminatedSessions {
-		n := notification.NewNotification{
+		notification := notification.NewNotification{
 			UserID: session.UserID,
 			Msg:    fmt.Sprintf("Your session has ended normally for Server Group %s. Servers are now off", session.ServerGroup),
 			Title:  fmt.Sprintf("Session ended for server group %s.", session.ServerGroup),
@@ -245,7 +245,7 @@ func (s *Service) processTerminatedServerSessions() error {
 
 		defer tx.Rollback()
 
-		if err := s.NotificationService.QueueNotification(tx, n); err != nil {
+		if err := s.NotificationService.QueueNotification(tx, notification); err != nil {
 			s.Logger.Error("Failed to queue aging session notification", "email", session.Email, "server group", session.ServerGroup, "error", err)
 			tx.Rollback()
 			continue

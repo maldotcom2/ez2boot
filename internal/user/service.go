@@ -22,14 +22,16 @@ func (s *Service) loginUser(u UserLogin) (string, error) {
 		return "", shared.ErrAuthenticationFailed
 	}
 
-	// Create token
-	str, err := util.GenerateRandomString(32)
+	// Create session token
+	token, err := util.GenerateRandomString(32)
 	if err != nil {
 		return "", err
 	}
 
-	hash := util.HashToken(str)
+	// Hash it
+	hash := util.HashToken(token)
 
+	// Set expiry
 	sessionExpiry := time.Now().Add(s.Config.UserSessionDuration).Unix()
 
 	// Store it
@@ -37,10 +39,11 @@ func (s *Service) loginUser(u UserLogin) (string, error) {
 		return "", err
 	}
 
-	return str, nil
+	return token, nil
 }
 
 func (s *Service) logoutUser(token string) error {
+	// Hash supplied session token
 	hash := util.HashToken(token)
 
 	if err := s.Repo.deleteUserSession(hash); err != nil {
@@ -50,7 +53,7 @@ func (s *Service) logoutUser(token string) error {
 	return nil
 }
 
-// Check if any users exist
+// Check if any users exist in DB
 func (s *Service) HasUsers() (bool, error) {
 	hasUsers, err := s.Repo.hasUsers()
 	if err != nil {
@@ -78,7 +81,8 @@ func (s *Service) createUser(req CreateUserRequest) error {
 		return err
 	}
 
-	u := CreateUser{
+	// Don't transport password
+	user := CreateUser{
 		UserID:       req.UserID,
 		Email:        req.Email,
 		PasswordHash: passwordHash,
@@ -88,7 +92,7 @@ func (s *Service) createUser(req CreateUserRequest) error {
 		UIEnabled:    req.UIEnabled,
 	}
 
-	if err := s.Repo.createUser(u); err != nil {
+	if err := s.Repo.createUser(user); err != nil {
 		return err
 	}
 
@@ -105,6 +109,7 @@ func (s *Service) changePassword(req ChangePasswordRequest) error {
 
 	req.Email = email
 
+	// Validate request
 	if err = s.validateChangePassword(req); err != nil {
 		return err
 	}
@@ -137,7 +142,7 @@ func (s *Service) changePassword(req ChangePasswordRequest) error {
 	return nil
 }
 
-// Authenticate user and return userID and match bool
+// Authenticate user, return userID for use in context and match bool
 func (s *Service) AuthenticateUser(email string, password string) (int64, bool, error) {
 	id, hash, err := s.Repo.findUserIDHashByEmail(email)
 	if err != nil {
@@ -159,7 +164,7 @@ func (s *Service) GetSessionStatus(token string) (UserSession, error) {
 	// Hash token from cookie
 	hash := util.HashToken(token)
 
-	u, err := s.Repo.findSessionStatus(hash)
+	userSession, err := s.Repo.findSessionStatus(hash)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return UserSession{}, shared.ErrSessionNotFound
@@ -167,26 +172,27 @@ func (s *Service) GetSessionStatus(token string) (UserSession, error) {
 		return UserSession{}, err
 	}
 
-	if u.SessionExpiry < time.Now().Unix() {
+	if userSession.SessionExpiry < time.Now().Unix() {
 		return UserSession{}, shared.ErrSessionExpired
 	}
 
-	return u, nil
+	return userSession, nil
 }
 
+// Get a user's authorisation, eg admin, API access, etc
 func (s *Service) GetUserAuthorisation(email string) (User, error) {
-	u, err := s.Repo.findUserAuthorisation(email)
+	user, err := s.Repo.findUserAuthorisation(email)
 	if err != nil {
 		return User{}, nil
 	}
 
-	return u, nil
+	return user, nil
 }
 
-func (s *Service) CleanupExpiredSessions() (sql.Result, error) {
+func (s *Service) DeleteExpiredUserSessions() (sql.Result, error) { // TODO should a result be returned here?
 	now := time.Now().Unix()
 
-	result, err := s.Repo.deleteExpiredSessions(now)
+	result, err := s.Repo.deleteExpiredUserSessions(now)
 	if err != nil {
 		return nil, err
 	}

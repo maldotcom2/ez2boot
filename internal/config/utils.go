@@ -6,13 +6,14 @@ import (
 	"time"
 )
 
+// Get a duration type from a string expression eg "4h"
 func GetDurationFromString(strValue string) (time.Duration, error) {
-	scrapeInterval, err := time.ParseDuration(strValue)
+	duration, err := time.ParseDuration(strValue)
 	if err != nil {
 		return 0, err
 	}
 
-	return scrapeInterval, nil
+	return duration, nil
 }
 
 func ParseLogLevel(strValue string) slog.Level {

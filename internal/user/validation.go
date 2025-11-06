@@ -33,6 +33,7 @@ func (s *Service) validateChangePassword(req ChangePasswordRequest) error {
 	return nil
 }
 
+// Password rules
 func validatePassword(email string, password string) error {
 	length := utf8.RuneCountInString(password)
 

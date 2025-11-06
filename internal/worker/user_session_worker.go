@@ -18,7 +18,7 @@ func StartExpiredUserSessionCleanup(w Worker, ctx context.Context) {
 				return
 			case <-ticker.C:
 				// Process expired user sessions
-				result, err := w.UserService.CleanupExpiredSessions()
+				result, err := w.UserService.DeleteExpiredUserSessions()
 				if err != nil {
 					w.Logger.Error("Error while deleting expired user sessions", "error", err)
 					continue

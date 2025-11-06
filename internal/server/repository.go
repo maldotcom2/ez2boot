@@ -28,7 +28,7 @@ func (r *Repository) getServers() (map[string][]Server, error) {
 
 func (r *Repository) deleteObsolete(ids []interface{}, placeholderStr string) error {
 	query := fmt.Sprintf(`DELETE FROM servers WHERE unique_id NOT IN (%s)`, placeholderStr)
-	_, err := r.Base.DB.Exec(query, ids...)
+	_, err := r.Base.DB.Exec(query, ids...) // expand
 	if err != nil {
 		return err
 	}
