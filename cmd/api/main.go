@@ -250,7 +250,7 @@ func SetupRoutes(
 	publicRouter.Use(middleware.JsonContentTypeMiddleware)
 
 	publicRouter.HandleFunc("/user/login", user.Login()).Methods("POST")
-	publicRouter.HandleFunc("/mode", user.CheckMode()).Methods("GET")
+	publicRouter.HandleFunc("/mode", user.GetMode()).Methods("GET")
 	if cfg.SetupMode {
 		publicRouter.HandleFunc("/setup", user.CreateFirstTimeUser()).Methods("POST")
 	}

@@ -69,3 +69,7 @@ type User struct {
 	APIEnabled bool
 	UIEnabled  bool
 }
+
+type SetupResponse struct {
+	SetupMode bool
+}

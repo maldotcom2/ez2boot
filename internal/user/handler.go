@@ -9,16 +9,15 @@ import (
 	"time"
 )
 
-// UI endpoint for runtime state and bootstrap flow
-func (h *Handler) CheckMode() http.HandlerFunc {
+// UI endpoint for runtime state and bootstrap flow // TODO Does this belong here?
+func (h *Handler) GetMode() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Get mode from config
 		setupMode := h.Service.Config.SetupMode
 
-		response := map[string]bool{
-			"setup_mode": setupMode,
-		}
+		response := SetupResponse{SetupMode: setupMode}
 
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: response})
 	}
 }
 
@@ -27,7 +26,8 @@ func (h *Handler) Login() http.HandlerFunc {
 		var u UserLogin
 		if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
 			h.Logger.Info("Malformed request", "email", u.Email, "error", err)
-			http.Error(w, "Malformed request", http.StatusBadRequest)
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
 			return
 		}
 
@@ -37,11 +37,14 @@ func (h *Handler) Login() http.HandlerFunc {
 		if err != nil {
 			if errors.Is(err, shared.ErrAuthenticationFailed) {
 				h.Logger.Info("Invalid email or password", "email", u.Email, "error", err)
-				http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+				w.WriteHeader(http.StatusUnauthorized)
+				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Invalid email or password"})
 				return
 			}
+
 			h.Logger.Info("Failed to login", "email", u.Email, "error", err)
-			http.Error(w, "Failed to login", http.StatusInternalServerError)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to login"})
 			return
 		}
 
@@ -56,18 +59,33 @@ func (h *Handler) Login() http.HandlerFunc {
 		})
 
 		h.Logger.Info("User logged in", "email", u.Email)
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
 
 func (h *Handler) Logout() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		userID, ok := r.Context().Value(contextkey.UserIDKey).(int64)
+		if !ok {
+			h.Logger.Error("User ID not found in context")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User ID not found in context"})
+			return
+		}
 		// Get session token
 		cookie, _ := r.Cookie("session")
 
+		email, err := h.Service.FindEmailFromUserID(userID)
+		if err != nil {
+			h.Logger.Error("Failed to get email from user id", "user id", userID, "error", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Server error while processing logout"})
+		}
+
 		if err := h.Service.logoutUser(cookie.Value); err != nil {
 			h.Logger.Error("Error while logging out user", "error", err)
-			http.Error(w, "Failed to logout", http.StatusInternalServerError)
-			// TODO Redirect to login page
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Server error while processing logout"})
 		}
 
 		// Expire and null cookie
@@ -80,8 +98,8 @@ func (h *Handler) Logout() http.HandlerFunc {
 			MaxAge:   -1,
 		})
 
-		h.Logger.Info("User logged out")
-		// TODO redirect
+		h.Logger.Info("User logged out", "email", email)
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
 
@@ -89,23 +107,25 @@ func (h *Handler) Logout() http.HandlerFunc {
 func (h *Handler) CreateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req CreateUserRequest
-		err := json.NewDecoder(r.Body).Decode(&req)
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			h.Logger.Error("Malformed request", "email", req.Email)
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
+			return
+		}
 
 		h.Logger.Info("Attempted user creation", "email", req.Email)
 
-		if err != nil {
-			h.Logger.Error("Malformed request", "email", req.Email)
-			http.Error(w, "Malformed request", http.StatusBadRequest)
-			return
-		}
-
-		if err = h.Service.createUser(req); err != nil {
+		if err := h.Service.createUser(req); err != nil {
 			h.Logger.Error("Failed to create user", "email", req.Email, "error", err)
-			http.Error(w, "Failed to create user", http.StatusInternalServerError)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to create user"})
 			return
 		}
 
+		h.Logger.Info("New user created", "email", req.Email)
 		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
 
@@ -115,14 +135,16 @@ func (h *Handler) CreateFirstTimeUser() http.HandlerFunc {
 		// Block subsequent requests
 		if h.Service.Config.SetupMode == false {
 			h.Logger.Error("First time user creation blocked")
-			http.Error(w, "First time user creation blocked", http.StatusForbidden)
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "First time user creation blocked"})
 			return
 		}
 
 		var req CreateUserRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			h.Logger.Error("Malformed request", "email", req.Email)
-			http.Error(w, "Malformed request", http.StatusBadRequest)
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
 			return
 		}
 
@@ -135,7 +157,8 @@ func (h *Handler) CreateFirstTimeUser() http.HandlerFunc {
 
 		if err := h.Service.createUser(req); err != nil {
 			h.Logger.Error("Failed to create user", "email", req.Email, "error", err)
-			http.Error(w, "Failed to create user", http.StatusInternalServerError)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to create user"})
 			return
 		}
 
@@ -143,6 +166,7 @@ func (h *Handler) CreateFirstTimeUser() http.HandlerFunc {
 		h.Service.Config.SetupMode = false
 
 		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
 
@@ -151,14 +175,16 @@ func (h *Handler) ChangePassword() http.HandlerFunc {
 		userID, ok := r.Context().Value(contextkey.UserIDKey).(int64)
 		if !ok {
 			h.Logger.Error("User ID not found in context")
-			http.Error(w, "User ID not found in context", http.StatusUnauthorized)
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User ID not found in context"})
 			return
 		}
 
 		var c ChangePasswordRequest
 		if err := json.NewDecoder(r.Body).Decode(&c); err != nil {
 			h.Logger.Error("Malformed request", "userid", userID)
-			http.Error(w, "Malformed request", http.StatusBadRequest)
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
 			return
 		}
 
@@ -166,16 +192,19 @@ func (h *Handler) ChangePassword() http.HandlerFunc {
 
 		if err := h.Service.changePassword(c); err != nil {
 			if errors.Is(err, shared.ErrAuthenticationFailed) {
-				h.Logger.Error("Failed to change password for user")
-				http.Error(w, "Authentication failed", http.StatusUnauthorized)
+				h.Logger.Error("Failed to change password for user, authentication failed", "email", c.Email)
+				w.WriteHeader(http.StatusUnauthorized)
+				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Authentication failed"})
 				return
 			} else if errors.Is(err, shared.ErrInvalidPassword) {
-				h.Logger.Error("Failed to change password for user")
-				http.Error(w, "Password did not match complexity requirements", http.StatusBadRequest)
+				h.Logger.Error("Failed to change password for user, password did not match complexity requirements", "email", c.Email)
+				w.WriteHeader(http.StatusBadRequest)
+				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Password did not match complexity requirements"})
 				return
 			} else {
-				h.Logger.Error("Failed to change password for user")
-				http.Error(w, "Failed to change password", http.StatusInternalServerError)
+				h.Logger.Error("Failed to change password for user", "email", c.Email, "error", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to change password"})
 				return
 			}
 		}

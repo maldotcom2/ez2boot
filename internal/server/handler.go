@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"ez2boot/internal/shared"
 	"net/http"
 )
 
@@ -10,15 +11,11 @@ func (h *Handler) GetServers() http.HandlerFunc {
 		servers, err := h.Service.GetServers()
 		if err != nil {
 			h.Logger.Error("Failed to get servers", "error", err)
-			http.Error(w, "Failed to get servers", http.StatusInternalServerError)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to get servers"})
 			return
 		}
 
-		err = json.NewEncoder(w).Encode(servers)
-		if err != nil {
-			h.Logger.Error("Failed to encode JSON response", "error", err)
-			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-			return
-		}
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: servers})
 	}
 }
