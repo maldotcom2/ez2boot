@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"encoding/json"
+	"ez2boot/internal/shared"
 	"net"
 	"net/http"
 	"strings"
@@ -49,7 +51,8 @@ func (m *Middleware) LimitMiddleware(next http.Handler) http.Handler {
 			host, _, err := net.SplitHostPort(r.RemoteAddr)
 			if err != nil {
 				m.Logger.Error("Limit middleware error", "error", err)
-				http.Error(w, "Limit middleware error", http.StatusInternalServerError)
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Limit middleware error"})
 				return
 
 			}
@@ -59,7 +62,8 @@ func (m *Middleware) LimitMiddleware(next http.Handler) http.Handler {
 		limiter := getVisitor(clientIP, m.Config.RateLimit)
 		if !limiter.Allow() {
 			m.Logger.Warn("Too many requests", "source ip", clientIP)
-			http.Error(w, "Too many requests", http.StatusTooManyRequests)
+			w.WriteHeader(http.StatusTooManyRequests)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Too many requests"})
 			return
 		}
 

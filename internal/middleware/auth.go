@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"ez2boot/internal/contextkey"
 	"ez2boot/internal/shared"
@@ -18,24 +19,28 @@ func (m *Middleware) BasicAuthMiddleware() mux.MiddlewareFunc {
 			if !ok {
 				m.Logger.Warn("Unauthorised login attempt due to incorrect or missing auth header", "email", email, "source ip", r.RemoteAddr)
 				w.WriteHeader(http.StatusUnauthorized)
+				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false})
 				return
 			}
 
-			_, ok, err := m.UserService.AuthenticateUser(email, password)
+			_, authenticated, err := m.UserService.AuthenticateUser(email, password)
 			if err != nil {
 				if errors.Is(err, shared.ErrUserNotFound) {
 					m.Logger.Warn("Attempted login for user which does not exist", "email", email, "error", err)
-					w.WriteHeader(http.StatusUnauthorized) // Keep vague to avoid enumeration
+					w.WriteHeader(http.StatusUnauthorized)
+					json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Password incorrect or user not found"})
 					return
 				}
 				m.Logger.Error("Could not compare password for supplied user", "email", email, "error", err)
-				http.Error(w, "Unable to login", http.StatusInternalServerError)
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Error logging in"})
 				return
 			}
 
-			if !ok {
-				m.Logger.Warn("Unauthorised login attempt for user", "email", email, "source ip", r.RemoteAddr)
+			if !authenticated {
+				m.Logger.Warn("Basic auth login attempt failed", "email", email, "source ip", r.RemoteAddr)
 				w.WriteHeader(http.StatusUnauthorized)
+				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Password incorrect or user not found"})
 				return
 			}
 
@@ -43,19 +48,22 @@ func (m *Middleware) BasicAuthMiddleware() mux.MiddlewareFunc {
 			u, err := m.UserService.GetUserAuthorisation(email)
 			if err != nil {
 				m.Logger.Error("Error while fetching user authorisation", "email", email, "error", err)
-				http.Error(w, "Error while fetching user authorisation", http.StatusInternalServerError)
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Error while fetching user authorisation"})
 				return
 			}
 
 			if !u.IsActive {
 				m.Logger.Info("Inactive user attempted login", "email", u.Email)
-				http.Error(w, "User is not active", http.StatusForbidden)
+				w.WriteHeader(http.StatusForbidden)
+				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User is not active"})
 				return
 			}
 
 			if !u.APIEnabled {
 				m.Logger.Info("Non-API user attempted to reach API endpoint", "email", u.Email)
-				http.Error(w, "User not authorised for API access", http.StatusForbidden)
+				w.WriteHeader(http.StatusForbidden)
+				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User not authorised for API access"})
 				return
 			}
 
@@ -76,6 +84,7 @@ func (m *Middleware) SessionAuthMiddleware() mux.MiddlewareFunc {
 			if err != nil || cookie.Value == "" {
 				m.Logger.Info("User didn't present a sessionID to middleware - client redirect", "Path", r.URL.Path, "Source IP", r.RemoteAddr)
 				w.WriteHeader(http.StatusUnauthorized)
+				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false})
 				return
 			}
 
@@ -83,19 +92,22 @@ func (m *Middleware) SessionAuthMiddleware() mux.MiddlewareFunc {
 			us, err := m.UserService.GetSessionStatus(cookie.Value)
 			if err != nil {
 				if errors.Is(err, shared.ErrSessionNotFound) {
-					m.Logger.Info("Session not found for user", "error", err)
-					http.Error(w, "Session not found", http.StatusUnauthorized)
+					m.Logger.Info("User session not found for user", "error", err)
+					w.WriteHeader(http.StatusUnauthorized)
+					json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User session not found"})
 					return
 				}
 
 				if errors.Is(err, shared.ErrSessionExpired) {
-					m.Logger.Info("Session expired", "email", us.Email)
-					http.Error(w, "Session expired", http.StatusUnauthorized)
+					m.Logger.Info("Yser session expired", "email", us.Email)
+					w.WriteHeader(http.StatusUnauthorized)
+					json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User session expired"})
 					return
 				}
 
-				m.Logger.Error("An error occured while evaluating session", "email", us.Email, "error", err)
-				http.Error(w, "Error while evaluating session", http.StatusInternalServerError)
+				m.Logger.Error("An error occured while evaluating user session", "email", us.Email, "error", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Error while evaluating user session"})
 				return
 			}
 
@@ -103,19 +115,22 @@ func (m *Middleware) SessionAuthMiddleware() mux.MiddlewareFunc {
 			ua, err := m.UserService.GetUserAuthorisation(us.Email)
 			if err != nil {
 				m.Logger.Error("Error while fetching user authorisation", "email", ua.Email, "error", err)
-				http.Error(w, "Error while fetching user authorisation", http.StatusInternalServerError)
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Error while fetching user authorisation"})
 				return
 			}
 
 			if !ua.IsActive {
 				m.Logger.Info("Inactive user attempted login", "email", ua.Email)
-				http.Error(w, "User is not active", http.StatusForbidden)
+				w.WriteHeader(http.StatusForbidden)
+				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User is not active"})
 				return
 			}
 
 			if !ua.UIEnabled {
 				m.Logger.Info("Non-UI user attempted to login via UI", "email", ua.Email)
-				http.Error(w, "User not authorised for UI access", http.StatusForbidden)
+				w.WriteHeader(http.StatusForbidden)
+				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User not authorised for UI access"})
 				return
 			}
 
