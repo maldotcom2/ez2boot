@@ -87,6 +87,16 @@ func GetEnvVars() (*Config, error) {
 
 	encryptionKey := os.Getenv("ENCRYPTION_KEY") // optional
 
+	rateLimitStr := os.Getenv("RATE_LIMIT")
+	if rateLimitStr == "" {
+		rateLimitStr = "3" //default
+	}
+
+	rateLimit, err := strconv.Atoi(rateLimitStr)
+	if err != nil {
+		return nil, err
+	}
+
 	cfg := &Config{
 		TrustProxyHeaders:   trustProxyHeaders,
 		CloudProvider:       cloudProvider,
@@ -98,6 +108,7 @@ func GetEnvVars() (*Config, error) {
 		UserSessionDuration: userSessionDuration,
 		LogLevel:            logLevel,
 		EncryptionKey:       encryptionKey,
+		RateLimit:           rateLimit,
 	}
 
 	return cfg, nil

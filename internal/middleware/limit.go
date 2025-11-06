@@ -56,7 +56,7 @@ func (m *Middleware) LimitMiddleware(next http.Handler) http.Handler {
 			clientIP = host
 		}
 
-		limiter := getVisitor(clientIP)
+		limiter := getVisitor(clientIP, m.Config.RateLimit)
 		if !limiter.Allow() {
 			m.Logger.Warn("Too many requests", "source ip", clientIP)
 			http.Error(w, "Too many requests", http.StatusTooManyRequests)
@@ -67,13 +67,13 @@ func (m *Middleware) LimitMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func getVisitor(ip string) *rate.Limiter {
+func getVisitor(ip string, rateLimit int) *rate.Limiter {
 	mu.Lock()
 	defer mu.Unlock()
 
 	v, exists := visitors[ip]
 	if !exists {
-		limiter := rate.NewLimiter(1, 3) // eg (1, 3) 3 requests per 1 second
+		limiter := rate.NewLimiter(1, rateLimit) // eg (1, 3) 3 requests per 1 second
 		// Include the current time when creating a new visitor.
 		visitors[ip] = &visitor{limiter, time.Now()}
 		return limiter
