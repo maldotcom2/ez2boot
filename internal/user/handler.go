@@ -99,12 +99,14 @@ func (h *Handler) Logout() http.HandlerFunc {
 			h.Logger.Error("Failed to get email from user id", "user id", userID, "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Server error while processing logout"})
+			return
 		}
 
 		if err := h.Service.logout(cookie.Value); err != nil {
 			h.Logger.Error("Error while logging out user", "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Server error while processing logout"})
+			return
 		}
 
 		// Expire and null cookie
@@ -264,14 +266,15 @@ func (h *Handler) CreateFirstTimeUser() http.HandlerFunc {
 					Error:   fmt.Sprintf("Failed to create user %s", err),
 				}
 			}
+			json.NewEncoder(w).Encode(resp)
+			return
 		}
 
 		// Disable setup mode
 		h.Service.Config.SetupMode = false
-
 		h.Logger.Info("First time user created", "email", req.Email)
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
 
@@ -329,9 +332,12 @@ func (h *Handler) ChangePassword() http.HandlerFunc {
 				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to change password"})
 				return
 			}
+
+			json.NewEncoder(w).Encode(resp)
+			return
 		}
 
 		h.Logger.Info("Password changed for user", "email", req.Email)
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
