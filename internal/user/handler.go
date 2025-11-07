@@ -299,31 +299,32 @@ func (h *Handler) ChangePassword() http.HandlerFunc {
 		req.UserID = userID
 
 		var resp shared.ApiResponse[any]
-		if err := h.Service.changePassword(req); err != nil {
+		email, err := h.Service.changePassword(req)
+		if err != nil {
 			switch {
 			case errors.Is(err, shared.ErrOldOrNewPasswordMissing):
-				h.Logger.Error("Failed to change password for user, old or new password missing", "email", req.Email)
+				h.Logger.Error("Failed to change password for user, old or new password missing", "email", email)
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
 					Error:   shared.ErrOldOrNewPasswordMissing.Error(),
 				}
 			case errors.Is(err, shared.ErrAuthenticationFailed):
-				h.Logger.Error("Failed to change password for user, authentication failed", "email", req.Email)
+				h.Logger.Error("Failed to change password for user, authentication failed", "email", email)
 				w.WriteHeader(http.StatusUnauthorized)
 				resp = shared.ApiResponse[any]{
 					Success: false,
 					Error:   shared.ErrAuthenticationFailed.Error(),
 				}
 			case errors.Is(err, shared.ErrInvalidPassword):
-				h.Logger.Error("Failed to change password for user, password did not match complexity requirements", "email", req.Email)
+				h.Logger.Error("Failed to change password for user, password did not match complexity requirements", "email", email)
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
 					Error:   shared.ErrInvalidPassword.Error(),
 				}
 			default:
-				h.Logger.Error("Failed to change password for user", "email", req.Email, "error", err)
+				h.Logger.Error("Failed to change password for user", "email", email, "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				resp = shared.ApiResponse[any]{
 					Success: false,
@@ -337,7 +338,7 @@ func (h *Handler) ChangePassword() http.HandlerFunc {
 			return
 		}
 
-		h.Logger.Info("Password changed for user", "email", req.Email)
+		h.Logger.Info("Password changed for user", "email", email)
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }

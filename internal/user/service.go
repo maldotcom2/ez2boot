@@ -105,44 +105,43 @@ func (s *Service) createUser(req CreateUserRequest) error {
 }
 
 // Change a password for authenticated user
-func (s *Service) changePassword(req ChangePasswordRequest) error {
-	if req.OldPassword == "" || req.NewPassword == "" {
-		return shared.ErrOldOrNewPasswordMissing
-	}
+func (s *Service) changePassword(req ChangePasswordRequest) (string, error) {
 	// Get email of authenticated user
 	email, err := s.GetEmailFromUserID(req.UserID)
 	if err != nil {
-		return err
+		return email, err
 	}
 
-	req.Email = email
+	if req.OldPassword == "" || req.NewPassword == "" {
+		return email, shared.ErrOldOrNewPasswordMissing
+	}
 
 	// Check current password
 	_, isCurrentPassword, err := s.AuthenticateUser(email, req.OldPassword)
 	if err != nil {
-		return err
+		return email, err
 	}
 
 	if !isCurrentPassword {
-		return shared.ErrAuthenticationFailed
+		return email, shared.ErrAuthenticationFailed
 	}
 
 	//Validate complexity
 	if err := validatePassword(email, req.NewPassword); err != nil {
-		return fmt.Errorf("%w: %v", shared.ErrInvalidPassword, err)
+		return email, fmt.Errorf("%w: %v", shared.ErrInvalidPassword, err)
 	}
 
 	// Hash new password and change
 	newHash, err := util.HashPassword(req.NewPassword)
 	if err != nil {
-		return err
+		return email, err
 	}
 
-	if err = s.Repo.changePassword(req.Email, newHash); err != nil {
-		return err
+	if err = s.Repo.changePassword(email, newHash); err != nil {
+		return email, err
 	}
 
-	return nil
+	return email, nil
 }
 
 // Authenticate user, return userID for use in context and match bool
