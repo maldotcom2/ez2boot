@@ -2,7 +2,10 @@ package user
 
 import (
 	"database/sql"
+	"ez2boot/internal/shared"
 	"fmt"
+
+	"github.com/mattn/go-sqlite3"
 )
 
 // Login UI user
@@ -38,13 +41,18 @@ func (r *Repository) hasUsers() (bool, error) {
 // Create new user
 func (r *Repository) createUser(u CreateUser) error {
 	if _, err := r.Base.DB.Exec("INSERT INTO users (email, password_hash, is_active, is_admin, api_enabled, ui_enabled) VALUES ($1, $2, $3, $4, $5, $6)", u.Email, u.PasswordHash, u.IsActive, u.IsAdmin, u.APIEnabled, u.UIEnabled); err != nil {
+		if sqliteErr, ok := err.(sqlite3.Error); ok {
+			if sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
+				return shared.ErrUserAlreadyExists
+			}
+		}
 		return err
 	}
 	return nil
 }
 
 // Find password hash and ID by email
-func (r *Repository) findUserIDHashByEmail(email string) (int64, string, error) {
+func (r *Repository) getUserIDHashByEmail(email string) (int64, string, error) {
 	var passwordHash string
 	var id int64
 	err := r.Base.DB.QueryRow("SELECT id, password_hash FROM users WHERE email = $1", email).Scan(&id, &passwordHash)
@@ -54,7 +62,7 @@ func (r *Repository) findUserIDHashByEmail(email string) (int64, string, error) 
 	return id, passwordHash, nil
 }
 
-func (r *Repository) findEmailFromUserID(userID int64) (string, error) {
+func (r *Repository) getEmailFromUserID(userID int64) (string, error) {
 	var email string
 	if err := r.Base.DB.QueryRow("SELECT email from users WHERE id = $1", userID).Scan(&email); err != nil {
 		return "", err
@@ -83,7 +91,7 @@ func (r *Repository) changePassword(email string, newHash string) error {
 }
 
 // Get user session info by session token hash
-func (r *Repository) findSessionStatus(hash string) (UserSession, error) {
+func (r *Repository) getSessionStatus(hash string) (UserSession, error) {
 	query := `SELECT user_sessions.session_expiry, users.email
         	FROM user_sessions
         	JOIN users ON user_sessions.user_id = users.id
@@ -107,7 +115,7 @@ func (r *Repository) deleteExpiredUserSessions(now int64) (sql.Result, error) {
 	return result, nil
 }
 
-func (r *Repository) findUserAuthorisation(email string) (User, error) {
+func (r *Repository) getUserAuthorisation(email string) (User, error) {
 	query := `SELECT id, email, is_active, is_admin, api_enabled, ui_enabled FROM users WHERE email = $1`
 
 	var u User

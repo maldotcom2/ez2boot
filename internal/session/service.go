@@ -20,7 +20,7 @@ func (s *Service) newServerSession(session ServerSession) (ServerSession, error)
 	}
 
 	// Get email for user
-	email, err := s.UserService.FindEmailFromUserID(session.UserID)
+	email, err := s.UserService.GetEmailFromUserID(session.UserID)
 	if err != nil {
 		return ServerSession{}, err
 	}
@@ -78,7 +78,7 @@ func (s *Service) ProcessServerSessions() {
 
 // Server sessions which are ready for use
 func (s *Service) processReadyServerSessions() error {
-	sessionsForUse, err := s.Repo.findPendingOnServerSessions()
+	sessionsForUse, err := s.Repo.getPendingOnServerSessions()
 	if err != nil {
 		s.Logger.Error("Error while finding sessions ready for use", "error", err)
 	}
@@ -125,7 +125,7 @@ func (s *Service) processReadyServerSessions() error {
 
 // Process server sessions which will expire soon and user not yet notified
 func (s *Service) processAgingServerSessions() error {
-	agingSessions, err := s.Repo.findAgingServerSessions()
+	agingSessions, err := s.Repo.getAgingServerSessions()
 	if err != nil {
 		return err
 	}
@@ -173,7 +173,7 @@ func (s *Service) processAgingServerSessions() error {
 
 // Process expired server session which haven't been processed yet
 func (s *Service) processExpiredServerSessions() error {
-	expiredSessions, err := s.Repo.findExpiredServerSessions()
+	expiredSessions, err := s.Repo.getExpiredServerSessions()
 	if err != nil {
 		return err
 	}
@@ -220,7 +220,7 @@ func (s *Service) processExpiredServerSessions() error {
 
 // Process sessions which have been marked for cleanup and users not yet notified
 func (s *Service) processTerminatedServerSessions() error {
-	terminatedSessions, err := s.Repo.findTerminatedServerSessions()
+	terminatedSessions, err := s.Repo.getTerminatedServerSessions()
 	if err != nil {
 		s.Logger.Error("Error while finding terminated server sessions", "error", err)
 	}
@@ -266,7 +266,7 @@ func (s *Service) processTerminatedServerSessions() error {
 
 // Process sessions which are marked for cleanup and users have been notified server off state. Restores server group to state ready for new session.
 func (s *Service) processFinalisedServerSessions() error {
-	sessionsForFinalise, err := s.Repo.findFinalisedServerSessions()
+	sessionsForFinalise, err := s.Repo.getFinalisedServerSessions()
 	if err != nil {
 		s.Logger.Error("Error while finding sessions for cleanup", "error", err)
 	}

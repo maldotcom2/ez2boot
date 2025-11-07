@@ -14,7 +14,7 @@ func (r *Repository) queueNotification(tx *sql.Tx, n NewNotification) error {
 }
 
 // Find all pending notifications in queue and match to user config
-func (r *Repository) findPendingNotifications() ([]Notification, error) {
+func (r *Repository) getPendingNotifications() ([]Notification, error) {
 	query := `SELECT nq.id, nq.message, nq.title, un.type, un.config
 			FROM notification_queue AS nq
 			INNER JOIN user_notifications AS un

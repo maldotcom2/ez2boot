@@ -37,7 +37,7 @@ func (r *Repository) getServerSessions() ([]ServerSession, error) {
 }
 
 // Get server sessions which will expire soon and user not yet notified
-func (r *Repository) findAgingServerSessions() ([]ServerSession, error) {
+func (r *Repository) getAgingServerSessions() ([]ServerSession, error) {
 	now := time.Now().UTC()
 	threshold := now.Add(15 * time.Minute)
 
@@ -65,7 +65,7 @@ func (r *Repository) findAgingServerSessions() ([]ServerSession, error) {
 }
 
 // Get expired server session which haven't been processed yet
-func (r *Repository) findExpiredServerSessions() ([]ServerSession, error) {
+func (r *Repository) getExpiredServerSessions() ([]ServerSession, error) {
 	rows, err := r.Base.DB.Query("SELECT user_id, server_group FROM server_sessions WHERE expiry < $1 AND to_cleanup = 0", time.Now().Unix())
 
 	if err != nil {
@@ -198,7 +198,7 @@ func (r *Repository) cleanupServerSession(tx *sql.Tx, session ServerSession) err
 }
 
 // Find sessions which are not marked for cleanup, and haven't been notified on yet
-func (r *Repository) findPendingOnServerSessions() ([]ServerSession, error) {
+func (r *Repository) getPendingOnServerSessions() ([]ServerSession, error) {
 	query := `SELECT u.id, u.email, s.server_group, s.expiry
 			FROM server_sessions s
 			JOIN users u ON s.user_id = u.id
@@ -242,7 +242,7 @@ func (r *Repository) findPendingOnServerSessions() ([]ServerSession, error) {
 }
 
 // Find sessions which have been marked for cleanup and not yet notified
-func (r *Repository) findTerminatedServerSessions() ([]ServerSession, error) {
+func (r *Repository) getTerminatedServerSessions() ([]ServerSession, error) {
 	query := `SELECT u.id AS user_id, u.email, s.server_group, s.expiry
 			FROM server_sessions s
 			JOIN users u ON s.user_id = u.id
@@ -286,7 +286,7 @@ func (r *Repository) findTerminatedServerSessions() ([]ServerSession, error) {
 }
 
 // Find sessions which are marked for cleanup and user has been notified of servers off state
-func (r *Repository) findFinalisedServerSessions() ([]ServerSession, error) {
+func (r *Repository) getFinalisedServerSessions() ([]ServerSession, error) {
 	query := `SELECT u.id, u.email, s.server_group, s.expiry
 			FROM server_sessions s
 			JOIN users u ON s.user_id = u.id

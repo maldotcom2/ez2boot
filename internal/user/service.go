@@ -12,7 +12,11 @@ import (
 )
 
 // Attempt user login using even-time
-func (s *Service) loginUser(u UserLogin) (string, error) {
+func (s *Service) login(u UserLogin) (string, error) {
+	if u.Email == "" || u.Password == "" {
+		return "", shared.ErrEmailOrPasswordMissing
+	}
+
 	// Create session token
 	token, err := util.GenerateRandomString(32)
 	if err != nil {
@@ -43,7 +47,7 @@ func (s *Service) loginUser(u UserLogin) (string, error) {
 	return token, nil
 }
 
-func (s *Service) logoutUser(token string) error {
+func (s *Service) logout(token string) error {
 	// Hash supplied session token
 	hash := util.HashToken(token)
 
@@ -102,18 +106,16 @@ func (s *Service) createUser(req CreateUserRequest) error {
 
 // Change a password for authenticated user
 func (s *Service) changePassword(req ChangePasswordRequest) error {
+	if req.OldPassword == "" || req.NewPassword == "" {
+		return shared.ErrOldOrNewPasswordMissing
+	}
 	// Get email of authenticated user
-	email, err := s.FindEmailFromUserID(req.UserID)
+	email, err := s.GetEmailFromUserID(req.UserID)
 	if err != nil {
 		return err
 	}
 
 	req.Email = email
-
-	// Validate request
-	if err = s.validateChangePassword(req); err != nil {
-		return err
-	}
 
 	// Check current password
 	_, isCurrentPassword, err := s.AuthenticateUser(email, req.OldPassword)
@@ -145,7 +147,7 @@ func (s *Service) changePassword(req ChangePasswordRequest) error {
 
 // Authenticate user, return userID for use in context and match bool
 func (s *Service) AuthenticateUser(email string, password string) (int64, bool, error) {
-	id, hash, err := s.Repo.findUserIDHashByEmail(email)
+	id, hash, err := s.Repo.getUserIDHashByEmail(email)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return 0, false, shared.ErrUserNotFound
 	}
@@ -171,7 +173,7 @@ func (s *Service) GetSessionStatus(token string) (UserSession, error) {
 	// Hash token from cookie
 	hash := util.HashToken(token)
 
-	userSession, err := s.Repo.findSessionStatus(hash)
+	userSession, err := s.Repo.getSessionStatus(hash)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return UserSession{}, shared.ErrSessionNotFound
@@ -188,7 +190,7 @@ func (s *Service) GetSessionStatus(token string) (UserSession, error) {
 
 // Get a user's authorisation, eg admin, API access, etc
 func (s *Service) GetUserAuthorisation(email string) (User, error) {
-	user, err := s.Repo.findUserAuthorisation(email)
+	user, err := s.Repo.getUserAuthorisation(email)
 	if err != nil {
 		return User{}, nil
 	}
@@ -207,8 +209,8 @@ func (s *Service) DeleteExpiredUserSessions() (sql.Result, error) { // TODO shou
 	return result, nil
 }
 
-func (s *Service) FindEmailFromUserID(userID int64) (string, error) {
-	email, err := s.Repo.findEmailFromUserID(userID)
+func (s *Service) GetEmailFromUserID(userID int64) (string, error) {
+	email, err := s.Repo.getEmailFromUserID(userID)
 	if err != nil {
 		return "", err
 	}

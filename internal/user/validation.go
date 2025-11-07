@@ -1,7 +1,7 @@
 package user
 
 import (
-	"errors"
+	"ez2boot/internal/shared"
 	"regexp"
 	"strings"
 	"unicode/utf8"
@@ -11,23 +11,7 @@ import (
 func (s *Service) validateEmail(email string) error {
 	re := regexp.MustCompile(`^[^\s@]+@[^\s@]+$`)
 	if !re.MatchString(email) {
-		return errors.New("Email does not match required pattern")
-	}
-
-	return nil
-}
-
-func (s *Service) validateChangePassword(req ChangePasswordRequest) error {
-	if req.Email == "" {
-		return errors.New("Missing email")
-	}
-
-	if req.OldPassword == "" {
-		return errors.New("Missing old password")
-	}
-
-	if req.NewPassword == "" {
-		return errors.New("Missing new password")
+		return shared.ErrEmailPattern
 	}
 
 	return nil
@@ -38,15 +22,15 @@ func validatePassword(email string, password string) error {
 	length := utf8.RuneCountInString(password)
 
 	if length < 14 {
-		return errors.New("Password must be 14 characters or more")
+		return shared.ErrPasswordLength
 	}
 
 	if strings.Contains(password, email) {
-		return errors.New("Password cannot contain the email")
+		return shared.ErrPasswordContainsEmail
 	}
 
-	if strings.Contains(password, email) {
-		return errors.New("email cannot contain the password")
+	if strings.Contains(email, password) {
+		return shared.ErrEmailContainsPassword
 	}
 
 	return nil

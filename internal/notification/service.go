@@ -41,7 +41,7 @@ func (s *Service) QueueNotification(tx *sql.Tx, n NewNotification) error {
 
 // Get all pending notifications
 func (s *Service) GetPendingNotifications() ([]Notification, error) {
-	notifications, err := s.Repo.findPendingNotifications()
+	notifications, err := s.Repo.getPendingNotifications()
 	if err != nil {
 		return nil, err
 	}
