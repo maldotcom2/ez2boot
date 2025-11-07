@@ -289,7 +289,8 @@ func SetupRoutes(
 	uiRouter.HandleFunc("/user/new", user.CreateUser()).Methods("POST")
 	uiRouter.HandleFunc("/user/changepassword", user.ChangePassword()).Methods("PUT")
 	uiRouter.HandleFunc("/user/logout", user.Logout()).Methods("POST")
-	//uiRouter.HandleFunc("/notification/sender", notification.GetNotificationTypes()).Methods("GET")
+
 	/// Notification channels
+	uiRouter.HandleFunc("/notification/types", notification.GetNotificationTypes()).Methods("GET")
 	uiRouter.HandleFunc("/email/update", email.AddOrUpdate()).Methods("POST")
 }

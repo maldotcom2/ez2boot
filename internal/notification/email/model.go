@@ -19,7 +19,7 @@ type Handler struct {
 	Logger  *slog.Logger
 }
 
-type Config struct {
+type EmailConfig struct {
 	Host     string `json:"host"`
 	Port     string `json:"port"`
 	To       string `json:"to"`

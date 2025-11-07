@@ -3,16 +3,13 @@ package notification
 import (
 	"encoding/json"
 	"ez2boot/internal/shared"
-	"log"
 	"net/http"
 )
 
-func GetNotificationTypes() http.HandlerFunc {
+// Retrieves all supported notification types, used to list available options
+func (h *Handler) GetNotificationTypes() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		sender, ok := GetSender("email") // Testing
-		log.Print(ok)
-		if ok {
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: sender}) // This might not work here
-		}
+		types := h.Service.getNotificationTypes()
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: types})
 	}
 }

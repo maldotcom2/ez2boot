@@ -2,6 +2,7 @@ package email
 
 import (
 	"encoding/json"
+	"errors"
 	"ez2boot/internal/contextkey"
 	"ez2boot/internal/shared"
 	"net/http"
@@ -17,18 +18,25 @@ func (h *Handler) AddOrUpdate() http.HandlerFunc {
 			return
 		}
 
-		var c Config
-		if err := json.NewDecoder(r.Body).Decode(&c); err != nil {
+		var e EmailConfig
+		if err := json.NewDecoder(r.Body).Decode(&e); err != nil {
 			h.Logger.Error("Malformed request")
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
 			return
 		}
 
-		if err := h.Service.AddOrUpdate(userID, c); err != nil {
+		if err := h.Service.AddOrUpdate(userID, e); err != nil {
+			if errors.Is(err, ErrMissingAuthValues) {
+				h.Logger.Error("Failed to add or update email notifications, missing credentials for authenticated send", "userID", userID, "error", err)
+				w.WriteHeader(http.StatusBadRequest)
+				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: ErrMissingAuthValues.Error()})
+				return
+			}
+
 			h.Logger.Error("Failed to add or update email notifications", "userID", userID, "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to create new session"})
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to add or update email notifications"})
 			return
 		}
 

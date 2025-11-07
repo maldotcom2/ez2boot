@@ -2,7 +2,6 @@ package worker
 
 import (
 	"context"
-	"ez2boot/internal/notification"
 	"time"
 )
 
@@ -29,7 +28,7 @@ func StartNotificationWorker(w Worker, ctx context.Context) {
 				}
 
 				for _, n := range notifications {
-					sender, ok := notification.GetSender(n.Type)
+					sender, ok := w.NotificationService.GetNotificationSender(n.Type)
 					if !ok {
 						w.Logger.Error("Notification type not supported. Removing from queue", "id", n.Id, "type", n.Type)
 						if err := w.NotificationService.DeleteNotification(n.Id); err != nil {

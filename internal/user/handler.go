@@ -81,6 +81,7 @@ func (h *Handler) Login() http.HandlerFunc {
 	}
 }
 
+// Logout session handler
 func (h *Handler) Logout() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, ok := r.Context().Value(contextkey.UserIDKey).(int64)

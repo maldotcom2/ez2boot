@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 )
 
-// Returned error is consumed only when called from endpoint, not Go routine
+// Scrape AWS to retrieve servers. Returned error is consumed only when called from endpoint, not Go routine
 func (s *Service) Scrape() error {
 	s.Logger.Debug("Scraping AWS")
 	awsCFG, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(s.Config.AWSRegion))
@@ -58,6 +58,7 @@ func (s *Service) Scrape() error {
 	return nil
 }
 
+// Start required AWS servers
 func (s *Service) Start() error {
 	s.Logger.Debug("Starting requested AWS servers")
 	awsCFG, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(s.Config.AWSRegion))
@@ -106,6 +107,7 @@ func (s *Service) Start() error {
 	return nil
 }
 
+// Stop no longer required AWS servers
 func (s *Service) Stop() error {
 	s.Logger.Debug("Stopping requested AWS servers")
 	awsCFG, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(s.Config.AWSRegion))

@@ -15,7 +15,7 @@ func (e *EmailNotification) Type() string {
 	return "email"
 }
 
-func (e *Service) AddOrUpdate(userID int64, cfg Config) error {
+func (e *Service) AddOrUpdate(userID int64, cfg EmailConfig) error {
 	// Must supply creds for auth
 	if cfg.Auth && (cfg.User == "" || cfg.Password == "") {
 		return ErrMissingAuthValues
@@ -38,7 +38,7 @@ func (e *Service) AddOrUpdate(userID int64, cfg Config) error {
 
 func (e *EmailNotification) Send(msg string, title string, cfgStr string) error {
 
-	var cfg Config
+	var cfg EmailConfig
 	if err := json.Unmarshal([]byte(cfgStr), &cfg); err != nil {
 		return err
 	}
