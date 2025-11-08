@@ -15,10 +15,17 @@ func (e *EmailNotification) Type() string {
 	return "email"
 }
 
+// TODO Validation function?
 func (e *Service) AddOrUpdate(userID int64, cfg EmailConfig) error {
 	// Must supply creds for auth
 	if cfg.Auth && (cfg.User == "" || cfg.Password == "") {
 		return ErrMissingAuthValues
+	}
+
+	// Don't store junk values
+	if !cfg.Auth {
+		cfg.User = ""
+		cfg.Password = ""
 	}
 
 	// Stringify the config

@@ -1,9 +1,9 @@
 package user
 
 import (
-	"database/sql"
 	"ez2boot/internal/shared"
 	"fmt"
+	"time"
 
 	"github.com/mattn/go-sqlite3"
 )
@@ -106,13 +106,19 @@ func (r *Repository) getSessionStatus(hash string) (UserSession, error) {
 	return u, nil
 }
 
-func (r *Repository) deleteExpiredUserSessions(now int64) (sql.Result, error) {
-	result, err := r.Base.DB.Exec("DELETE FROM user_sessions WHERE session_expiry < $1", now)
+// Delete expired sessons and return rows affected
+func (r *Repository) deleteExpiredUserSessions() (int64, error) {
+	result, err := r.Base.DB.Exec("DELETE FROM user_sessions WHERE session_expiry < $1", time.Now().Unix())
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
-	return result, nil
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+
+	return rows, nil
 }
 
 func (r *Repository) getUserAuthorisation(email string) (User, error) {

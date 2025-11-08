@@ -197,15 +197,22 @@ func (s *Service) GetUserAuthorisation(email string) (User, error) {
 	return user, nil
 }
 
-func (s *Service) DeleteExpiredUserSessions() (sql.Result, error) { // TODO should a result be returned here?
-	now := time.Now().Unix()
-
-	result, err := s.Repo.deleteExpiredUserSessions(now)
+func (s *Service) ProcessUserSessions() error {
+	rows, err := s.Repo.deleteExpiredUserSessions()
 	if err != nil {
-		return nil, err
+		s.Logger.Error("Error while deleting expired user sessions", "error", err)
+		return err
 	}
 
-	return result, nil
+	if rows == 0 {
+		s.Logger.Debug("No expired user sessions to cleanup")
+	}
+
+	if rows > 0 {
+		s.Logger.Debug("Deleted expired sessions", "count", rows)
+	}
+
+	return nil
 }
 
 func (s *Service) GetEmailFromUserID(userID int64) (string, error) {
