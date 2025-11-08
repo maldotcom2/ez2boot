@@ -209,7 +209,7 @@ func (s *Service) ProcessUserSessions() error {
 	}
 
 	if rows > 0 {
-		s.Logger.Debug("Deleted expired sessions", "count", rows)
+		s.Logger.Debug("Deleted expired user sessions", "count", rows)
 	}
 
 	return nil

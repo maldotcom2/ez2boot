@@ -6,6 +6,56 @@ import (
 	"time"
 )
 
+func (s *Service) ProcessNotifications() error {
+	notifications, err := s.getPendingNotifications()
+	if err != nil {
+		s.Logger.Error("Error while getting pending notifications", "error", err)
+		return err
+	}
+
+	// Nothing to do
+	if len(notifications) == 0 {
+		s.Logger.Debug("No pending notifications")
+		return nil
+	}
+
+	for _, n := range notifications {
+		sender, ok := s.GetNotificationSender(n.Type)
+		if !ok {
+			s.Logger.Error("Notification type not supported. Removing from queue", "id", n.Id, "type", n.Type, "title", n.Title)
+			if err := s.deleteNotification(n.Id); err != nil {
+				s.Logger.Error("Could not delete notification from queue", "id", n.Id, "type", n.Type, "title", n.Title, "error", err)
+			}
+			continue
+		}
+
+		sent := false
+		for i := 0; i < 3; i++ {
+			if err := sender.Send(n.Msg, n.Title, n.Cfg); err != nil {
+				s.Logger.Error("Failed to send notification", "attempt", i+1, "id", n.Id, "type", n.Type, "title", n.Title, "error", err)
+				continue
+			}
+			// success
+			sent = true
+			break
+		}
+
+		// Delete notification whether it was sent successfully or not
+		if err := s.deleteNotification(n.Id); err != nil {
+			s.Logger.Error("Could not delete notification from queue", "id", n.Id, "error", err)
+			continue
+		}
+
+		if sent {
+			s.Logger.Debug("Successfully sent notification and removed from queue", "id", n.Id, "type", n.Type, "title", n.Title)
+		} else {
+			s.Logger.Warn("Failed to send notification", "id", n.Id, "type", n.Type, "title", n.Title)
+		}
+	}
+
+	return nil
+}
+
 // Add new notification to queue
 func (s *Service) QueueNotification(tx *sql.Tx, n NewNotification) error {
 	n.Time = time.Now().Unix()
@@ -17,7 +67,7 @@ func (s *Service) QueueNotification(tx *sql.Tx, n NewNotification) error {
 }
 
 // Get all pending notifications
-func (s *Service) GetPendingNotifications() ([]Notification, error) {
+func (s *Service) getPendingNotifications() ([]Notification, error) {
 	notifications, err := s.Repo.getPendingNotifications()
 	if err != nil {
 		return nil, err
@@ -27,7 +77,7 @@ func (s *Service) GetPendingNotifications() ([]Notification, error) {
 }
 
 // Delete notification by notification ID
-func (s *Service) DeleteNotification(id int64) error {
+func (s *Service) deleteNotification(id int64) error {
 	rows, err := s.Repo.deleteNotificationFromQueue(id)
 	if err != nil {
 		return err
