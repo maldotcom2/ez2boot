@@ -330,6 +330,7 @@ func (h *Handler) ChangePassword() http.HandlerFunc {
 					Success: false,
 					Error:   "Failed to change password",
 				}
+
 				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to change password"})
 				return
 			}
