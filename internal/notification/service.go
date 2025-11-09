@@ -10,7 +10,7 @@ func Register(sender Sender) {
 
 // Retrieves sender by type name, return value can then be called for sending notification, eg sender, ok := GetSender("email"). sender.Send(params)
 // Used by notification worker
-func (s *Service) GetNotificationSender(typeName string) (Sender, bool) {
+func (s *Service) getNotificationSender(typeName string) (Sender, bool) {
 	sender, ok := registry[typeName]
 	return sender, ok
 }

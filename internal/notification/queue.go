@@ -20,7 +20,7 @@ func (s *Service) ProcessNotifications() error {
 	}
 
 	for _, n := range notifications {
-		sender, ok := s.GetNotificationSender(n.Type)
+		sender, ok := s.getNotificationSender(n.Type)
 		if !ok {
 			s.Logger.Error("Notification type not supported. Removing from queue", "id", n.Id, "type", n.Type, "title", n.Title)
 			if err := s.deleteNotification(n.Id); err != nil {
