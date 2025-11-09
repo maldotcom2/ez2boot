@@ -22,6 +22,13 @@ func (h *Handler) GetMode() http.HandlerFunc {
 	}
 }
 
+// Session check for UI
+func (h *Handler) CheckSession() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
 // Login session user
 func (h *Handler) Login() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

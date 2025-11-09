@@ -1,7 +1,7 @@
 package shared
 
 type ApiResponse[T any] struct {
-	Success bool
-	Data    T
-	Error   string
+	Success bool   `json:"success"`
+	Data    T      `json:"data"`
+	Error   string `json:"error"`
 }
