@@ -2,14 +2,15 @@ html, body, #app {
   height: 100%;
   margin: 0;
   padding: 0;
-  background-color: #000000;
+  background-color: var(--background);
   font-family: Arial, sans-serif;
 }
 
 :root {
-  --main-blue:rgb(53, 127, 255);
+  --background:rgb(20, 28, 43);
+  --container-modal:rgb(36, 44, 57);
   --low-glare:rgb(228, 228, 228);
-  --btn:rgb(53, 127, 255);
+  --btn-blue:rgb(53, 127, 255);
   --btn-disabled:rgb(145,145,145);
   --error-msg: rgb(160, 34, 34);
   --success-msg: rgb(228, 228, 228);
@@ -22,10 +23,24 @@ h1 {
 input {
     background-color: var(--low-glare);
     border: none;
+    border-radius: 7px;
 }
 
 input:focus {
   outline: none
+}
+
+button {
+  padding: 10px 20px;
+  background-color: var(--btn-blue);
+  color: var(--low-glare);
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+button:hover {
+   filter: brightness(1.3);
 }
 
 .message.error {

@@ -1,9 +1,13 @@
 <template>
-  <div class="login-form" >
-    <input v-model="email" placeholder="Email" />
-    <input v-model="password" type="password" placeholder="Password" />
-    <button @click="login">Login</button>
-    <p class="message" :class="{error: error}" v-if="error">{{ error }}</p>
+  <div class="centre-container" >
+    <div class="login-form" >
+      <input v-model="email" placeholder="Email" />
+      <input v-model="password" type="password" placeholder="Password" />
+      <button @click="login">Login</button>
+      <div class="message-container" >
+        <p class="message" :class="{error: error}" v-if="error">{{ error }}</p>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -51,23 +55,37 @@ async function login() {
 </script>
 
 <style scoped>
+.centre-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh; /* Full screen */
+}
+
 .login-form {
   display: flex;
   flex-direction: column;
+  background-color: var(--container-modal);
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  width: 30%;
+  padding: 40px;
+  width: 25%;
   gap: 15px;
-  margin: 0 auto; /* centers the form horizontally */
+  border-radius:15px;
+  outline: none;
+}
+
+.message-container {
+  width: 100%;
+  outline: auto;
+}
+
+input {
+  height: 30px;
+  width: 50%;
 }
 
 button {
-  padding: 10px 20px;
-  background-color: var(--main-blue);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+  width: 50%;
 }
 </style>

@@ -10,6 +10,10 @@ const routes = [
     component: Dashboard,
     meta: { requiresAuth: true } // protect this route
   },
+  {
+    path: '/',       // default route
+    redirect: '/dashboard'
+  },
 ]
 
 // Create router
