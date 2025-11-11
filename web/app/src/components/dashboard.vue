@@ -2,10 +2,14 @@
 <header class="navbar">
     <UserNav />
 </header>
+<div>
+    <ServerSummary />
+</div>
 </template>
 
 <script setup>
 import UserNav from './UserNav.vue'
+import ServerSummary from './ServerSummary.vue'
 </script>
 
 <style scoped>

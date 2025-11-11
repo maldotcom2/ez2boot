@@ -3,6 +3,7 @@
     <button @click="toggleUserDropdown">Menu</button>
     <div v-if="isOpen" class="dropdown">
         <button @click="admin">Admin</button>
+        <button @click="settings">Settings</button>
         <button @click="logout">Logout</button>
     </div>
 </div>

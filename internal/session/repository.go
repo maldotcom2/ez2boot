@@ -36,6 +36,39 @@ func (r *Repository) getServerSessions() ([]ServerSession, error) {
 	return sessions, nil
 }
 
+// Specialised query specifically for main UI table population
+func (r *Repository) getServerSessionSummary() ([]ServerSessionSummary, error) {
+	query := `SELECT s.server_group, COUNT(s.server_group) AS server_count, GROUP_CONCAT(s.name, ', ') AS server_names, MIN(u.email) AS current_user, MIN(ss.expiry) AS session_expiry
+			FROM servers AS s
+			LEFT JOIN server_sessions AS ss
+			ON s.server_group = ss.server_group
+			LEFT JOIN users AS u
+			ON ss.user_id = u.id
+			GROUP BY s.server_group
+			ORDER BY s.server_group`
+
+	rows, err := r.Base.DB.Query(query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	summary := []ServerSessionSummary{}
+
+	for rows.Next() {
+		var s ServerSessionSummary
+		err = rows.Scan(&s.ServerGroup, &s.ServerCount, &s.ServerNames, &s.CurrentUser, &s.Expiry)
+		if err != nil {
+			return nil, err
+		}
+
+		summary = append(summary, s)
+	}
+
+	return summary, nil
+}
+
 // Get server sessions which will expire soon and user not yet notified
 func (r *Repository) getAgingServerSessions() ([]ServerSession, error) {
 	now := time.Now().UTC()

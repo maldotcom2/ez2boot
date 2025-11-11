@@ -22,6 +22,20 @@ func (h *Handler) GetServerSessions() http.HandlerFunc {
 	}
 }
 
+func (h *Handler) GetServerSessionSummary() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		summary, err := h.Service.getServerSessionSummary()
+		if err != nil {
+			h.Logger.Error("Failed to get server session summary", "error", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to get server session summary"})
+			return
+		}
+
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: summary})
+	}
+}
+
 func (h *Handler) NewServerSession() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, ok := r.Context().Value(contextkey.UserIDKey).(int64)

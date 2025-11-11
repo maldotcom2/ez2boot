@@ -32,3 +32,11 @@ type ServerSession struct {
 	Duration    string    `json:"duration"`
 	Expiry      time.Time `json:"expiry"`
 }
+
+type ServerSessionSummary struct {
+	ServerGroup string  `json:"server_group"`
+	ServerCount int64   `json:"server_count"`
+	ServerNames string  `json:"server_names"`
+	CurrentUser *string `json:"current_user"` // Can be null
+	Expiry      *int64  `json:"expiry"`       // Can be null
+}

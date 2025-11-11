@@ -14,6 +14,15 @@ func (s *Service) getServerSessions() ([]ServerSession, error) {
 	return sessions, nil
 }
 
+func (s *Service) getServerSessionSummary() ([]ServerSessionSummary, error) {
+	summary, err := s.Repo.getServerSessionSummary()
+	if err != nil {
+		return []ServerSessionSummary{}, err
+	}
+
+	return summary, nil
+}
+
 func (s *Service) newServerSession(session ServerSession) (ServerSession, error) {
 	if err := s.validateServerSession(session); err != nil {
 		return ServerSession{}, err

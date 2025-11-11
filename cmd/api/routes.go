@@ -54,8 +54,9 @@ func setupRoutes(
 	uiRouter.HandleFunc("/servers", handlers.ServerHandler.GetServers()).Methods("GET")
 	//// Server Sessions
 	uiRouter.HandleFunc("/sessions", handlers.SessionHandler.GetServerSessions()).Methods("GET")
-	uiRouter.HandleFunc("/sessions", handlers.SessionHandler.NewServerSession()).Methods("POST")
-	uiRouter.HandleFunc("/sessions", handlers.SessionHandler.UpdateServerSession()).Methods("PUT")
+	uiRouter.HandleFunc("/session/summary", handlers.SessionHandler.GetServerSessionSummary()).Methods("GET")
+	uiRouter.HandleFunc("/session/new", handlers.SessionHandler.NewServerSession()).Methods("POST")
+	uiRouter.HandleFunc("/session/update", handlers.SessionHandler.UpdateServerSession()).Methods("PUT")
 	//// Users
 	uiRouter.HandleFunc("/user/session", handlers.UserHandler.CheckSession()).Methods("GET")
 	uiRouter.HandleFunc("/user/new", handlers.UserHandler.CreateUser()).Methods("POST")
@@ -64,5 +65,5 @@ func setupRoutes(
 
 	/// Notification channels
 	uiRouter.HandleFunc("/notification/types", handlers.NotificationHandler.GetNotificationTypes()).Methods("GET")
-	uiRouter.HandleFunc("/email/update", handlers.EmailHandler.AddOrUpdate()).Methods("POST")
+	uiRouter.HandleFunc("/notification/email/update", handlers.EmailHandler.AddOrUpdate()).Methods("POST")
 }
