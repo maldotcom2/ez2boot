@@ -59,6 +59,7 @@ func setupRoutes(
 	uiRouter.HandleFunc("/session/update", handlers.SessionHandler.UpdateServerSession()).Methods("PUT")
 	//// Users
 	uiRouter.HandleFunc("/user/session", handlers.UserHandler.CheckSession()).Methods("GET")
+	uiRouter.HandleFunc("/user/auth", handlers.UserHandler.GetUserAuthorisation()).Methods("GET")
 	uiRouter.HandleFunc("/user/new", handlers.UserHandler.CreateUser()).Methods("POST")
 	uiRouter.HandleFunc("/user/changepassword", handlers.UserHandler.ChangePassword()).Methods("PUT")
 	uiRouter.HandleFunc("/user/logout", handlers.UserHandler.Logout()).Methods("POST")

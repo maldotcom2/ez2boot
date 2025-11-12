@@ -22,10 +22,32 @@ func (h *Handler) GetMode() http.HandlerFunc {
 	}
 }
 
-// Session check for UI
+// Session validity check for UI
 func (h *Handler) CheckSession() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
+	}
+}
+
+// Get user authorisation for logged in user
+func (h *Handler) GetUserAuthorisation() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID, ok := r.Context().Value(contextkey.UserIDKey).(int64)
+		if !ok {
+			h.Logger.Error("User ID not found in context")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User ID not found in context"})
+			return
+		}
+
+		user, err := h.Service.GetUserAuthorisation(userID)
+		if err != nil {
+			h.Logger.Error("Error while fetching user authorisation")
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Error while fetching user authorisation"})
+			return
+		}
+
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: user})
 	}
 }
 
