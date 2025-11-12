@@ -92,13 +92,13 @@ func (r *Repository) changePassword(email string, newHash string) error {
 
 // Get user session info by session token hash
 func (r *Repository) getSessionStatus(hash string) (UserSession, error) {
-	query := `SELECT user_sessions.session_expiry, users.email
-        	FROM user_sessions
-        	JOIN users ON user_sessions.user_id = users.id
-        	WHERE user_sessions.token_hash = $1`
+	query := `SELECT us.session_expiry, u.id, u.email
+        	FROM user_sessions AS us
+        	JOIN users u ON us.user_id = u.id
+        	WHERE us.token_hash = $1`
 
 	var u UserSession
-	err := r.Base.DB.QueryRow(query, hash).Scan(&u.SessionExpiry, &u.Email)
+	err := r.Base.DB.QueryRow(query, hash).Scan(&u.SessionExpiry, &u.UserID, &u.Email)
 	if err != nil {
 		return UserSession{}, err
 	}
@@ -121,11 +121,11 @@ func (r *Repository) deleteExpiredUserSessions() (int64, error) {
 	return rows, nil
 }
 
-func (r *Repository) getUserAuthorisation(email string) (User, error) {
-	query := `SELECT id, email, is_active, is_admin, api_enabled, ui_enabled FROM users WHERE email = $1`
+func (r *Repository) getUserAuthorisation(userID int64) (User, error) {
+	query := `SELECT id, email, is_active, is_admin, api_enabled, ui_enabled FROM users WHERE id = $1`
 
 	var u User
-	if err := r.Base.DB.QueryRow(query, email).Scan(&u.UserID, &u.Email, &u.IsActive, &u.IsAdmin, &u.APIEnabled, &u.UIEnabled); err != nil {
+	if err := r.Base.DB.QueryRow(query, userID).Scan(&u.UserID, &u.Email, &u.IsActive, &u.IsAdmin, &u.APIEnabled, &u.UIEnabled); err != nil {
 		return User{}, err
 	}
 

@@ -16,14 +16,10 @@
       <tbody>
         <tr v-for="server in servers" :key="server.server_group">
           <td>{{ server.server_group }}</td>
-          <td>
-            <span :title="server.server_names">{{ server.server_count }}</span>
-          </td>
+          <td><span :title="server.server_names">{{ server.server_count }}</span></td>
           <td>{{ server.expiry ? new Date(server.expiry * 1000).toLocaleString() : '-' }}</td>
           <td>{{ server.current_user || '-' }}</td>
-          <td>
-            <button @click="startServerSession(server.server_group)">Start Session</button>
-          </td>
+          <td><input v-model="duration" placeholder="eg 3h" /><button @click="startServerSession(server.server_group)">Start Session</button></td>
         </tr>
       </tbody>
     </table>
@@ -34,7 +30,7 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 
-const servers = ref([])
+const servers = ref([]) // Makes 'servers' reactive
 
 // Load table data from specialised endpoint
 async function loadServerSessions() {

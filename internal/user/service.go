@@ -188,8 +188,8 @@ func (s *Service) GetSessionStatus(token string) (UserSession, error) {
 }
 
 // Get a user's authorisation, eg admin, API access, etc
-func (s *Service) GetUserAuthorisation(email string) (User, error) {
-	user, err := s.Repo.getUserAuthorisation(email)
+func (s *Service) GetUserAuthorisation(userID int64) (User, error) {
+	user, err := s.Repo.getUserAuthorisation(userID)
 	if err != nil {
 		return User{}, nil
 	}

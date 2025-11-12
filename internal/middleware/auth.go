@@ -23,7 +23,7 @@ func (m *Middleware) BasicAuthMiddleware() mux.MiddlewareFunc {
 				return
 			}
 
-			_, authenticated, err := m.UserService.AuthenticateUser(email, password)
+			userID, authenticated, err := m.UserService.AuthenticateUser(email, password)
 			if err != nil {
 				if errors.Is(err, shared.ErrUserNotFound) {
 					m.Logger.Warn("Attempted login for user which does not exist", "email", email, "error", err)
@@ -45,7 +45,7 @@ func (m *Middleware) BasicAuthMiddleware() mux.MiddlewareFunc {
 			}
 
 			// Get user permissions
-			u, err := m.UserService.GetUserAuthorisation(email)
+			u, err := m.UserService.GetUserAuthorisation(userID)
 			if err != nil {
 				m.Logger.Error("Error while fetching user authorisation", "email", email, "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
@@ -67,7 +67,7 @@ func (m *Middleware) BasicAuthMiddleware() mux.MiddlewareFunc {
 				return
 			}
 
-			m.Logger.Info("Basic auth passed", "email", email, "Path", r.URL.Path, "Source IP", r.RemoteAddr)
+			m.Logger.Info("Basic auth passed", "userID", u.UserID, "email", email, "Path", r.URL.Path, "Source IP", r.RemoteAddr)
 			// Pass down request to the next middleware
 			ctx := context.WithValue(r.Context(), contextkey.UserIDKey, u.UserID)
 			next.ServeHTTP(w, r.WithContext(ctx))
@@ -99,7 +99,7 @@ func (m *Middleware) SessionAuthMiddleware() mux.MiddlewareFunc {
 				}
 
 				if errors.Is(err, shared.ErrSessionExpired) {
-					m.Logger.Info("Yser session expired", "email", us.Email)
+					m.Logger.Info("User session expired", "email", us.Email)
 					w.WriteHeader(http.StatusUnauthorized)
 					json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User session expired"})
 					return
@@ -112,7 +112,7 @@ func (m *Middleware) SessionAuthMiddleware() mux.MiddlewareFunc {
 			}
 
 			// Get user permissions
-			ua, err := m.UserService.GetUserAuthorisation(us.Email)
+			ua, err := m.UserService.GetUserAuthorisation(us.UserID)
 			if err != nil {
 				m.Logger.Error("Error while fetching user authorisation", "email", ua.Email, "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
@@ -135,7 +135,7 @@ func (m *Middleware) SessionAuthMiddleware() mux.MiddlewareFunc {
 			}
 
 			// Create a context containing the userID and the account verified status. This controls the authorisation to downstream functions.
-			m.Logger.Info("User request passed middleware", "email", ua.Email, "Path", r.URL.Path, "Source IP", r.RemoteAddr)
+			m.Logger.Info("User request passed middleware", "userID", ua.UserID, "email", ua.Email, "Path", r.URL.Path, "Source IP", r.RemoteAddr)
 			ctx := context.WithValue(r.Context(), contextkey.UserIDKey, ua.UserID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
