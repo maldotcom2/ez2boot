@@ -121,12 +121,12 @@ func (r *Repository) deleteExpiredUserSessions() (int64, error) {
 	return rows, nil
 }
 
-func (r *Repository) getUserAuthorisation(userID int64) (User, error) {
+func (r *Repository) getUserAuthorisation(userID int64) (UserAuthRequest, error) {
 	query := `SELECT id, email, is_active, is_admin, api_enabled, ui_enabled FROM users WHERE id = $1`
 
-	var u User
+	var u UserAuthRequest
 	if err := r.Base.DB.QueryRow(query, userID).Scan(&u.UserID, &u.Email, &u.IsActive, &u.IsAdmin, &u.APIEnabled, &u.UIEnabled); err != nil {
-		return User{}, err
+		return UserAuthRequest{}, err
 	}
 
 	return u, nil

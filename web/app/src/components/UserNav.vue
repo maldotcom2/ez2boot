@@ -1,10 +1,11 @@
 <template>
 <div class="user-nav">
+    <p>{{ userState.email }}</p>
     <button @click="toggleUserDropdown">Menu</button>
     <div v-if="isOpen" class="dropdown">
-        <button @click="admin">Admin</button>
-        <button @click="settings">Settings</button>
-        <button @click="logout">Logout</button>
+      <button v-if="userState.isAdmin" @click="$router.push('/adminpanel')">Admin Panel</button>
+      <button @click="settings">Settings</button>
+      <button @click="logout">Logout</button>
     </div>
 </div>
 </template>
@@ -13,6 +14,7 @@
 import { ref } from 'vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
+import { userState } from '@/user.js'
 
 const isOpen = ref(false)
 const router = useRouter()
@@ -53,7 +55,11 @@ async function logout() {
 
 <style scoped>
 .user-nav {
+    display: flex;
     position: relative;
+    align-items: center;
+    gap: 10px;
+    color: var(--low-glare);
 }
 
 .dropdown {

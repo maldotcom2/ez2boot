@@ -60,13 +60,13 @@ type CreateUser struct {
 	UIEnabled    bool
 }
 
-type User struct {
+type UserAuthRequest struct {
 	UserID     int64
-	Email      string
-	IsActive   bool
-	IsAdmin    bool
-	APIEnabled bool
-	UIEnabled  bool
+	Email      string `json:"email"`
+	IsActive   bool   `json:"is_active"`
+	IsAdmin    bool   `json:"is_admin"`
+	APIEnabled bool   `json:"api_enabled"`
+	UIEnabled  bool   `json:"ui_enabled"`
 }
 
 type SetupResponse struct {
