@@ -43,6 +43,7 @@ func (h *Handler) GetUserAuthorisation() http.HandlerFunc {
 		user, err := h.Service.GetUserAuthorisation(userID)
 		if err != nil {
 			h.Logger.Error("Error while fetching user authorisation")
+			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Error while fetching user authorisation"})
 			return
 		}
@@ -166,6 +167,11 @@ func (h *Handler) CreateUser() http.HandlerFunc {
 
 		h.Logger.Info("Attempted user creation", "email", req.Email)
 
+		// Admin check
+		if !h.userIsAdmin(w, r) {
+			return // Response written by helper
+		}
+
 		var resp shared.ApiResponse[any]
 		if err := h.Service.createUser(req); err != nil {
 			switch {
@@ -252,13 +258,6 @@ func (h *Handler) CreateFirstTimeUser() http.HandlerFunc {
 		var resp shared.ApiResponse[any]
 		if err := h.Service.createUser(req); err != nil {
 			switch {
-			case errors.Is(err, shared.ErrUserAlreadyExists):
-				h.Logger.Error("Failed to create user, user already exists")
-				w.WriteHeader(http.StatusConflict)
-				resp = shared.ApiResponse[any]{
-					Success: false,
-					Error:   shared.ErrUserAlreadyExists.Error(),
-				}
 			case errors.Is(err, shared.ErrEmailPattern):
 				h.Logger.Error("Failed to create user, email does not match pattern", "email", req.Email)
 				w.WriteHeader(http.StatusBadRequest)
@@ -371,4 +370,32 @@ func (h *Handler) ChangePassword() http.HandlerFunc {
 		h.Logger.Info("Password changed for user", "email", email)
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
+}
+
+// Handler helper to guard admin routes
+func (h *Handler) userIsAdmin(w http.ResponseWriter, r *http.Request) bool {
+	userID, ok := r.Context().Value(contextkey.UserIDKey).(int64)
+	if !ok {
+		h.Logger.Error("User ID not found in context")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User ID not found in context"})
+		return false
+	}
+
+	user, err := h.Service.GetUserAuthorisation(userID)
+	if err != nil {
+		h.Logger.Error("Error while fetching user authorisation")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Error while fetching user authorisation"})
+		return false
+	}
+
+	if !user.IsAdmin {
+		h.Logger.Error("Non-admin user attempted to access admin functions", "email", user.Email)
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Unauthorised"})
+		return false
+	}
+
+	return true
 }
