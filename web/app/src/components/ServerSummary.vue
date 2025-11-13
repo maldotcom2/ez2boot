@@ -19,7 +19,22 @@
           <td><span :title="server.server_names">{{ server.server_count }}</span></td>
           <td>{{ server.expiry ? new Date(server.expiry * 1000).toLocaleString() : '-' }}</td>
           <td>{{ server.current_user || '-' }}</td>
-          <td><input v-model="duration" placeholder="eg 3h" /><button @click="startServerSession(server.server_group)">Start Session</button></td>
+          <td>
+            <div class="controls-container">
+              <input v-model="duration" placeholder="eg 3h" :disabled="server.current_user && server.current_user !== userState.email" />
+                <!-- Nobody using session -->
+                <button v-if="!server.current_user" @click="startServerSession(server.server_group, duration)">Start Session</button>
+
+                <!-- Current session is mine -->
+                <template v-else-if="server.current_user === userState.email">
+                  <button @click="updateServerSession(server.server_group, duration)">Extend Session</button>
+                  <button @click="updateServerSession(server.server_group, '0m')">End Session</button>
+                </template>
+
+                <!-- Session is someone else -->
+                <button v-else disabled>In Use</button>
+            </div>
+          </td>
         </tr>
       </tbody>
     </table>
@@ -29,6 +44,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
+import { userState } from '@/user.js'
 
 const servers = ref([]) // Makes 'servers' reactive
 
@@ -45,11 +61,11 @@ async function loadServerSessions() {
 }
 
 // Start a new server session
-async function startServerSession(serverGroup) {
+async function startServerSession(serverGroup, duration) {
   try {
     const response = await axios.post('/ui/session/new', {
       server_group: serverGroup,
-      duration: '3h'
+      duration: duration
     })
 
     if (response.data.success) {
@@ -57,6 +73,22 @@ async function startServerSession(serverGroup) {
     }
   } catch (err) {
     console.error('Error starting server session:', err)
+  }
+}
+
+// Update server session
+async function updateServerSession(serverGroup, duration) {
+  try {
+    const response = await axios.put('/ui/session/update', {
+      server_group: serverGroup,
+      duration: duration
+    })
+
+    if (response.data.success) {
+      loadServerSessions() // refresh table after creating session
+    }
+  } catch (err) {
+    console.error('Error updating server session:', err)
   }
 }
 
@@ -85,5 +117,10 @@ onMounted(() => {
 
 .server-table th {
   text-align: left;
+}
+
+.controls-container {
+  display: flex;
+  gap: 10px;
 }
 </style>
