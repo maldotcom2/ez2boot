@@ -2,7 +2,6 @@ package notification
 
 import (
 	"database/sql"
-	"ez2boot/internal/shared"
 	"time"
 )
 
@@ -56,7 +55,8 @@ func (s *Service) ProcessNotifications() error {
 		}
 
 		// Delete notification whether it was sent successfully or not
-		if err := s.deleteNotification(n.Id); err != nil {
+		_, err := s.Repo.deleteNotificationFromQueue(n.Id)
+		if err != nil {
 			s.Logger.Error("Could not delete notification from queue", "id", n.Id, "error", err)
 			continue
 		}
@@ -76,20 +76,6 @@ func (s *Service) QueueNotification(tx *sql.Tx, n NewNotification) error {
 	n.Time = time.Now().Unix()
 	if err := s.Repo.queueNotification(tx, n); err != nil {
 		return err
-	}
-
-	return nil
-}
-
-// Delete notification by notification ID
-func (s *Service) deleteNotification(id int64) error {
-	rows, err := s.Repo.deleteNotificationFromQueue(id)
-	if err != nil {
-		return err
-	}
-
-	if rows == 0 {
-		return shared.ErrNoRowsDeleted
 	}
 
 	return nil
