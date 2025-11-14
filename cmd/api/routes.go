@@ -67,4 +67,5 @@ func setupRoutes(
 	/// Notification channels
 	uiRouter.HandleFunc("/notification/types", handlers.NotificationHandler.GetNotificationTypes()).Methods("GET")
 	uiRouter.HandleFunc("/notification/email/update", handlers.EmailHandler.AddOrUpdate()).Methods("POST")
+	uiRouter.HandleFunc("/notification/telegram/update", handlers.TelegramHandler.AddOrUpdate()).Methods("POST")
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"ez2boot/internal/notification"
 	"ez2boot/internal/notification/email"
+	"ez2boot/internal/notification/telegram"
 	"ez2boot/internal/provider/aws"
 	"ez2boot/internal/server"
 	"ez2boot/internal/session"
@@ -24,4 +25,5 @@ type Handlers struct {
 	SessionHandler      *session.Handler
 	NotificationHandler *notification.Handler
 	EmailHandler        *email.Handler
+	TelegramHandler     *telegram.Handler
 }

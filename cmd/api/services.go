@@ -6,6 +6,7 @@ import (
 	"ez2boot/internal/middleware"
 	"ez2boot/internal/notification"
 	"ez2boot/internal/notification/email"
+	"ez2boot/internal/notification/telegram"
 	"ez2boot/internal/provider/aws"
 	"ez2boot/internal/server"
 	"ez2boot/internal/session"
@@ -40,6 +41,11 @@ func initServices(cfg *config.Config, repo *db.Repository, logger *slog.Logger) 
 	emailService := &email.Service{Repo: emailRepo, Logger: logger}
 	emailHandler := &email.Handler{Service: emailService, Logger: logger}
 
+	// Telegram
+	telegramRepo := &telegram.Repository{Base: repo}
+	telegramService := &telegram.Service{Repo: telegramRepo, Logger: logger}
+	telegramHandler := &telegram.Handler{Service: telegramService, Logger: logger}
+
 	// aws
 	awsRepo := &aws.Repository{Base: repo}
 	awsService := &aws.Service{Repo: awsRepo, Config: cfg, ServerService: serverService, Logger: logger}
@@ -56,6 +62,7 @@ func initServices(cfg *config.Config, repo *db.Repository, logger *slog.Logger) 
 		SessionHandler:      sessionHandler,
 		NotificationHandler: notificationHandler,
 		EmailHandler:        emailHandler,
+		TelegramHandler:     telegramHandler,
 	}
 
 	services := &Services{

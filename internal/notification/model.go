@@ -19,6 +19,7 @@ type Handler struct {
 	Logger  *slog.Logger
 }
 
+// Notification channels must implement this
 type Sender interface {
 	Type() string                                    // Get the name
 	Send(msg string, title string, cfg string) error // Send the notification
