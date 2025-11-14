@@ -7,7 +7,19 @@ import (
 )
 
 func (s *Service) ProcessNotifications() error {
-	notifications, err := s.getPendingNotifications()
+	// Remove any from queue where user does not have configured notifications
+	rows, err := s.Repo.deleteOrphanedNotifications()
+	if err != nil {
+		s.Logger.Error("Error while removing orphaned notifications", "error", err)
+		return err
+	}
+
+	if rows > 0 {
+		s.Logger.Debug("Deleted orphaned notifications", "count", rows)
+	}
+
+	// Get remaining pending
+	notifications, err := s.Repo.getPendingNotifications()
 	if err != nil {
 		s.Logger.Error("Error while getting pending notifications", "error", err)
 		return err
@@ -19,16 +31,19 @@ func (s *Service) ProcessNotifications() error {
 		return nil
 	}
 
+	// Get sender for each
 	for _, n := range notifications {
 		sender, ok := s.getNotificationSender(n.Type)
 		if !ok {
 			s.Logger.Error("Notification type not supported. Removing from queue", "id", n.Id, "type", n.Type, "title", n.Title)
-			if err := s.deleteNotification(n.Id); err != nil {
+			_, err := s.Repo.deleteNotificationFromQueue(n.Id)
+			if err != nil {
 				s.Logger.Error("Could not delete notification from queue", "id", n.Id, "type", n.Type, "title", n.Title, "error", err)
 			}
 			continue
 		}
 
+		// Send
 		sent := false
 		for i := 0; i < 3; i++ {
 			if err := sender.Send(n.Msg, n.Title, n.Cfg); err != nil {
@@ -64,16 +79,6 @@ func (s *Service) QueueNotification(tx *sql.Tx, n NewNotification) error {
 	}
 
 	return nil
-}
-
-// Get all pending notifications
-func (s *Service) getPendingNotifications() ([]Notification, error) {
-	notifications, err := s.Repo.getPendingNotifications()
-	if err != nil {
-		return nil, err
-	}
-
-	return notifications, nil
 }
 
 // Delete notification by notification ID

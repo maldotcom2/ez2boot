@@ -41,6 +41,25 @@ func (r *Repository) getPendingNotifications() ([]Notification, error) {
 	return notifications, nil
 }
 
+// Delete notifications where the user does not have a notifications channel
+func (r *Repository) deleteOrphanedNotifications() (int64, error) {
+	query := `DELETE FROM notification_queue
+		     WHERE user_id NOT IN (
+    	     SELECT user_id FROM user_notifications);`
+
+	result, err := r.Base.DB.Exec(query)
+	if err != nil {
+		return 0, err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+
+	return rows, nil
+}
+
 func (r *Repository) deleteNotificationFromQueue(id int64) (int64, error) {
 	result, err := r.Base.DB.Exec("DELETE FROM notification_queue WHERE id = $1", id)
 	if err != nil {
