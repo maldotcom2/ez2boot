@@ -1,0 +1,46 @@
+# Build frontend
+FROM node:22-alpine AS frontend-build
+
+WORKDIR /web
+
+COPY web/app/package*.json ./
+
+RUN npm ci
+
+COPY web/app/public ./public
+
+COPY web/app/src ./src
+
+COPY web/app/index.html ./
+
+COPY web/app/vite.config.js ./
+
+# Outputs to /web/dist set in vite.config
+RUN npm run build     
+
+# Build backend
+FROM golang:1.25.4-bookworm AS backend-build
+
+WORKDIR /app
+
+COPY . .
+
+RUN go mod download
+
+RUN go build -o api ./cmd/api
+
+
+# Final
+FROM debian:bookworm-slim
+
+WORKDIR /app
+
+# Copy SPA assets
+COPY --from=frontend-build /web/dist /app/web
+
+# Copy Go binary
+COPY --from=backend-build /app/api /app/api
+
+EXPOSE 8000
+
+CMD ["/app/api"]

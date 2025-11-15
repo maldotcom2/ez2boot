@@ -1,6 +1,7 @@
 package config
 
 import (
+	"log"
 	"os"
 	"strconv"
 
@@ -8,9 +9,8 @@ import (
 )
 
 func GetEnvVars() (*Config, error) {
-	err := godotenv.Load()
-	if err != nil {
-		return nil, err
+	if err := godotenv.Load(); err != nil {
+		log.Print("Could not load .env file, assuming env vars from other means")
 	}
 
 	val := os.Getenv("TRUST_PROXY_HEADERS")
@@ -44,8 +44,8 @@ func GetEnvVars() (*Config, error) {
 	}
 
 	internalClockStr := os.Getenv("INTERNAL_CLOCK")
-	if scrapeIntervalStr == "" {
-		scrapeIntervalStr = "10s" //default
+	if internalClockStr == "" {
+		internalClockStr = "10s" //default
 	}
 
 	internalClock, err := GetDurationFromString(internalClockStr)

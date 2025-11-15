@@ -3,11 +3,13 @@ package main
 import (
 	"ez2boot/internal/config"
 	"ez2boot/internal/middleware"
+	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 )
 
-func setupRoutes(
+func setupBackendRoutes(
 	cfg *config.Config,
 	router *mux.Router,
 	mw *middleware.Middleware,
@@ -68,4 +70,30 @@ func setupRoutes(
 	uiRouter.HandleFunc("/notification/types", handlers.NotificationHandler.GetNotificationTypes()).Methods("GET")
 	uiRouter.HandleFunc("/notification/email/update", handlers.EmailHandler.AddOrUpdate()).Methods("POST")
 	uiRouter.HandleFunc("/notification/telegram/update", handlers.TelegramHandler.AddOrUpdate()).Methods("POST")
+}
+
+func setupFrontendRoutes(router *mux.Router) {
+	// Serve static frontend (Vue build output)
+	staticDir := "./web"
+
+	// File server for assets
+	fileServer := http.FileServer(http.Dir(staticDir))
+
+	// Serve static folders directly
+	router.PathPrefix("/assets/").Handler(http.StripPrefix("/", fileServer))
+	router.PathPrefix("/css/").Handler(http.StripPrefix("/", fileServer))
+	router.PathPrefix("/js/").Handler(http.StripPrefix("/", fileServer))
+
+	// Catch-all route for SPA
+	router.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Attempt to serve a static file
+		path := staticDir + r.URL.Path
+		if _, err := os.Stat(path); err == nil {
+			http.ServeFile(w, r, path)
+			return
+		}
+
+		// Else serve the SPA entry point
+		http.ServeFile(w, r, staticDir+"/index.html")
+	})
 }

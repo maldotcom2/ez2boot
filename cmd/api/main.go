@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"ez2boot/internal/config"
+	"log"
 	"net/http"
 	"os"
 
@@ -10,7 +12,10 @@ import (
 
 func main() {
 	// Load env vars
-	cfg := loadVars()
+	cfg, err := config.GetEnvVars()
+	if err != nil {
+		log.Print("Error getting env vars", "error", err)
+	}
 
 	// Create logger
 	logger := initLogger(cfg)
@@ -41,8 +46,11 @@ func main() {
 	// Create router
 	router := mux.NewRouter()
 
-	// Setup routes
-	setupRoutes(cfg, router, mw, handlers)
+	// Setup backend routes
+	setupBackendRoutes(cfg, router, mw, handlers)
+
+	// Setup frontend routes
+	setupFrontendRoutes(router)
 
 	// Set Go routine context
 	ctx, cancel := context.WithCancel(context.Background())
@@ -53,7 +61,7 @@ func main() {
 
 	//Start server
 	logger.Info("Server is ready and listening", "port", cfg.Port)
-	err = http.ListenAndServe(":"+cfg.Port, router)
+	err = http.ListenAndServe("0.0.0.0:"+cfg.Port, router)
 	if err != nil {
 		logger.Error("Failed to start http server", "error", err)
 		os.Exit(1)

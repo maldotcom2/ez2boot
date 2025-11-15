@@ -16,7 +16,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: path.resolve(__dirname, '../static'), // Output to web/static
+    outDir: path.resolve(__dirname, '/web/dist'), // Output to web/dist
     emptyOutDir: true,                            // Clean old builds
   },
   server: {
