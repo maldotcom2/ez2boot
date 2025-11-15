@@ -10,7 +10,7 @@ import (
 
 // Connect to DB and return pointer to connection pool
 func Connect() (*sql.DB, error) {
-	dbDir := "/data"
+	dbDir := "./data"
 	dbPath := filepath.Join(dbDir, "ez2boot.sqlite")
 
 	// Make sure the directory exists

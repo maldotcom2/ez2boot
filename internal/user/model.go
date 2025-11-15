@@ -70,5 +70,5 @@ type UserAuthRequest struct {
 }
 
 type SetupResponse struct {
-	SetupMode bool
+	SetupMode bool `json:"setup_mode"`
 }

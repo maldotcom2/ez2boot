@@ -1,10 +1,11 @@
 <template>
   <div class="centre-container" >
-    <div class="login-form" >
-      <p class="prompt">Login</p>
+    <div class="setup-form" >
+      <p class="prompt">Create initial user</p>
       <input v-model="email" placeholder="Email" />
       <input v-model="password" type="password" placeholder="Password" />
-      <button @click="login">Login</button>
+      <input v-model="confirmPassword" type="password" placeholder="Confirm Password" />
+      <button @click="createFirstUser">Create</button>
       <div class="message-container" >
         <p class="message" :class="{error: error}" v-if="error">{{ error }}</p>
       </div>
@@ -20,29 +21,30 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const email = ref('')
 const password = ref('')
+const confirmPassword = ref('')
 const error = ref('')
 
-// async login function
-async function login() {
+async function createFirstUser() {
   error.value = ''  // Reset error
+  if (password.value !== confirmPassword.value) {
+    console.error("password and confirm password do not match")
+    return
+  }
   try {
-    const response = await axios.post('ui/user/login', // Login endpoint
+    const response = await axios.post('ui/setup',
       {
         email: email.value,
         password: password.value
-      },
-      {
-        withCredentials: true // Cookies
       }
     )
+    console.log('User creation successful:', response.data)
 
-    console.log('Login successful:', response.data)
-    router.push('/dashboard')
+    router.push('/login')
 
   } catch (err) {
     if (err.response) {
       // Get server response
-      error.value = `Login failed: ${err.response.data.error || err.response.statusText}`
+      error.value = `User creation failed: ${err.response.data.error || err.response.statusText}`
     } else if (err.request) {
       // No response
       error.value = 'No response from server'
@@ -52,6 +54,7 @@ async function login() {
     }
   }
 }
+
 </script>
 
 <style scoped>
@@ -62,7 +65,7 @@ async function login() {
   height: 100vh; /* Full screen */
 }
 
-.login-form {
+.setup-form {
   display: flex;
   flex-direction: column;
   background-color: var(--container-modal);
