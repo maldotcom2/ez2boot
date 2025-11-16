@@ -35,5 +35,11 @@ func Connect() (*sql.DB, error) {
 		return nil, err
 	}
 
+	// Enable WAL
+	_, err = db.Exec("PRAGMA journal_mode = WAL;")
+	if err != nil {
+		return nil, err
+	}
+
 	return db, nil
 }
