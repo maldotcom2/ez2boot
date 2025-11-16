@@ -41,10 +41,12 @@ button {
 
 button:disabled {
   background-color: var(--btn-disabled);
+  cursor: not-allowed;
 }
 
 input:disabled {
   background-color: var(--btn-disabled);
+  cursor: not-allowed;
 }
 
 button:not(:disabled):hover {
