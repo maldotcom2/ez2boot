@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"ez2boot/internal/config"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -11,6 +12,9 @@ import (
 )
 
 func main() {
+	var version = "dev"
+	var buildDate = "unknown"
+
 	// Load env vars
 	cfg, err := config.GetEnvVars()
 	if err != nil {
@@ -20,12 +24,14 @@ func main() {
 	// Create logger
 	logger := initLogger(cfg)
 
+	logger.Info(fmt.Sprintf("ez2boot version %s date %s", version, buildDate))
+
 	// Connect to db and hold connection open
 	conn, repo := initDatabase(logger)
 	defer conn.Close()
 
 	// Setup domain/service structs
-	mw, wkr, handlers, services := initServices(cfg, repo, logger)
+	mw, wkr, handlers, services := initServices(version, buildDate, cfg, repo, logger)
 
 	// Setup DB tables
 	if err := repo.SetupDB(); err != nil {

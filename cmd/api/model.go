@@ -8,6 +8,7 @@ import (
 	"ez2boot/internal/server"
 	"ez2boot/internal/session"
 	"ez2boot/internal/user"
+	"ez2boot/internal/util"
 )
 
 type Services struct {
@@ -24,6 +25,7 @@ type Handlers struct {
 	ServerHandler       *server.Handler
 	SessionHandler      *session.Handler
 	NotificationHandler *notification.Handler
+	UtilHandler         *util.Handler
 	EmailHandler        *email.Handler
 	TelegramHandler     *telegram.Handler
 }

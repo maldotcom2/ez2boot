@@ -27,8 +27,10 @@ COPY . .
 
 RUN go mod download
 
-RUN go build -o api ./cmd/api
+ARG VERSION="dev"
+ARG BUILD_DATE="unknown"
 
+RUN go build -ldflags "-X main.Version=${VERSION} -X main.BuildDate=${BUILD_DATE}" -o api ./cmd/api
 
 # Final
 FROM debian:bookworm-slim

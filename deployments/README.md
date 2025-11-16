@@ -15,7 +15,9 @@ https://github.com/niXman/mingw-builds-binaries/releases/download/15.2.0-rt_v13-
 
 Testing containerised app:
 - Ensure Docker is running locally, eg Docker Deskop
-- CD to the deployments directory
+- CD to the deployments directory and run the single command to build and bring the container online:
 - ```docker compose up --build -d```
+- Alternatively, to run the build only, run the below command from the project root:
+- ```docker build -f deployments/Dockerfile -t ez2boot:test .```
 
 NOTE: C compiler is not required for containerised testing as the build stage is performed within a container which already has one

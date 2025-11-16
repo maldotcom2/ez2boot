@@ -24,6 +24,7 @@ func setupBackendRoutes(
 
 	publicRouter.HandleFunc("/user/login", handlers.UserHandler.Login()).Methods("POST")
 	publicRouter.HandleFunc("/mode", handlers.UserHandler.GetMode()).Methods("GET")
+	publicRouter.HandleFunc("/version", handlers.UtilHandler.GetVersion()).Methods("GET")
 	if cfg.SetupMode {
 		publicRouter.HandleFunc("/setup", handlers.UserHandler.CreateFirstTimeUser()).Methods("POST")
 	}

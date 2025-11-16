@@ -11,11 +11,12 @@ import (
 	"ez2boot/internal/server"
 	"ez2boot/internal/session"
 	"ez2boot/internal/user"
+	"ez2boot/internal/util"
 	"ez2boot/internal/worker"
 	"log/slog"
 )
 
-func initServices(cfg *config.Config, repo *db.Repository, logger *slog.Logger) (*middleware.Middleware, *worker.Worker, *Handlers, *Services) {
+func initServices(version string, buildDate string, cfg *config.Config, repo *db.Repository, logger *slog.Logger) (*middleware.Middleware, *worker.Worker, *Handlers, *Services) {
 	// Notification
 	notificationRepo := &notification.Repository{Base: repo}
 	notificationService := &notification.Service{Repo: notificationRepo, Logger: logger}
@@ -35,6 +36,9 @@ func initServices(cfg *config.Config, repo *db.Repository, logger *slog.Logger) 
 	sessionRepo := &session.Repository{Base: repo}
 	sessionService := &session.Service{Repo: sessionRepo, NotificationService: notificationService, UserService: userService, Logger: logger}
 	sessionHandler := &session.Handler{Service: sessionService, Logger: logger}
+
+	// Util
+	utilHandler := &util.Handler{Version: version, BuildDate: buildDate}
 
 	// Email
 	emailRepo := &email.Repository{Base: repo}
@@ -61,6 +65,7 @@ func initServices(cfg *config.Config, repo *db.Repository, logger *slog.Logger) 
 		ServerHandler:       serverHandler,
 		SessionHandler:      sessionHandler,
 		NotificationHandler: notificationHandler,
+		UtilHandler:         utilHandler,
 		EmailHandler:        emailHandler,
 		TelegramHandler:     telegramHandler,
 	}
