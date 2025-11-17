@@ -101,9 +101,9 @@ func (h *Handler) Login() http.HandlerFunc {
 			Value:    token,
 			Path:     "/",
 			Expires:  time.Now().Add(h.Service.Config.UserSessionDuration),
-			SameSite: http.SameSiteNoneMode,
+			SameSite: http.SameSiteStrictMode, // Use SameSiteLaxMode for testing
 			HttpOnly: true,
-			Secure:   true,
+			Secure:   true, // Use false for testing
 		})
 
 		h.Logger.Info("User logged in", "email", u.Email)

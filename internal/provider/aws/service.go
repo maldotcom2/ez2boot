@@ -21,7 +21,7 @@ func (s *Service) Scrape() error {
 
 	ec2Client := getEC2Client(awsCFG)
 
-	input := getDescribeInstancesInput(s.Config.TagKey)
+	input := getDescribeInstancesInput(s.Config.TagKey) // Target tagged instances
 
 	// Describe instances from AWS. Max 1000 responses without pagination
 	result, err := ec2Client.DescribeInstances(context.TODO(), input)
@@ -35,15 +35,15 @@ func (s *Service) Scrape() error {
 		for _, inst := range reservation.Instances {
 
 			// Add to struct
-			var s = server.Server{
+			var svr = server.Server{
 				UniqueID:    aws.ToString(inst.InstanceId),
 				Name:        getTagValue(inst, "Name"),
-				State:       string(inst.State.Name),
+				State:       mapState(string(inst.State.Name)),
 				ServerGroup: getTagValue(inst, s.Config.TagKey),
 				TimeAdded:   time.Now().Unix(),
 			}
 
-			servers = append(servers, s)
+			servers = append(servers, svr)
 		}
 	}
 

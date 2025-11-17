@@ -63,11 +63,6 @@ func GetEnvVars() (*Config, error) {
 		awsRegion = "ap-southeast-2" //default
 	}
 
-	userNotifications := os.Getenv("USER_NOTIFICATIONS")
-	if userNotifications == "" {
-		userNotifications = "disabled" //default
-	}
-
 	userSessionDurationStr := os.Getenv("USER_SESSION_DURATION")
 	if userSessionDurationStr == "" {
 		userSessionDurationStr = "6h" //default
@@ -89,7 +84,7 @@ func GetEnvVars() (*Config, error) {
 
 	rateLimitStr := os.Getenv("RATE_LIMIT")
 	if rateLimitStr == "" {
-		rateLimitStr = "3" //default
+		rateLimitStr = "20" //default
 	}
 
 	rateLimit, err := strconv.Atoi(rateLimitStr)

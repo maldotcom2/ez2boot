@@ -43,6 +43,8 @@ COPY --from=frontend-build /web/dist /app/web
 # Copy Go binary
 COPY --from=backend-build /app/api /app/api
 
+RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
+
 EXPOSE 8000
 
 CMD ["/app/api"]
