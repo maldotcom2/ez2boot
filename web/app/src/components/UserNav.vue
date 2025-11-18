@@ -4,6 +4,7 @@
     <button @click="toggleUserDropdown">Menu</button>
     <div v-if="isOpen" class="dropdown">
       <button v-if="userState.isAdmin" @click="$router.push('/adminpanel')">Admin Panel</button>
+      <button @click="dashboard">Dashboard</button>
       <button @click="settings">Settings</button>
       <button @click="logout">Logout</button>
     </div>
@@ -18,22 +19,19 @@ import { userState } from '@/user.js'
 
 const isOpen = ref(false)
 const router = useRouter()
-const email = ref('')
-const password = ref('')
 const error = ref('')
 
 function toggleUserDropdown() {
   isOpen.value = !isOpen.value
 }
 
+function dashboard() {
+  router.push("/dashboard")
+}
+
 async function logout() {
     try {
-        const response = await axios.post(
-            'ui/user/logout',
-            {
-                withCredentials: true // Cookies
-            }
-        )
+        const response = await axios.post('ui/user/logout',{withCredentials: true})
         console.log('logout successful', response.data)
         router.push('/login')
 
