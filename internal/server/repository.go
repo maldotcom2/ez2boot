@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"strings"
 )
 
 // Return all servers from catalogue - names and groups
@@ -26,10 +27,20 @@ func (r *Repository) getServers() (map[string][]Server, error) {
 	return servers, nil
 }
 
-func (r *Repository) deleteObsolete(ids []interface{}, placeholderStr string) error {
-	query := fmt.Sprintf(`DELETE FROM servers WHERE unique_id NOT IN (%s)`, placeholderStr)
-	_, err := r.Base.DB.Exec(query, ids...) // expand
-	if err != nil {
+func (r *Repository) deleteObsolete(ids []any) error {
+	if len(ids) == 0 {
+		_, err := r.Base.DB.Exec("DELETE FROM servers")
+		return err
+	}
+
+	// Build string of positional placeholders eg $1, $2, $3
+	placeholders := make([]string, len(ids))
+	for i := range ids {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+	}
+
+	query := fmt.Sprintf("DELETE FROM servers WHERE unique_id NOT IN (%s)", strings.Join(placeholders, ", "))
+	if _, err := r.Base.DB.Exec(query, ids...); err != nil {
 		return err
 	}
 
@@ -52,7 +63,7 @@ func (r *Repository) addOrUpdate(server Server) error {
 
 // Get server IDs which are pending a state change
 func (r *Repository) getPending(currentState string, nextState string) ([]string, error) {
-	rows, err := r.Base.DB.Query(`SELECT unique_id FROM servers WHERE state = $1 AND next_state = $2`, currentState, nextState)
+	rows, err := r.Base.DB.Query("SELECT unique_id FROM servers WHERE state = $1 AND next_state = $2", currentState, nextState)
 	if err != nil {
 		return nil, err
 	}

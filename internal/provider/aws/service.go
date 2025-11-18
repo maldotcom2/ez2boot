@@ -47,13 +47,8 @@ func (s *Service) Scrape() error {
 		}
 	}
 
-	// Check number of servers returned from scrape
-	if len(servers) > 0 {
-		s.Logger.Debug("Scraper found matching servers", "count", len(servers))
-		s.ServerService.UpdateServers(servers)
-	} else {
-		s.Logger.Debug("Scraper found no matching servers")
-	}
+	s.Logger.Debug("Scraped and found number of matching servers", "count", len(servers))
+	s.ServerService.UpdateServers(servers)
 
 	return nil
 }
