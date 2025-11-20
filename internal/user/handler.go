@@ -10,6 +10,20 @@ import (
 	"time"
 )
 
+func (h *Handler) GetUsers() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		users, err := h.Service.getUsers()
+		if err != nil {
+			h.Logger.Error("Error while fetching users", "error", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Error while fetching users"})
+			return
+		}
+
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: users})
+	}
+}
+
 // UI endpoint for runtime state and bootstrap flow // TODO Does this belong here?
 func (h *Handler) GetMode() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

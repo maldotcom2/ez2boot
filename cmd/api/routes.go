@@ -61,6 +61,7 @@ func setupBackendRoutes(
 	uiRouter.HandleFunc("/session/new", handlers.SessionHandler.NewServerSession()).Methods("POST")
 	uiRouter.HandleFunc("/session/update", handlers.SessionHandler.UpdateServerSession()).Methods("PUT")
 	//// Users
+	uiRouter.HandleFunc("/users", handlers.UserHandler.GetUsers()).Methods("GET")
 	uiRouter.HandleFunc("/user/session", handlers.UserHandler.CheckSession()).Methods("GET")
 	uiRouter.HandleFunc("/user/auth", handlers.UserHandler.GetUserAuthorisation()).Methods("GET")
 	uiRouter.HandleFunc("/user/new", handlers.UserHandler.CreateUser()).Methods("POST")

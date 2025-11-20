@@ -16,7 +16,7 @@ const props = defineProps({
 // Emits for v-model
 const emit = defineEmits(['update:modelValue'])
 
-import UserManagement from './UserManagement.vue'
+import UserManagement from './AdminUserMgmt.vue'
 import AdminSettings from './AdminSettings.vue'
 
 // Update parent when button clicked

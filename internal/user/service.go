@@ -11,6 +11,15 @@ import (
 	"github.com/alexedwards/argon2id"
 )
 
+func (s *Service) getUsers() ([]User, error) {
+	users, err := s.Repo.getUsers()
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
 // Attempt user login using even-time
 func (s *Service) login(u UserLogin) (string, error) {
 	if u.Email == "" || u.Password == "" {
@@ -163,6 +172,12 @@ func (s *Service) AuthenticateUser(email string, password string) (int64, bool, 
 
 	if id == 0 { // User doesn't exist
 		return 0, false, shared.ErrUserNotFound
+	}
+
+	if match {
+		if err = s.Repo.updateLastLogin(id); err != nil {
+			return 0, false, err
+		}
 	}
 
 	return id, match, nil

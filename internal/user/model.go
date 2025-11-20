@@ -40,6 +40,16 @@ type UserSession struct {
 	Token         string
 }
 
+// For get request only
+type User struct {
+	Email      string `json:"email"`
+	IsActive   bool   `json:"is_active"`
+	IsAdmin    bool   `json:"is_admin"`
+	APIEnabled bool   `json:"api_enabled"`
+	UIEnabled  bool   `json:"ui_enabled"`
+	LastLogin  *int64 `json:"last_login"`
+}
+
 type CreateUserRequest struct {
 	UserID     int64
 	Email      string `json:"email"`
@@ -50,6 +60,7 @@ type CreateUserRequest struct {
 	UIEnabled  bool   `json:"ui_enabled"`
 }
 
+// Intermediate stuct used after password hashing
 type CreateUser struct {
 	UserID       int64
 	Email        string

@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Setup from '@/components/Setup.vue'
 import Login from '@/components/Login.vue'
 import Dashboard from '@/components/Dashboard.vue'
-import AdminPanel from '@/components/AdminPanel.vue'
+import AdminPanel from '@/components/AdminMain.vue'
 import axios from 'axios'
 
 

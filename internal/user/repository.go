@@ -8,10 +8,40 @@ import (
 	"github.com/mattn/go-sqlite3"
 )
 
+func (r *Repository) getUsers() ([]User, error) {
+	rows, err := r.Base.DB.Query("SELECT email, is_active, is_admin, api_enabled, ui_enabled, last_login FROM users")
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	users := []User{}
+
+	for rows.Next() {
+		var u User
+		if err = rows.Scan(&u.Email, &u.IsActive, &u.IsAdmin, &u.APIEnabled, &u.UIEnabled, &u.LastLogin); err != nil {
+			return nil, err
+		}
+
+		users = append(users, u)
+	}
+
+	return users, nil
+}
+
 // Login UI user
 func (r *Repository) createUserSession(tokenHash string, expiry int64, userID int64) error {
 	// Write hash, expiry and user ID
 	if _, err := r.Base.DB.Exec("INSERT INTO user_sessions (token_hash, session_expiry, user_id) VALUES ($1, $2, $3)", tokenHash, expiry, userID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Repository) updateLastLogin(userID int64) error {
+	if _, err := r.Base.DB.Exec("UPDATE users SET last_login = $1 WHERE id = $2", time.Now().Unix(), userID); err != nil {
 		return err
 	}
 
