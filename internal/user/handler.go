@@ -26,9 +26,17 @@ func (h *Handler) GetUsers() http.HandlerFunc {
 
 func (h *Handler) UpdateUserAuthorisation() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		userID, ok := r.Context().Value(contextkey.UserIDKey).(int64)
+		if !ok {
+			h.Logger.Error("User ID not found in context")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User ID not found in context"})
+			return
+		}
+
 		var req []UpdateUserRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			h.Logger.Info("Malformed request", "error", err)
+			h.Logger.Error("Malformed request", "error", err)
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
 			return
@@ -39,14 +47,27 @@ func (h *Handler) UpdateUserAuthorisation() http.HandlerFunc {
 			return // Response written by helper
 		}
 
-		if err := h.Service.updateUserAuthorisation(req); err != nil {
-			h.Logger.Info("Error updating user authorisation", "error", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Error updating user authorisation"})
+		if err := h.Service.updateUserAuthorisation(req, userID); err != nil {
+			var resp shared.ApiResponse[any]
+			switch {
+			case errors.Is(err, shared.ErrCannotModifyOwnAuth):
+				h.Logger.Error("User cannot modify their own authorisations")
+				w.WriteHeader(http.StatusBadRequest)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   err.Error(),
+				}
+			default:
+				h.Logger.Info("Error updating user authorisation", "error", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				resp = (shared.ApiResponse[any]{
+					Success: false,
+					Error:   "Error updating user authorisation"})
+			}
+
+			json.NewEncoder(w).Encode(resp)
 			return
 		}
-
-		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
 
@@ -97,7 +118,7 @@ func (h *Handler) Login() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var u UserLogin
 		if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
-			h.Logger.Info("Malformed request", "email", u.Email, "error", err)
+			h.Logger.Error("Malformed request", "email", u.Email, "error", err)
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
 			return
@@ -124,7 +145,7 @@ func (h *Handler) Login() http.HandlerFunc {
 					Error:   shared.ErrAuthenticationFailed.Error(),
 				}
 			default:
-				h.Logger.Info("Failed to login", "email", u.Email, "error", err)
+				h.Logger.Error("Failed to login", "email", u.Email, "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				resp = shared.ApiResponse[any]{
 					Success: false,

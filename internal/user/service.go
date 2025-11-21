@@ -20,7 +20,13 @@ func (s *Service) getUsers() ([]User, error) {
 	return users, nil
 }
 
-func (s *Service) updateUserAuthorisation(users []UpdateUserRequest) error {
+func (s *Service) updateUserAuthorisation(users []UpdateUserRequest, currentUserID int64) error {
+	for _, u := range users {
+		if u.UserID == currentUserID {
+			return shared.ErrCannotModifyOwnAuth
+		}
+	}
+
 	if err := s.Repo.updateUserAuthorisation(users); err != nil {
 		return err
 	}
