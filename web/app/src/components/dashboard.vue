@@ -64,8 +64,10 @@ async function getVersion() {
 onMounted(async () => {
     try {
       const response = await getUserAuth()
+      userState.userID = response.data.user_id
       userState.email = response.data.email
       userState.isAdmin = response.data.is_admin
+      console.log('Current user id is', userState.userID)
       console.log('Current user is', userState.email)
       console.log('User is admin', userState.isAdmin)
     } catch (err) {

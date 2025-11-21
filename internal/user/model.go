@@ -82,7 +82,7 @@ type CreateUser struct {
 }
 
 type UserAuthRequest struct {
-	UserID     int64
+	UserID     int64  `json:"user_id"`
 	Email      string `json:"email"`
 	IsActive   bool   `json:"is_active"`
 	IsAdmin    bool   `json:"is_admin"`
