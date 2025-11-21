@@ -24,6 +24,32 @@ func (h *Handler) GetUsers() http.HandlerFunc {
 	}
 }
 
+func (h *Handler) UpdateUserAuthorisation() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req []UpdateUserRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			h.Logger.Info("Malformed request", "error", err)
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
+			return
+		}
+
+		// Admin check
+		if !h.userIsAdmin(w, r) {
+			return // Response written by helper
+		}
+
+		if err := h.Service.updateUserAuthorisation(req); err != nil {
+			h.Logger.Info("Error updating user authorisation", "error", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Error updating user authorisation"})
+			return
+		}
+
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
+	}
+}
+
 // UI endpoint for runtime state and bootstrap flow // TODO Does this belong here?
 func (h *Handler) GetMode() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

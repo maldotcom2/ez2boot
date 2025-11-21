@@ -20,6 +20,14 @@ func (s *Service) getUsers() ([]User, error) {
 	return users, nil
 }
 
+func (s *Service) updateUserAuthorisation(users []UpdateUserRequest) error {
+	if err := s.Repo.updateUserAuthorisation(users); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Attempt user login using even-time
 func (s *Service) login(u UserLogin) (string, error) {
 	if u.Email == "" || u.Password == "" {

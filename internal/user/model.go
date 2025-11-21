@@ -42,12 +42,22 @@ type UserSession struct {
 
 // For get request only
 type User struct {
+	UserID     int64  `json:"user_id"`
 	Email      string `json:"email"`
 	IsActive   bool   `json:"is_active"`
 	IsAdmin    bool   `json:"is_admin"`
 	APIEnabled bool   `json:"api_enabled"`
 	UIEnabled  bool   `json:"ui_enabled"`
 	LastLogin  *int64 `json:"last_login"`
+}
+
+// Used for admin panel user updates
+type UpdateUserRequest struct {
+	UserID     int64 `json:"user_id"`
+	IsActive   bool  `json:"is_active"`
+	IsAdmin    bool  `json:"is_admin"`
+	APIEnabled bool  `json:"api_enabled"`
+	UIEnabled  bool  `json:"ui_enabled"`
 }
 
 type CreateUserRequest struct {

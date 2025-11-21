@@ -9,7 +9,7 @@ import (
 )
 
 func (r *Repository) getUsers() ([]User, error) {
-	rows, err := r.Base.DB.Query("SELECT email, is_active, is_admin, api_enabled, ui_enabled, last_login FROM users")
+	rows, err := r.Base.DB.Query("SELECT id, email, is_active, is_admin, api_enabled, ui_enabled, last_login FROM users")
 	if err != nil {
 		return nil, err
 	}
@@ -20,7 +20,7 @@ func (r *Repository) getUsers() ([]User, error) {
 
 	for rows.Next() {
 		var u User
-		if err = rows.Scan(&u.Email, &u.IsActive, &u.IsAdmin, &u.APIEnabled, &u.UIEnabled, &u.LastLogin); err != nil {
+		if err = rows.Scan(&u.UserID, &u.Email, &u.IsActive, &u.IsAdmin, &u.APIEnabled, &u.UIEnabled, &u.LastLogin); err != nil {
 			return nil, err
 		}
 
@@ -28,6 +28,25 @@ func (r *Repository) getUsers() ([]User, error) {
 	}
 
 	return users, nil
+}
+
+// Bulk update from admin panel
+func (r *Repository) updateUserAuthorisation(users []UpdateUserRequest) error {
+	tx, err := r.Base.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	for _, u := range users {
+		if _, err := tx.Exec("UPDATE users SET is_active = $1, is_admin = $2, api_enabled = $3, ui_enabled = $4 WHERE id = $5", u.IsActive, u.IsAdmin, u.APIEnabled, u.UIEnabled, u.UserID); err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	tx.Commit()
+
+	return nil
 }
 
 // Login UI user
