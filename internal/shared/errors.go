@@ -21,4 +21,5 @@ var (
 	ErrEmailMissing            = errors.New("email field missing")
 	ErrOldOrNewPasswordMissing = errors.New("old_password and new_password field required")
 	ErrCannotModifyOwnAuth     = errors.New("cannot modify own authorisation")
+	ErrCannotDeleteOwnUser     = errors.New("cannot delete own user")
 )

@@ -66,6 +66,7 @@ func setupBackendRoutes(
 	uiRouter.HandleFunc("/user/auth", handlers.UserHandler.GetUserAuthorisation()).Methods("GET")
 	uiRouter.HandleFunc("/user/auth/update", handlers.UserHandler.UpdateUserAuthorisation()).Methods("POST")
 	uiRouter.HandleFunc("/user/new", handlers.UserHandler.CreateUser()).Methods("POST")
+	uiRouter.HandleFunc("/user/delete", handlers.UserHandler.DeleteUser()).Methods("DELETE")
 	uiRouter.HandleFunc("/user/changepassword", handlers.UserHandler.ChangePassword()).Methods("PUT")
 	uiRouter.HandleFunc("/user/logout", handlers.UserHandler.Logout()).Methods("POST")
 

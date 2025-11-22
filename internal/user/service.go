@@ -127,6 +127,18 @@ func (s *Service) createUser(req CreateUserRequest) error {
 	return nil
 }
 
+func (s *Service) deleteUser(targetUserID int64, currentUserID int64) error {
+	if targetUserID == currentUserID {
+		return shared.ErrCannotDeleteOwnUser
+	}
+
+	if err := s.Repo.deleteUser(targetUserID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Change a password for authenticated user
 func (s *Service) changePassword(req ChangePasswordRequest) (string, error) {
 	// Get email of authenticated user

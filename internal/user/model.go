@@ -60,6 +60,10 @@ type UpdateUserRequest struct {
 	UIEnabled  bool  `json:"ui_enabled"`
 }
 
+type DeleteUserRequest struct {
+	UserID int64 `json:"user_id"`
+}
+
 type CreateUserRequest struct {
 	UserID     int64
 	Email      string `json:"email"`

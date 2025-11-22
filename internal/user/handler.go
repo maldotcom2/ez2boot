@@ -290,6 +290,60 @@ func (h *Handler) CreateUser() http.HandlerFunc {
 	}
 }
 
+func (h *Handler) DeleteUser() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID, ok := r.Context().Value(contextkey.UserIDKey).(int64)
+		if !ok {
+			h.Logger.Error("User ID not found in context")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User ID not found in context"})
+			return
+		}
+
+		var req DeleteUserRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			h.Logger.Error("Malformed request", "error", err)
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
+			return
+		}
+
+		// Admin check
+		if !h.userIsAdmin(w, r) {
+			return // Response written by helper
+		}
+
+		email, err := h.Service.GetEmailFromUserID(req.UserID)
+		if err != nil {
+			h.Logger.Error("Failed to get email from userID", "error", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to get email from userID"})
+		}
+
+		var resp shared.ApiResponse[any]
+		if err := h.Service.deleteUser(req.UserID, userID); err != nil {
+			if errors.Is(err, shared.ErrCannotDeleteOwnUser) {
+				h.Logger.Error("User attempted to delete own user", "email", email)
+				w.WriteHeader(http.StatusBadRequest)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   shared.ErrCannotDeleteOwnUser.Error(),
+				}
+			} else {
+				h.Logger.Error("Failed to delete user", "error", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "Failed to delete user",
+				}
+			}
+
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
+	}
+}
+
 // Handler to bootstrap initial user creation - username and password input
 func (h *Handler) CreateFirstTimeUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

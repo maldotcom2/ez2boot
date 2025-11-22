@@ -24,7 +24,7 @@
           <td><input type="checkbox" v-model="user.api_enabled" @change="markChanged(user.user_id)" :disabled="user.user_id === currentUserId"/></td>
           <td><input type="checkbox" v-model="user.ui_enabled" @change="markChanged(user.user_id)" :disabled="user.user_id === currentUserId"/></td>
           <td>{{ user.last_login ? new Date(user.last_login * 1000).toLocaleString() : '-' }}</td>
-          <td>"Delete"</td>
+          <td><button @click="deleteUser(user.user_id)" :disabled="user.user_id === currentUserId">Delete User</button></td>
         </tr>
       </tbody>
     </table>
@@ -51,6 +51,20 @@ async function getUsers() {
 
     } catch (err) {
     console.error('Error loading users:', err)
+  }
+}
+
+async function deleteUser(userID) {
+  try {
+    await axios.delete('/ui/user/delete',
+      {
+        data: { user_id: userID },
+        withCredentials: true
+      }
+    )
+    getUsers()
+  } catch (err) {
+    console.error('Error deleting user:', err)
   }
 }
 
