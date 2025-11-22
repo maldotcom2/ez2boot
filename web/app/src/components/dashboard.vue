@@ -13,31 +13,11 @@ import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import UserNav from './UserNav.vue'
 import ServerSummary from './ServerSummary.vue'
-import { userState } from '@/user.js'
+import { useUserStore } from '@/stores/user'
 
+const user = useUserStore()
 const error = ref('')
 const versionInfo = ref({ version: '', buildDate: '' })
-
-// Get user authorisation values
-async function getUserAuth() {
-    try {
-        const response = await axios.get('ui/user/auth', {withCredentials: true})
-        console.log('got user auth', response.data)
-        return response.data   
-  } catch (err) {
-    if (err.response) {
-        // Get server response
-        error.value = `User auth fetch failed: ${err.response.data.error || err.response.statusText}`
-    } else if (err.request) {
-        // No response
-        error.value = 'No response from server'
-    } else {
-        // other errors
-        error.value = err.message
-    }
-    console.log(error.value)
-  }
-}
 
 async function getVersion() {
   try {
@@ -63,15 +43,12 @@ async function getVersion() {
 
 onMounted(async () => {
     try {
-      const response = await getUserAuth()
-      userState.userID = response.data.user_id
-      userState.email = response.data.email
-      userState.isAdmin = response.data.is_admin
-      console.log('Current user id is', userState.userID)
-      console.log('Current user is', userState.email)
-      console.log('User is admin', userState.isAdmin)
+      await user.loadUser()
+      console.log('Current user id is', user.userID)
+      console.log('Current user is', user.email)
+      console.log('User is admin', user.isAdmin)
     } catch (err) {
-      console.error('Could not fetch user on page load', err)
+      console.error("Failed to load user", user.error)
     }
 
     try {

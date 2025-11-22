@@ -1,9 +1,9 @@
 <template>
 <div class="user-nav">
-    <p>{{ userState.email }}</p>
+    <p>{{ user.email }}</p>
     <button @click="toggleUserDropdown">Menu</button>
     <div v-if="isOpen" class="dropdown">
-      <button v-if="userState.isAdmin" @click="$router.push('/adminpanel')">Admin Panel</button>
+      <button v-if="user.isAdmin" @click="$router.push('/adminpanel')">Admin Panel</button>
       <button @click="dashboard">Dashboard</button>
       <button @click="settings">Settings</button>
       <button @click="logout">Logout</button>
@@ -12,11 +12,12 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
-import { userState } from '@/user.js'
+import { useUserStore } from '@/stores/user'
 
+const user = useUserStore()
 const isOpen = ref(false)
 const router = useRouter()
 const error = ref('')
@@ -49,6 +50,14 @@ async function logout() {
     console.log(error.value)
   }
 }
+
+onMounted(async () => {
+    try {
+      await user.loadUser()
+    } catch (err) {
+      console.error("Failed to load user", user.error)
+    }
+})
 </script>
 
 <style scoped>

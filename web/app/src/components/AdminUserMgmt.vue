@@ -21,7 +21,7 @@
           <td>{{ user.email }}</td>
           <td><input type="checkbox" v-model="user.is_active" @change="markChanged(user.user_id)" :disabled="user.user_id === currentUserId"/></td>
           <td><input type="checkbox" v-model="user.is_admin" @change="markChanged(user.user_id)" :disabled="user.user_id === currentUserId"/></td>
-          <td><input type="checkbox" v-model="user.api_enabled" @change="markChanged(user.user_id)"/></td>
+          <td><input type="checkbox" v-model="user.api_enabled" @change="markChanged(user.user_id)" :disabled="user.user_id === currentUserId"/></td>
           <td><input type="checkbox" v-model="user.ui_enabled" @change="markChanged(user.user_id)" :disabled="user.user_id === currentUserId"/></td>
           <td>{{ user.last_login ? new Date(user.last_login * 1000).toLocaleString() : '-' }}</td>
           <td>"Delete"</td>
@@ -34,10 +34,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
-import { userState } from '@/user.js'
+import { useUserStore } from '@/stores/user'
+const user = useUserStore()
 
 const users = ref([])
-const currentUserId = ref(userState.userID)
+const currentUserId = ref(user.userID)
 const changedUsers = ref(new Set())
 
 // Load table data from specialised endpoint
@@ -53,8 +54,9 @@ async function getUsers() {
   }
 }
 
-onMounted(() => {
-  getUsers()
+onMounted(async () => {
+  await getUsers()
+  await user.loadUser()
 })
 
 // Called on checkbox change

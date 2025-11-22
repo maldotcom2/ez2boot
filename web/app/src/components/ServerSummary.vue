@@ -23,18 +23,18 @@
           <td>{{ server.current_user || '-' }}</td>
           <td>
             <div class="controls-container">
-              <input v-model="duration[server.server_group]" placeholder="eg 3h" :disabled="server.current_user && server.current_user !== userState.email" />
+              <input v-model="duration[server.server_group]" placeholder="eg 3h" :disabled="server.current_user && server.current_user !== user.email" />
                 <!-- Start Session enabled if nobody is using it -->
               <button @click="startServerSession(server.server_group)"
               :disabled="!!server.current_user || !duration[server.server_group]">Start Session</button>
 
               <!-- Extend Session enabled for current user -->
               <button @click="updateServerSession(server.server_group)"
-              :disabled="server.current_user !== userState.email || !duration[server.server_group]">Update Session</button>
+              :disabled="server.current_user !== user.email || !duration[server.server_group]">Update Session</button>
 
               <!-- End Session enabled for current user-->
               <button @click="endServerSession(server.server_group)"
-              :disabled="server.current_user !== userState.email">End Session</button>
+              :disabled="server.current_user !== user.email">End Session</button>
             </div>
           </td>
         </tr>
@@ -46,8 +46,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
-import { userState } from '@/user.js'
+import { useUserStore } from '@/stores/user'
 
+const user = useUserStore()
 const servers = ref([])
 const duration = ref({})
 
@@ -139,8 +140,19 @@ function validateDuration(duration) {
 }
 
 // Load table on page load
-onMounted(() => {
-  loadServerSessions()
+onMounted(async () => {
+  try {
+    await user.loadUser()
+  } catch (err) {
+    console.error("Failed to load user", user.error)
+  }
+
+  try {
+    await loadServerSessions()
+  } catch (err) {
+    console.error("Failed to load server sessions")
+  }
+  
 })
 </script>
 

@@ -12,10 +12,10 @@
 
 <script setup>
 import UserNav from './UserNav.vue'
-import { ref } from 'vue'
+import { shallowRef } from 'vue'
 import AdminMenu from './AdminMenu.vue'
 
-const currentComponent = ref(null) // default view on load
+const currentComponent = shallowRef(null) // default view on load
 </script>
 
 <style scoped>
