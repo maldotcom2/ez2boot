@@ -3,9 +3,9 @@
     <UserNav />
   </header>
   <div class="admin-panel">
-    <<AdminMenu v-model="currentComponent" />
+    <AdminMenu v-model="currentComponent" />
     <main class="content">
-      <component :is="currentComponent" />
+      <component :is="currentComponent" @switch-pane="currentComponent = $event" />
     </main>
   </div>
 </template>
@@ -14,8 +14,9 @@
 import UserNav from './UserNav.vue'
 import { shallowRef } from 'vue'
 import AdminMenu from './AdminMenu.vue'
+import UserManagement from './AdminUserMgmt.vue'
 
-const currentComponent = shallowRef(null) // default view on load
+const currentComponent = shallowRef(UserManagement) // default view on load
 </script>
 
 <style scoped>

@@ -1,7 +1,8 @@
 <template>
 <p>User Management</p>
   <div class="user-mgmt-container">
-    <div class="user-mgmt-container">
+    <div class="user-btn-container">
+      <button @click="createUser()">Create User</button>
       <button @click="saveChanges" :disabled="changedUsers.size === 0">Save Changes</button>
     </div>
     <table class="user-mgmt-table">
@@ -35,8 +36,11 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { useUserStore } from '@/stores/user'
-const user = useUserStore()
+import AdminCreateUser from './AdminCreateUser.vue'
 
+const emit = defineEmits(['switch-pane'])
+
+const user = useUserStore()
 const users = ref([])
 const currentUserId = ref(user.userID)
 const changedUsers = ref(new Set())
@@ -97,11 +101,27 @@ async function saveChanges() {
   }
 }
 
+function createUser() {
+  // Swap the right pane to Create User
+  emit('switch-pane', AdminCreateUser)
+}
+
 </script>
 
 <style scoped>
 p {
     color: var(--low-glare)
+}
+
+.user-btn-container {
+  display: flex;
+  margin-bottom: 5px;
+  justify-content: right;
+  gap: 5px;
+}
+
+.user-btn-container button {
+  width: 130px;
 }
 
 .user-mgmt-table {
