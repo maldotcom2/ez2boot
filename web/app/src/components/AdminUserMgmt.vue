@@ -1,5 +1,4 @@
 <template>
-<p>User Management</p>
   <div class="user-mgmt-container">
     <div class="user-btn-container">
       <button @click="createUser()">Create User</button>
@@ -14,7 +13,7 @@
           <th>API</th>
           <th>UI</th>
           <th>Last Login</th>
-          <th>Delete User</th>
+          <th>Action</th>
         </tr>
       </thead>
       <tbody>
@@ -111,6 +110,12 @@ function createUser() {
 <style scoped>
 p {
     color: var(--low-glare)
+}
+
+.user-mgmt-container {
+  background-color: var(--container-modal);
+  padding: 12px;
+  border-radius: 7px;
 }
 
 .user-btn-container {

@@ -1,18 +1,14 @@
 <template>
   <div class="centre-container">
-    <div class="create-user-form">
-      <form @submit.prevent="createUser">
+      <form class="create-user-form" @submit.prevent="createUser">
         <p class="prompt">Create User</p>
         <input v-model="email" placeholder="Email" />
         <input v-model="password" type="password" placeholder="Password" />
         <input v-model="confirmPassword" type="password" placeholder="Confirm Password" />
         <p v-if="!passwordsMatch && confirmPassword.length > 0" class="error">Passwords do not match</p>
-        <div class="buttons">
-          <button type="submit" :disabled="!passwordsMatch || !email || !password || !confirmPassword">Create</button>
-        </div>
+        <button type="submit" :disabled="!passwordsMatch || !email || !password || !confirmPassword">Create</button>
         <p v-if="error" class="error">{{ error }}</p>
       </form>
-    </div>
   </div>
 </template>
 
@@ -66,6 +62,7 @@ async function createUser() {
   justify-content: center;
   align-items: center;
   height: 100%;
+  outline: none;
 }
 
 .create-user-form {
@@ -75,10 +72,14 @@ async function createUser() {
   justify-content: center;
   align-items: center;
   padding: 40px;
-  width: 400px; /* fixed width like login form */
-  gap: 5px;
-  border-radius: 15px;
-  outline: none;
+  width: 300px;
+  gap: 15px;
+  border-radius: var(--big-radius);
+  outline: auto;
+}
+
+.create-user-form button{
+  width: 150px;
 }
 
 .prompt {
@@ -96,13 +97,6 @@ button {
   width: 100%;
   padding: 8px 0;
   margin-top: 5px;
-}
-
-.buttons {
-  display: flex;
-  gap: 10px;
-  width: 100%;
-  justify-content: space-between;
 }
 
 .error {

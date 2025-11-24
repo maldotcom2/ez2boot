@@ -1,14 +1,14 @@
 <template>
   <div class="centre-container" >
-    <div class="login-form" >
+    <form class="login-form" @submit.prevent="login">
       <p class="prompt">Login</p>
       <input v-model="email" placeholder="Email" />
       <input v-model="password" type="password" placeholder="Password" />
-      <button @click="login">Login</button>
+      <button type="submit" :disabled="!email || !password">Login</button>
       <div class="message-container" >
         <p class="message" :class="{error: error}" v-if="error">{{ error }}</p>
       </div>
-    </div>
+    </form>
   </div>
 </template>
 
@@ -69,10 +69,10 @@ async function login() {
   justify-content: center;
   align-items: center;
   padding: 40px;
-  width: 25%;
+  width: 300px;
   gap: 15px;
-  border-radius:15px;
-  outline: none;
+  border-radius: var(--big-radius);
+  outline: auto;
 }
 
 .message-container {
@@ -86,7 +86,8 @@ async function login() {
 
 input {
   height: 30px;
-  width: 50%;
+  width: 100%;
+  padding: 5px;
 }
 
 button {

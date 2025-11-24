@@ -33,6 +33,7 @@ function dashboard() {
 async function logout() {
     try {
         const response = await axios.post('ui/user/logout',{withCredentials: true})
+        user.$reset() // purge Pinia store
         console.log('logout successful', response.data)
         router.push('/login')
 
@@ -78,7 +79,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   min-width: 150px;
-  border-radius: 12px;
+  border-radius: var(--small-radius);
 }
 
 .dropdown button {
