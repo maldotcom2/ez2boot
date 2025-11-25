@@ -11,7 +11,7 @@
 </template>
 
 <script setup>
-import UserNav from './UserNav.vue'
+import UserNav from '../user/UserNav.vue'
 import { shallowRef } from 'vue'
 import AdminMenu from './AdminMenu.vue'
 import UserManagement from './AdminUserMgmt.vue'

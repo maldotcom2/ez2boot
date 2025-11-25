@@ -16,6 +16,10 @@ func (e *EmailNotification) Type() string {
 	return "email"
 }
 
+func (e *EmailNotification) Label() string {
+	return "Email"
+}
+
 func (e *EmailNotification) Send(msg string, title string, cfgStr string) error {
 	var cfg EmailConfig
 	if err := json.Unmarshal([]byte(cfgStr), &cfg); err != nil {

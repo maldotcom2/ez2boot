@@ -16,10 +16,13 @@ func (s *Service) getNotificationSender(typeName string) (Sender, bool) {
 }
 
 // Retrieves all supported notification types
-func (s *Service) getNotificationTypes() []string {
-	types := make([]string, 0, len(registry))
-	for k := range registry {
-		types = append(types, k)
+func (s *Service) getNotificationTypes() []NotificationTypeRequest {
+	list := make([]NotificationTypeRequest, 0, len(registry))
+	for _, sender := range registry {
+		list = append(list, NotificationTypeRequest{
+			Type:  sender.Type(),
+			Label: sender.Label(),
+		})
 	}
-	return types
+	return list
 }

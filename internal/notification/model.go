@@ -21,8 +21,14 @@ type Handler struct {
 
 // Notification channels must implement this
 type Sender interface {
-	Type() string                                    // Get the name
+	Type() string                                    // Identifier
+	Label() string                                   // UI label
 	Send(msg string, title string, cfg string) error // Send the notification
+}
+
+type NotificationTypeRequest struct {
+	Type  string `json:"type"`
+	Label string `json:"label"`
 }
 
 type NewNotification struct {

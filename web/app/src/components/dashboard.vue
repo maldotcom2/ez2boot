@@ -11,7 +11,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
-import UserNav from './UserNav.vue'
+import UserNav from './user/UserNav.vue'
 import ServerSummary from './ServerSummary.vue'
 import { useUserStore } from '@/stores/user'
 

@@ -9,7 +9,7 @@ import (
 // Retrieves all supported notification types, used to list available options
 func (h *Handler) GetNotificationTypes() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		types := h.Service.getNotificationTypes()
-		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: types})
+		list := h.Service.getNotificationTypes()
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: list})
 	}
 }

@@ -115,7 +115,7 @@ p {
 .user-mgmt-container {
   background-color: var(--container-modal);
   padding: 12px;
-  border-radius: 7px;
+  border-radius: var(--small-radius);
 }
 
 .user-btn-container {

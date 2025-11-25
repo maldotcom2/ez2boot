@@ -3,7 +3,7 @@
     <p>{{ user.email }}</p>
     <button @click="toggleUserDropdown">Menu</button>
     <div v-if="isOpen" class="dropdown">
-      <button v-if="user.isAdmin" @click="$router.push('/adminpanel')">Admin Panel</button>
+      <button v-if="user.isAdmin" @click="admin">Admin Panel</button>
       <button @click="dashboard">Dashboard</button>
       <button @click="settings">Settings</button>
       <button @click="logout">Logout</button>
@@ -28,6 +28,14 @@ function toggleUserDropdown() {
 
 function dashboard() {
   router.push("/dashboard")
+}
+
+function settings() {
+  router.push("/settings")
+}
+
+function admin() {
+  router.push("/adminpanel")
 }
 
 async function logout() {

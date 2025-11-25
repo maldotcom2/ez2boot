@@ -16,6 +16,10 @@ func (s *TelegramNotification) Type() string {
 	return "telegram"
 }
 
+func (s *TelegramNotification) Label() string {
+	return "Telegram"
+}
+
 func (s *TelegramNotification) Send(msg string, title string, cfgStr string) error {
 	var cfg TelegramConfig
 	if err := json.Unmarshal([]byte(cfgStr), &cfg); err != nil {
