@@ -30,3 +30,5 @@ type EmailConfig struct {
 }
 
 type EmailNotification struct{}
+
+type EmailHandler struct{}

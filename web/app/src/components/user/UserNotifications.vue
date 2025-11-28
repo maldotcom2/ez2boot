@@ -19,6 +19,7 @@ const selectedType = ref('')
 const supportedTypes = ref([])
 const notificationData = reactive({})
 const error = ref('')
+const userNotification = ref(null) // currently set
 
 const formComponents = {
   email: EmailForm,
@@ -52,6 +53,27 @@ async function getNotificationTypes() {
   }
 }
 
+async function loadUserNotification() {
+  error.value = ''  // Reset error
+  try {
+    const response = await axios.get('/ui/user/notification')
+    if (response.data.success) {
+      userNotification.value = res.data.data
+    }
+  } catch (err) {
+    if (err.response) {
+      // Get server response
+      error.value = `Get user notificaion failed: ${err.response.data.error || err.response.statusText}`
+    } else if (err.request) {
+      // No response
+      error.value = 'No response from server'
+    } else {
+      // other errors
+      error.value = err.message
+    }
+  }
+}
+
 onMounted(async () => {
   await getNotificationTypes()
 })
@@ -60,6 +82,7 @@ onMounted(async () => {
 <style scoped>
 .notification-form {
     background-color: var(--container-modal);
+    border-radius: var(--small-radius);
 }
 
 </style>

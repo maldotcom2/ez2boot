@@ -25,3 +25,5 @@ type TelegramConfig struct {
 }
 
 type TelegramNotification struct{}
+
+type TelegramHandler struct{}

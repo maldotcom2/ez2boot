@@ -19,7 +19,14 @@ import (
 func initServices(version string, buildDate string, cfg *config.Config, repo *db.Repository, logger *slog.Logger) (*middleware.Middleware, *worker.Worker, *Handlers, *Services) {
 	// Notification
 	notificationRepo := &notification.Repository{Base: repo}
-	notificationService := &notification.Service{Repo: notificationRepo, Logger: logger}
+	notificationService := &notification.Service{
+		Repo:   notificationRepo,
+		Logger: logger,
+		Handlers: map[string]notification.ConfigHandler{
+			"telegram": &telegram.TelegramHandler{},
+			"email":    &email.EmailHandler{},
+		},
+	}
 	notificationHandler := &notification.Handler{Service: notificationService, Logger: logger}
 
 	// Server

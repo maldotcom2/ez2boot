@@ -41,24 +41,3 @@ func (s *TelegramNotification) Send(msg string, title string, cfgStr string) err
 
 	return err
 }
-
-func (s *Service) AddOrUpdate(userID int64, cfg TelegramConfig) error {
-	// Must supply
-	if cfg.Token == "" || cfg.ChatID == "" {
-		return ErrMissingValues
-	}
-
-	// Stringify the config
-	data, err := json.Marshal(cfg)
-	if err != nil {
-		return err
-	}
-
-	jsonStr := string(data)
-
-	if err = s.Repo.addOrUpdate(userID, jsonStr); err != nil {
-		return err
-	}
-
-	return nil
-}

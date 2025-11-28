@@ -41,6 +41,17 @@ func (r *Repository) getPendingNotifications() ([]Notification, error) {
 	return notifications, nil
 }
 
+// Add or update personal notification options
+func (r *Repository) setUserNotification(userID int64, notifType string, config string) error {
+	query := `INSERT INTO user_notifications (user_id, type, config) VALUES ($1, $2, $3)
+			ON CONFLICT (user_id) DO UPDATE SET type = EXCLUDED.type, config = EXCLUDED.config`
+	if _, err := r.Base.DB.Exec(query, userID, notifType, config); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Delete notifications where the user does not have a notifications channel
 func (r *Repository) deleteOrphanedNotifications() (int64, error) {
 	query := `DELETE FROM notification_queue

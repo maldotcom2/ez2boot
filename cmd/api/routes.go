@@ -71,9 +71,8 @@ func setupBackendRoutes(
 	uiRouter.HandleFunc("/user/logout", handlers.UserHandler.Logout()).Methods("POST")
 
 	/// Notification channels
+	uiRouter.HandleFunc("/user/notification", handlers.NotificationHandler.SetUserNotification()).Methods("POST")
 	uiRouter.HandleFunc("/notification/types", handlers.NotificationHandler.GetNotificationTypes()).Methods("GET")
-	uiRouter.HandleFunc("/notification/email/update", handlers.EmailHandler.AddOrUpdate()).Methods("POST")
-	uiRouter.HandleFunc("/notification/telegram/update", handlers.TelegramHandler.AddOrUpdate()).Methods("POST")
 }
 
 func setupFrontendRoutes(router *mux.Router) {

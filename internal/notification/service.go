@@ -1,6 +1,8 @@
 package notification
 
-// Global in-memory store of available notification channels // TODO is this actually needed? Will the FE validate?
+import "ez2boot/internal/shared"
+
+// Global in-memory store of available notification channels
 var registry = make(map[string]Sender)
 
 // Add sender to registry - notification packages register via their inits when imported
@@ -25,4 +27,27 @@ func (s *Service) getNotificationTypes() []NotificationTypeRequest {
 		})
 	}
 	return list
+}
+
+// Add or update personal notification options
+func (s *Service) setUserNotification(userID int64, req NotificationUpdateRequest) error {
+	// Check the notification type is supported
+	handler, ok := s.Handlers[req.Type]
+	if !ok {
+		return shared.ErrNotificationTypeNotSupported
+	}
+
+	// Call handler specific validation
+	if err := handler.Validate(req.Config); err != nil {
+		return err
+	}
+
+	// Call handler specific marshaler
+	cfgStr, err := handler.ToConfig(req.Config)
+	if err != nil {
+		return err
+	}
+
+	// Store it
+	return s.Repo.setUserNotification(userID, req.Type, cfgStr)
 }

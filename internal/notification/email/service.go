@@ -39,31 +39,3 @@ func (e *EmailNotification) Send(msg string, title string, cfgStr string) error 
 
 	return nil
 }
-
-// TODO Validation function?
-func (e *Service) AddOrUpdate(userID int64, cfg EmailConfig) error {
-	// Must supply creds for auth
-	if cfg.Auth && (cfg.User == "" || cfg.Password == "") {
-		return ErrMissingAuthValues
-	}
-
-	// Don't store junk values
-	if !cfg.Auth {
-		cfg.User = ""
-		cfg.Password = ""
-	}
-
-	// Stringify the config
-	data, err := json.Marshal(cfg)
-	if err != nil {
-		return err
-	}
-
-	jsonStr := string(data)
-
-	if err = e.Repo.addOrUpdate(userID, jsonStr); err != nil {
-		return err
-	}
-
-	return nil
-}

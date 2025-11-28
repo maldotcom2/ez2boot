@@ -10,8 +10,9 @@ type Repository struct {
 }
 
 type Service struct {
-	Repo   *Repository
-	Logger *slog.Logger
+	Repo     *Repository
+	Logger   *slog.Logger
+	Handlers map[string]ConfigHandler // type specific handlers
 }
 
 type Handler struct {
@@ -26,9 +27,22 @@ type Sender interface {
 	Send(msg string, title string, cfg string) error // Send the notification
 }
 
+// Notification channels must implement this
+type ConfigHandler interface {
+	Validate(cfg map[string]any) error           // Type specific validation
+	ToConfig(cfg map[string]any) (string, error) // Marshal into json
+}
+
+// Used by UI to populate options
 type NotificationTypeRequest struct {
 	Type  string `json:"type"`
 	Label string `json:"label"`
+}
+
+// User stored notification preferences
+type NotificationUpdateRequest struct {
+	Type   string         `json:"type"`
+	Config map[string]any `json:"config"`
 }
 
 type NewNotification struct {
