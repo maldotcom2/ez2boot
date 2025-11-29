@@ -38,12 +38,12 @@ func (s *Service) setUserNotification(userID int64, req NotificationUpdateReques
 	}
 
 	// Call handler specific validation
-	if err := handler.Validate(req.Config); err != nil {
+	if err := handler.Validate(req.ChannelConfig); err != nil {
 		return err
 	}
 
 	// Call handler specific marshaler
-	cfgStr, err := handler.ToConfig(req.Config)
+	cfgStr, err := handler.ToConfig(req.ChannelConfig)
 	if err != nil {
 		return err
 	}
