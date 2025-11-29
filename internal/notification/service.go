@@ -49,5 +49,9 @@ func (s *Service) setUserNotification(userID int64, req NotificationUpdateReques
 	}
 
 	// Store it
-	return s.Repo.setUserNotification(userID, req.Type, cfgStr)
+	if err := s.Repo.setUserNotification(userID, req.Type, cfgStr); err != nil {
+		return err
+	}
+
+	return nil
 }

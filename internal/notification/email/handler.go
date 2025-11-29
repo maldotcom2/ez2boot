@@ -2,6 +2,7 @@ package email
 
 import (
 	"encoding/json"
+	"ez2boot/internal/shared"
 	"fmt"
 )
 
@@ -9,22 +10,22 @@ import (
 func (e *EmailHandler) Validate(cfg map[string]any) error {
 	host, ok := cfg["host"].(string)
 	if !ok || host == "" {
-		return fmt.Errorf("host is missing: %w", ErrFieldsMissing)
+		return fmt.Errorf("host is missing: %w", shared.ErrFieldMissing)
 	}
 
 	port, ok := cfg["port"].(float64)
 	if !ok || port == 0 {
-		return fmt.Errorf("port is missing - must be an integer: %w", ErrFieldsMissing)
+		return fmt.Errorf("port is missing - must be an integer: %w", shared.ErrFieldMissing)
 	}
 
 	to, ok := cfg["to"].(string)
 	if !ok || to == "" {
-		return fmt.Errorf("to is missing: %w", ErrFieldsMissing)
+		return fmt.Errorf("to is missing: %w", shared.ErrFieldMissing)
 	}
 
 	from, ok := cfg["from"].(string)
 	if !ok || from == "" {
-		return fmt.Errorf("from is missing: %w", ErrFieldsMissing)
+		return fmt.Errorf("from is missing: %w", shared.ErrFieldMissing)
 	}
 
 	// Auth is optional, but user and password are required
@@ -33,7 +34,7 @@ func (e *EmailHandler) Validate(cfg map[string]any) error {
 		user, _ := cfg["user"].(string)
 		password, _ := cfg["password"].(string)
 		if user == "" || password == "" {
-			return ErrMissingAuthValues
+			return shared.ErrMissingAuthValues
 		}
 	}
 

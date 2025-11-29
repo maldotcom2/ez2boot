@@ -23,6 +23,6 @@ var (
 	ErrCannotModifyOwnAuth          = errors.New("cannot modify own authorisation")
 	ErrCannotDeleteOwnUser          = errors.New("cannot delete own user")
 	ErrNotificationTypeNotSupported = errors.New("notification type not supported")
-	ErrFieldsMissing                = errors.New("Host, port, to and from fields are required")
-	ErrMissingAuthValues            = errors.New("Cannot perform authenticated send without username and password")
+	ErrFieldMissing                 = errors.New("Mandatory field missing from request")
+	ErrMissingAuthValues            = errors.New("Cannot perform authenticated action without username and password")
 )

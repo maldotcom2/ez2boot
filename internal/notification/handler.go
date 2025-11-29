@@ -40,12 +40,12 @@ func (h *Handler) SetUserNotification() http.HandlerFunc {
 					Error:   "Notification type not supported",
 				}
 
-			case errors.Is(err, shared.ErrFieldsMissing):
-				h.Logger.Error(err.Error())
+			case errors.Is(err, shared.ErrFieldMissing):
+				h.Logger.Error("Required field missing", "error", err.Error())
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   "Required fields missing",
+					Error:   err.Error(), // TODO is this ok?
 				}
 
 			default:
