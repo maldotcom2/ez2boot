@@ -1,6 +1,9 @@
 package notification
 
-import "database/sql"
+import (
+	"database/sql"
+	"encoding/json"
+)
 
 // Create new notification - usually run in conjunction with flag setting so runs as a transaction
 func (r *Repository) queueNotification(tx *sql.Tx, n NewNotification) error {
@@ -41,11 +44,28 @@ func (r *Repository) getPendingNotifications() ([]Notification, error) {
 	return notifications, nil
 }
 
-// Add or update personal notification options
-func (r *Repository) setUserNotification(userID int64, notifType string, config string) error {
+// Get current user notification settings
+func (r *Repository) getUserNotification(userID int64) (NotificationRequest, error) {
+	var n NotificationRequest
+	var cfgStr string
+
+	if err := r.Base.DB.QueryRow("SELECT type, config FROM user_notifications WHERE user_id = $1", userID).Scan(&n.Type, &cfgStr); err != nil {
+		return NotificationRequest{}, err
+	}
+
+	// Unmarshal and populate struct
+	if err := json.Unmarshal([]byte(cfgStr), &n.ChannelConfig); err != nil {
+		return NotificationRequest{}, err
+	}
+
+	return n, nil
+}
+
+// Add or update user notification settings
+func (r *Repository) setUserNotification(userID int64, notifType string, channelConfig string) error {
 	query := `INSERT INTO user_notifications (user_id, type, config) VALUES ($1, $2, $3)
 			ON CONFLICT (user_id) DO UPDATE SET type = EXCLUDED.type, config = EXCLUDED.config`
-	if _, err := r.Base.DB.Exec(query, userID, notifType, config); err != nil {
+	if _, err := r.Base.DB.Exec(query, userID, notifType, channelConfig); err != nil {
 		return err
 	}
 

@@ -13,7 +13,7 @@ func (t *TelegramHandler) Validate(config map[string]any) error {
 		return fmt.Errorf("token is missing: %w", shared.ErrFieldMissing)
 	}
 
-	chatID, ok := config["chatId"].(string)
+	chatID, ok := config["chat_id"].(string)
 	if !ok || chatID == "" {
 		return fmt.Errorf("chat id is missing: %w", shared.ErrFieldMissing)
 	}

@@ -16,6 +16,29 @@ func (h *Handler) GetNotificationTypes() http.HandlerFunc {
 	}
 }
 
+func (h *Handler) GetUserNotification() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID, ok := r.Context().Value(contextkey.UserIDKey).(int64)
+		if !ok {
+			h.Logger.Error("User ID not found in context")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User ID not found in context"})
+			return
+		}
+
+		var n NotificationRequest
+		n, err := h.Service.getUserNotification(userID)
+		if err != nil {
+			h.Logger.Error("Failed to get user notification", "error", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to get user notification"})
+			return
+		}
+
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: n})
+	}
+}
+
 func (h *Handler) SetUserNotification() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, ok := r.Context().Value(contextkey.UserIDKey).(int64)
@@ -26,7 +49,7 @@ func (h *Handler) SetUserNotification() http.HandlerFunc {
 			return
 		}
 
-		var req NotificationUpdateRequest
+		var req NotificationRequest
 		json.NewDecoder(r.Body).Decode(&req)
 
 		var resp shared.ApiResponse[any]

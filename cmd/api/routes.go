@@ -69,8 +69,8 @@ func setupBackendRoutes(
 	uiRouter.HandleFunc("/user/delete", handlers.UserHandler.DeleteUser()).Methods("DELETE")
 	uiRouter.HandleFunc("/user/changepassword", handlers.UserHandler.ChangePassword()).Methods("PUT")
 	uiRouter.HandleFunc("/user/logout", handlers.UserHandler.Logout()).Methods("POST")
-
 	/// Notification channels
+	uiRouter.HandleFunc("/user/notification", handlers.NotificationHandler.GetUserNotification()).Methods("GET")
 	uiRouter.HandleFunc("/user/notification", handlers.NotificationHandler.SetUserNotification()).Methods("POST")
 	uiRouter.HandleFunc("/notification/types", handlers.NotificationHandler.GetNotificationTypes()).Methods("GET")
 }

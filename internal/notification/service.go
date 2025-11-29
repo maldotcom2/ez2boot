@@ -29,8 +29,18 @@ func (s *Service) getNotificationTypes() []NotificationTypeRequest {
 	return list
 }
 
+// Get current user notification settings
+func (s *Service) getUserNotification(userID int64) (NotificationRequest, error) {
+	n, err := s.Repo.getUserNotification(userID)
+	if err != nil {
+		return NotificationRequest{}, err
+	}
+
+	return n, nil
+}
+
 // Add or update personal notification options
-func (s *Service) setUserNotification(userID int64, req NotificationUpdateRequest) error {
+func (s *Service) setUserNotification(userID int64, req NotificationRequest) error {
 	// Check the notification type is supported
 	handler, ok := s.Handlers[req.Type]
 	if !ok {
