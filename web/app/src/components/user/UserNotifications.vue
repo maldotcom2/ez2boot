@@ -1,21 +1,28 @@
 <template>
-  <div class="notification-form">
-    <select v-model="selectedType">
-      <option v-for="t in supportedTypes" :key="t.type" :value="t.type">
-        {{ t.label }}
-      </option>
-    </select>
-    <component v-if="selectedType" :is="formComponents[selectedType]" v-model="notificationData[selectedType]"/>
-    <button type="button" @click="saveUserNotification">Save</button>
-    <button type="button" @click="deleteUserNotification">Delete</button>
+  <div class="user-notifications">
+    <aside class="sidebar">
+      <select v-model="selectedType">
+        <option v-for="t in supportedTypes" :key="t.type" :value="t.type">
+          {{ t.label }}
+        </option>
+      </select>
+      <div class="actions">
+        <button type="button" @click="saveUserNotification">Save</button>
+        <button type="button" @click="deleteUserNotification">Delete</button>
+      </div>
+    </aside>
+    <main class="config-panel">
+      <component v-if="selectedType" :is="formComponents[selectedType]" v-model="notificationData[selectedType]"/>
+    </main>
   </div>
 </template>
+
 
 <script setup>
 import { ref, reactive, onMounted, watch } from 'vue'
 import axios from 'axios'
-import EmailForm from '../notifications/EmailForm.vue'
-import TelegramForm from '../notifications/TelegramForm.vue'
+import EmailForm from '../notifications/Email.vue'
+import TelegramForm from '../notifications/Telegram.vue'
 
 const selectedType = ref('')
 const supportedTypes = ref([])
@@ -118,6 +125,7 @@ async function deleteUserNotification() {
     const response = await axios.delete('/ui/user/notification')
     if (response.data.success) {
       console.log("Notification deleted")
+      notificationData[selectedType.value] = {}
     }
   } catch (err) {
     if (err.response) {
@@ -140,9 +148,41 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.notification-form {
-    background-color: var(--container-modal);
-    border-radius: var(--small-radius);
+.user-notifications {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  gap: 1rem;
+  width: 100%;
+  min-height: 400px;
+  background-color: var(--container-modal);
+  border-radius: var(--small-radius);
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--small-radius);
+  padding: 1rem;
+  background: var(--container-modal);
+  gap: 1rem;
+}
+
+.config-panel {
+  display: flex;
+  color: var(--low-glare);
+  border-radius: var(--small-radius);
+  padding: 40px;
+  background: var(--container-modal);
+}
+
+.actions button {
+  display: block;
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+select {
+  border-radius: var(--small-radius);
 }
 
 </style>

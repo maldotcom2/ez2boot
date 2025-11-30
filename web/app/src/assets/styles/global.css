@@ -16,6 +16,7 @@ html, body, #app {
   --success-msg: rgb(228, 228, 228);
   --small-radius: 7px;
   --big-radius: 15px;
+  --input-height: 30px;
 }
 
 h1 {
@@ -23,9 +24,14 @@ h1 {
 }
 
 input {
+    height: var(--input-height);
     background-color: var(--low-glare);
     border: none;
     border-radius: var(--small-radius);
+}
+
+select {
+  height: var(--input-height);
 }
 
 input:focus {
@@ -56,9 +62,28 @@ button:not(:disabled):hover {
 }
 
 .message.error {
-    color: var(--error-msg);
+  color: var(--error-msg);
 }
 
 .message.success {
-    color: var(--success-msg);
+  color: var(--success-msg);
+}
+
+/* Notification channels */
+.channel-config input {
+  width: 500px;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.checkbox-row {
+  display: flex;
+  flex-direction: column;
+}
+
+.channel-config input[type="checkbox"] {
+  width: var(--input-height);
+  margin: 0;
+  display: inline-block;
+  margin-bottom: 1rem;
 }

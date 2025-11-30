@@ -1,7 +1,9 @@
 <template>
-  <div class="telegram-config">
-      <input v-model="config.token" placeholder="Token" />
-      <input v-model="config.chat_id" placeholder="Chat ID" />
+  <div class="channel-config">
+    <label for="token">Token</label>
+    <input id="token" v-model="config.token"/>
+    <label for="chat-id">Chat ID</label>
+    <input id="chat-id" v-model="config.chat_id"/>
   </div>
 </template>
 
@@ -21,8 +23,5 @@ const config = toRef(props, 'modelValue')
 </script>
 
 <style scoped>
-.telegram-config input {
-  display: block;
-  margin-bottom: 0.5rem;
-}
+
 </style>
