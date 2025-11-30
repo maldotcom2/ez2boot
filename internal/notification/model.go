@@ -40,7 +40,7 @@ type NotificationTypeRequest struct {
 }
 
 // User stored notification preferences
-type NotificationRequest struct {
+type NotificationConfigRequest struct {
 	Type          string         `json:"type"`
 	ChannelConfig map[string]any `json:"channel_config"`
 }

@@ -45,27 +45,36 @@ func (r *Repository) getPendingNotifications() ([]Notification, error) {
 }
 
 // Get current user notification settings
-func (r *Repository) getUserNotification(userID int64) (NotificationRequest, error) {
-	var n NotificationRequest
+func (r *Repository) getUserNotificationSettings(userID int64) (NotificationConfigRequest, error) {
+	var n NotificationConfigRequest
 	var cfgStr string
 
 	if err := r.Base.DB.QueryRow("SELECT type, config FROM user_notifications WHERE user_id = $1", userID).Scan(&n.Type, &cfgStr); err != nil {
-		return NotificationRequest{}, err
+		return NotificationConfigRequest{}, err
 	}
 
 	// Unmarshal and populate struct
 	if err := json.Unmarshal([]byte(cfgStr), &n.ChannelConfig); err != nil {
-		return NotificationRequest{}, err
+		return NotificationConfigRequest{}, err
 	}
 
 	return n, nil
 }
 
 // Add or update user notification settings
-func (r *Repository) setUserNotification(userID int64, notifType string, channelConfig string) error {
+func (r *Repository) setUserNotificationSettings(userID int64, notifType string, channelConfig string) error {
 	query := `INSERT INTO user_notifications (user_id, type, config) VALUES ($1, $2, $3)
 			ON CONFLICT (user_id) DO UPDATE SET type = EXCLUDED.type, config = EXCLUDED.config`
 	if _, err := r.Base.DB.Exec(query, userID, notifType, channelConfig); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Delete user notification settings
+func (r *Repository) deleteUserNotificationSettings(userID int64) error {
+	if _, err := r.Base.DB.Exec("DELETE FROM user_notifications WHERE user_id = $1", userID); err != nil {
 		return err
 	}
 

@@ -1,9 +1,7 @@
 <template>
-  <div class="telegram-form">
+  <div class="telegram-config">
       <input v-model="config.token" placeholder="Token" />
       <input v-model="config.chat_id" placeholder="Chat ID" />
-      <button type="button" :disabled="!config.token || !config.chat_id" @click="$emit('save')">Save</button>
-      <button type="button" @click="$emit('delete')">Delete</button>
   </div>
 </template>
 
@@ -17,13 +15,13 @@ const props = defineProps({
   }
 })
 
-defineEmits(['update:modelValue', 'save', 'delete'])
+defineEmits(['update:modelValue'])
 
 const config = toRef(props, 'modelValue')
 </script>
 
 <style scoped>
-.telegram-form input {
+.telegram-config input {
   display: block;
   margin-bottom: 0.5rem;
 }

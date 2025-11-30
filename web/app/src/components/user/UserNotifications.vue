@@ -5,12 +5,14 @@
         {{ t.label }}
       </option>
     </select>
-    <component v-if="selectedType" :is="formComponents[selectedType]" v-model="notificationData[selectedType]" @save="saveUserNotification" @delete="deleteUserNotification"/>
+    <component v-if="selectedType" :is="formComponents[selectedType]" v-model="notificationData[selectedType]"/>
+    <button type="button" @click="saveUserNotification">Save</button>
+    <button type="button" @click="deleteUserNotification">Delete</button>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import axios from 'axios'
 import EmailForm from '../notifications/EmailForm.vue'
 import TelegramForm from '../notifications/TelegramForm.vue'
@@ -19,6 +21,13 @@ const selectedType = ref('')
 const supportedTypes = ref([])
 const notificationData = reactive({})
 const error = ref('')
+
+// Gracefully handle case of no user notification settings from load, pass valid object to child
+watch(selectedType, (newType) => {
+  if (newType && !notificationData[newType]) {
+    notificationData[newType] = {}
+  }
+})
 
 const formComponents = {
   email: EmailForm,
@@ -60,6 +69,7 @@ async function loadUserNotification() {
     if (response.data.success && response.data.data) {
       const userNotif = response.data.data
       selectedType.value = userNotif.type || selectedType.value
+      // Populates fields with existing config if available
       notificationData[userNotif.type] = userNotif.channel_config || {}
     }
   } catch (err) {
@@ -78,8 +88,27 @@ async function loadUserNotification() {
 
 // Save new settings
 async function saveUserNotification() {
-  // TODO
-  console.log('Save notifications')
+  error.value = ''
+  try {
+    // Build the payload
+    const payload = {
+      type: selectedType.value,
+      channel_config: notificationData[selectedType.value] || {}
+    }
+
+    const response = await axios.post('/ui/user/notification', payload)
+    if (response.data.success) {
+    console.log("Notification settings saved")
+    }
+  } catch (err) {
+    if (err.response) {
+      error.value = `Failed to save: ${err.response.data.error || err.response.statusText}`
+    } else if (err.request) {
+      error.value = 'No response from server'
+    } else {
+      error.value = err.message
+    }
+  }
 }
 
 // Delete settings - user will have no notifications
@@ -87,7 +116,6 @@ async function deleteUserNotification() {
   error.value = ''  // Reset error
   try {
     const response = await axios.delete('/ui/user/notification')
-    console.log(response.data.data)
     if (response.data.success) {
       console.log("Notification deleted")
     }

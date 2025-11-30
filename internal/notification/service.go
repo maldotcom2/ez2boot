@@ -1,6 +1,10 @@
 package notification
 
-import "ez2boot/internal/shared"
+import (
+	"database/sql"
+	"errors"
+	"ez2boot/internal/shared"
+)
 
 // Global in-memory store of available notification channels
 var registry = make(map[string]Sender)
@@ -30,17 +34,22 @@ func (s *Service) getNotificationTypes() []NotificationTypeRequest {
 }
 
 // Get current user notification settings
-func (s *Service) getUserNotification(userID int64) (NotificationRequest, error) {
-	n, err := s.Repo.getUserNotification(userID)
+func (s *Service) getUserNotificationSettings(userID int64) (NotificationConfigRequest, error) {
+	n, err := s.Repo.getUserNotificationSettings(userID)
 	if err != nil {
-		return NotificationRequest{}, err
+		if errors.Is(err, sql.ErrNoRows) {
+			// User hasn't configured notifications yet
+			return NotificationConfigRequest{}, nil
+		}
+
+		return NotificationConfigRequest{}, err
 	}
 
 	return n, nil
 }
 
 // Add or update personal notification options
-func (s *Service) setUserNotification(userID int64, req NotificationRequest) error {
+func (s *Service) setUserNotificationSettings(userID int64, req NotificationConfigRequest) error {
 	// Check the notification type is supported
 	handler, ok := s.Handlers[req.Type]
 	if !ok {
@@ -59,7 +68,15 @@ func (s *Service) setUserNotification(userID int64, req NotificationRequest) err
 	}
 
 	// Store it
-	if err := s.Repo.setUserNotification(userID, req.Type, cfgStr); err != nil {
+	if err := s.Repo.setUserNotificationSettings(userID, req.Type, cfgStr); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Service) deleteUserNotificationSettings(userID int64) error {
+	if err := s.Repo.deleteUserNotificationSettings(userID); err != nil {
 		return err
 	}
 

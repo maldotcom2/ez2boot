@@ -16,7 +16,7 @@ func (h *Handler) GetNotificationTypes() http.HandlerFunc {
 	}
 }
 
-func (h *Handler) GetUserNotification() http.HandlerFunc {
+func (h *Handler) GetUserNotificationSettings() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, ok := r.Context().Value(contextkey.UserIDKey).(int64)
 		if !ok {
@@ -26,8 +26,8 @@ func (h *Handler) GetUserNotification() http.HandlerFunc {
 			return
 		}
 
-		var n NotificationRequest
-		n, err := h.Service.getUserNotification(userID)
+		var n NotificationConfigRequest
+		n, err := h.Service.getUserNotificationSettings(userID)
 		if err != nil {
 			h.Logger.Error("Failed to get user notification", "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -39,7 +39,7 @@ func (h *Handler) GetUserNotification() http.HandlerFunc {
 	}
 }
 
-func (h *Handler) SetUserNotification() http.HandlerFunc {
+func (h *Handler) SetUserNotificationSettings() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, ok := r.Context().Value(contextkey.UserIDKey).(int64)
 		if !ok {
@@ -49,11 +49,11 @@ func (h *Handler) SetUserNotification() http.HandlerFunc {
 			return
 		}
 
-		var req NotificationRequest
+		var req NotificationConfigRequest
 		json.NewDecoder(r.Body).Decode(&req)
 
 		var resp shared.ApiResponse[any]
-		if err := h.Service.setUserNotification(userID, req); err != nil {
+		if err := h.Service.setUserNotificationSettings(userID, req); err != nil {
 			switch {
 			case errors.Is(err, shared.ErrNotificationTypeNotSupported):
 				h.Logger.Error(err.Error())
@@ -64,6 +64,14 @@ func (h *Handler) SetUserNotification() http.HandlerFunc {
 				}
 
 			case errors.Is(err, shared.ErrFieldMissing):
+				h.Logger.Error("Required field missing", "error", err.Error())
+				w.WriteHeader(http.StatusBadRequest)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   err.Error(), // TODO is this ok?
+				}
+
+			case errors.Is(err, shared.ErrMissingAuthValues):
 				h.Logger.Error("Required field missing", "error", err.Error())
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
@@ -85,6 +93,27 @@ func (h *Handler) SetUserNotification() http.HandlerFunc {
 		}
 
 		h.Logger.Info("User notification config set")
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
+	}
+}
+
+func (h *Handler) DeleteUserNotificationSettings() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID, ok := r.Context().Value(contextkey.UserIDKey).(int64)
+		if !ok {
+			h.Logger.Error("User ID not found in context")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User ID not found in context"})
+			return
+		}
+
+		if err := h.Service.deleteUserNotificationSettings(userID); err != nil {
+			h.Logger.Error("Failed to delete user notification", "error", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to delete user notification"})
+		}
+
+		h.Logger.Info("User notification deleted")
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
