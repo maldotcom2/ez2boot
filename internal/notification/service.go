@@ -46,16 +46,12 @@ func (s *Service) getUserNotificationSettings(userID int64) (NotificationConfigR
 	}
 
 	cc := raw.ChannelConfig
-	hasPassword := false
 
 	// Check for sensitive value
 	pw, ok := cc["password"].(string)
 	if ok && pw != "" {
-		hasPassword = true
 		delete(cc, "password")
 	}
-
-	cc["has_password"] = hasPassword
 
 	return NotificationConfigResponse{
 		Type:          raw.Type,

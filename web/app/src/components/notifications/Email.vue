@@ -3,7 +3,7 @@
     <label for="host">Host</label>
     <input id="host" v-model="config.host"/>
     <label for="port">Port</label>
-    <input id="port" v-model="config.port"/>
+    <input id="port" type="number" v-model="config.port"/>
     <label for="to">To</label>
     <input id="to" v-model="config.to"/>
     <label for="from">From</label>
@@ -15,7 +15,7 @@
     <label for="user">User</label>
     <input id="user" v-model="config.user" :disabled="!config.auth"/>
     <label for="password">Password</label>
-    <input id="password" type="password" v-model="config.password" :disabled="!config.auth" :placeholder="config.has_password ? 'Saved — enter new to replace' : ''"/>
+    <input id="password" type="password" v-model="config.password" :disabled="!config.auth"/>
   </div>
 </template>
 

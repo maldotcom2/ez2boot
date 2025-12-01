@@ -21,7 +21,7 @@ type Handler struct {
 
 type EmailConfig struct {
 	Host     string `json:"host"`
-	Port     string `json:"port"`
+	Port     int64  `json:"port"`
 	To       string `json:"to"`
 	From     string `json:"from"`
 	User     string `json:"user"`

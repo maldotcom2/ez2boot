@@ -27,13 +27,22 @@ func (e *EmailNotification) Send(msg string, title string, cfgStr string) error 
 	}
 	// message string assembly
 	message := fmt.Sprintf("To: %s\r\nFrom: %s\r\nSubject: %s\r\n\r\n%s", cfg.To, cfg.From, title, msg)
+	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
 
-	// TODO option to set nil for unauthenticated
+	// Unauthenticated mail
+	if !cfg.Auth {
+		var auth smtp.Auth = nil
+		if err := smtp.SendMail(addr, auth, cfg.From, []string{cfg.To}, []byte(message)); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	// Authenticated mail
 	auth := smtp.PlainAuth("", cfg.User, cfg.Password, cfg.Host)
 
-	// Send the email
-	err := smtp.SendMail(cfg.Host+":"+cfg.Port, auth, cfg.From, []string{cfg.To}, []byte(message))
-	if err != nil {
+	if err := smtp.SendMail(addr, auth, cfg.From, []string{cfg.To}, []byte(message)); err != nil {
 		return err
 	}
 
