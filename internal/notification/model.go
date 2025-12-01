@@ -39,8 +39,14 @@ type NotificationTypeRequest struct {
 	Label string `json:"label"`
 }
 
-// User stored notification preferences
+// Used to save user notification config
 type NotificationConfigRequest struct {
+	Type          string         `json:"type"`
+	ChannelConfig map[string]any `json:"channel_config"`
+}
+
+// Used to return currently populated user notification config
+type NotificationConfigResponse struct {
 	Type          string         `json:"type"`
 	ChannelConfig map[string]any `json:"channel_config"`
 }

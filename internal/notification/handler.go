@@ -26,7 +26,7 @@ func (h *Handler) GetUserNotificationSettings() http.HandlerFunc {
 			return
 		}
 
-		var n NotificationConfigRequest
+		var n NotificationConfigResponse
 		n, err := h.Service.getUserNotificationSettings(userID)
 		if err != nil {
 			h.Logger.Error("Failed to get user notification", "error", err)

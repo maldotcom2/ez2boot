@@ -120,11 +120,14 @@ async function saveUserNotification() {
 
 // Delete settings - user will have no notifications
 async function deleteUserNotification() {
+  if (!confirm("Are you sure you want to delete this notification?")) {
+    return
+  }
+
   error.value = ''  // Reset error
   try {
     const response = await axios.delete('/ui/user/notification')
     if (response.data.success) {
-      console.log("Notification deleted")
       notificationData[selectedType.value] = {}
     }
   } catch (err) {
@@ -160,6 +163,7 @@ onMounted(async () => {
 
 .sidebar {
   display: flex;
+  height: 100vh;
   flex-direction: column;
   border-radius: var(--small-radius);
   padding: 1rem;

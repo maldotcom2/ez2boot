@@ -15,7 +15,7 @@
     <label for="user">User</label>
     <input id="user" v-model="config.user" :disabled="!config.auth"/>
     <label for="password">Password</label>
-    <input id="password" type="password" v-model="config.password" :disabled="!config.auth"/>
+    <input id="password" type="password" v-model="config.password" :disabled="!config.auth" :placeholder="config.has_password ? 'Saved — enter new to replace' : ''"/>
   </div>
 </template>
 

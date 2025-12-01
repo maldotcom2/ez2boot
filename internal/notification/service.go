@@ -34,18 +34,33 @@ func (s *Service) getNotificationTypes() []NotificationTypeRequest {
 }
 
 // Get current user notification settings
-func (s *Service) getUserNotificationSettings(userID int64) (NotificationConfigRequest, error) {
-	n, err := s.Repo.getUserNotificationSettings(userID)
+func (s *Service) getUserNotificationSettings(userID int64) (NotificationConfigResponse, error) {
+	raw, err := s.Repo.getUserNotificationSettings(userID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			// User hasn't configured notifications yet
-			return NotificationConfigRequest{}, nil
+			return NotificationConfigResponse{}, nil
 		}
 
-		return NotificationConfigRequest{}, err
+		return NotificationConfigResponse{}, err
 	}
 
-	return n, nil
+	cc := raw.ChannelConfig
+	hasPassword := false
+
+	// Check for sensitive value
+	pw, ok := cc["password"].(string)
+	if ok && pw != "" {
+		hasPassword = true
+		delete(cc, "password")
+	}
+
+	cc["has_password"] = hasPassword
+
+	return NotificationConfigResponse{
+		Type:          raw.Type,
+		ChannelConfig: cc,
+	}, nil
 }
 
 // Add or update personal notification options

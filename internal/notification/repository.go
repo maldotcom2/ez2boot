@@ -45,17 +45,17 @@ func (r *Repository) getPendingNotifications() ([]Notification, error) {
 }
 
 // Get current user notification settings
-func (r *Repository) getUserNotificationSettings(userID int64) (NotificationConfigRequest, error) {
-	var n NotificationConfigRequest
+func (r *Repository) getUserNotificationSettings(userID int64) (NotificationConfigResponse, error) {
+	var n NotificationConfigResponse
 	var cfgStr string
 
 	if err := r.Base.DB.QueryRow("SELECT type, config FROM user_notifications WHERE user_id = $1", userID).Scan(&n.Type, &cfgStr); err != nil {
-		return NotificationConfigRequest{}, err
+		return NotificationConfigResponse{}, err
 	}
 
 	// Unmarshal and populate struct
 	if err := json.Unmarshal([]byte(cfgStr), &n.ChannelConfig); err != nil {
-		return NotificationConfigRequest{}, err
+		return NotificationConfigResponse{}, err
 	}
 
 	return n, nil
