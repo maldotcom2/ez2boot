@@ -3,7 +3,7 @@ package user
 import (
 	"encoding/json"
 	"errors"
-	"ez2boot/internal/contextkey"
+	"ez2boot/internal/ctxutil"
 	"ez2boot/internal/shared"
 	"fmt"
 	"net/http"
@@ -26,13 +26,7 @@ func (h *Handler) GetUsers() http.HandlerFunc {
 
 func (h *Handler) UpdateUserAuthorisation() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, ok := r.Context().Value(contextkey.UserIDKey).(int64)
-		if !ok {
-			h.Logger.Error("User ID not found in context")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User ID not found in context"})
-			return
-		}
+		userID := ctxutil.GetUserID(r.Context())
 
 		var req []UpdateUserRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -93,13 +87,7 @@ func (h *Handler) CheckSession() http.HandlerFunc {
 // Get user authorisation for logged in user
 func (h *Handler) GetUserAuthorisation() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, ok := r.Context().Value(contextkey.UserIDKey).(int64)
-		if !ok {
-			h.Logger.Error("User ID not found in context")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User ID not found in context"})
-			return
-		}
+		userID := ctxutil.GetUserID(r.Context())
 
 		user, err := h.Service.GetUserAuthorisation(userID)
 		if err != nil {
@@ -175,13 +163,8 @@ func (h *Handler) Login() http.HandlerFunc {
 // Logout session handler
 func (h *Handler) Logout() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, ok := r.Context().Value(contextkey.UserIDKey).(int64)
-		if !ok {
-			h.Logger.Error("User ID not found in context")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User ID not found in context"})
-			return
-		}
+		userID := ctxutil.GetUserID(r.Context())
+
 		// Get session token
 		cookie, _ := r.Cookie("session")
 
@@ -292,13 +275,7 @@ func (h *Handler) CreateUser() http.HandlerFunc {
 
 func (h *Handler) DeleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, ok := r.Context().Value(contextkey.UserIDKey).(int64)
-		if !ok {
-			h.Logger.Error("User ID not found in context")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User ID not found in context"})
-			return
-		}
+		userID := ctxutil.GetUserID(r.Context())
 
 		var req DeleteUserRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -348,7 +325,7 @@ func (h *Handler) DeleteUser() http.HandlerFunc {
 func (h *Handler) CreateFirstTimeUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Block subsequent requests
-		if h.Service.Config.SetupMode == false {
+		if !h.Service.Config.SetupMode {
 			h.Logger.Error("First time user creation blocked")
 			w.WriteHeader(http.StatusForbidden)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "First time user creation blocked"})
@@ -423,13 +400,7 @@ func (h *Handler) CreateFirstTimeUser() http.HandlerFunc {
 
 func (h *Handler) ChangePassword() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, ok := r.Context().Value(contextkey.UserIDKey).(int64)
-		if !ok {
-			h.Logger.Error("User ID not found in context")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User ID not found in context"})
-			return
-		}
+		userID := ctxutil.GetUserID(r.Context())
 
 		var req ChangePasswordRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -489,13 +460,7 @@ func (h *Handler) ChangePassword() http.HandlerFunc {
 
 // Handler helper to guard admin routes
 func (h *Handler) userIsAdmin(w http.ResponseWriter, r *http.Request) bool {
-	userID, ok := r.Context().Value(contextkey.UserIDKey).(int64)
-	if !ok {
-		h.Logger.Error("User ID not found in context")
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User ID not found in context"})
-		return false
-	}
+	userID := ctxutil.GetUserID(r.Context())
 
 	user, err := h.Service.GetUserAuthorisation(userID)
 	if err != nil {

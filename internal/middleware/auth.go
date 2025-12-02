@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"ez2boot/internal/contextkey"
+	"ez2boot/internal/ctxutil"
 	"ez2boot/internal/shared"
 	"net/http"
 
@@ -69,7 +69,7 @@ func (m *Middleware) BasicAuthMiddleware() mux.MiddlewareFunc {
 
 			m.Logger.Info("Basic auth passed", "userID", u.UserID, "email", email, "Path", r.URL.Path, "Source IP", r.RemoteAddr)
 			// Pass down request to the next middleware
-			ctx := context.WithValue(r.Context(), contextkey.UserIDKey, u.UserID)
+			ctx := context.WithValue(r.Context(), ctxutil.UserIDKey, u.UserID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -136,7 +136,7 @@ func (m *Middleware) SessionAuthMiddleware() mux.MiddlewareFunc {
 
 			// Create a context containing the userID and the account verified status. This controls the authorisation to downstream functions.
 			m.Logger.Info("User request passed middleware", "userID", ua.UserID, "email", ua.Email, "Path", r.URL.Path, "Source IP", r.RemoteAddr)
-			ctx := context.WithValue(r.Context(), contextkey.UserIDKey, ua.UserID)
+			ctx := context.WithValue(r.Context(), ctxutil.UserIDKey, ua.UserID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

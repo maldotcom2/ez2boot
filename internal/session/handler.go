@@ -3,7 +3,7 @@ package session
 import (
 	"encoding/json"
 	"errors"
-	"ez2boot/internal/contextkey"
+	"ez2boot/internal/ctxutil"
 	"ez2boot/internal/shared"
 	"net/http"
 )
@@ -38,13 +38,7 @@ func (h *Handler) GetServerSessionSummary() http.HandlerFunc {
 
 func (h *Handler) NewServerSession() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, ok := r.Context().Value(contextkey.UserIDKey).(int64)
-		if !ok {
-			h.Logger.Error("User ID not found in context")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User ID not found in context"})
-			return
-		}
+		userID := ctxutil.GetUserID(r.Context())
 
 		var session ServerSession
 		json.NewDecoder(r.Body).Decode(&session)
@@ -65,13 +59,7 @@ func (h *Handler) NewServerSession() http.HandlerFunc {
 
 func (h *Handler) UpdateServerSession() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, ok := r.Context().Value(contextkey.UserIDKey).(int64)
-		if !ok {
-			h.Logger.Error("User ID not found in context")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User ID not found in context"})
-			return
-		}
+		userID := ctxutil.GetUserID(r.Context())
 
 		var session ServerSession
 		json.NewDecoder(r.Body).Decode(&session)
@@ -79,7 +67,7 @@ func (h *Handler) UpdateServerSession() http.HandlerFunc {
 
 		session, err := h.Service.updateServerSession(session) //TODO make this more clear
 		if err != nil {
-			if errors.Is(shared.ErrNoRowsUpdated, err) {
+			if errors.Is(err, shared.ErrNoRowsUpdated) {
 				h.Logger.Error("Requsted session for update was either not found or not owned", "error", err)
 				w.WriteHeader(http.StatusUnauthorized)
 				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to find session"})

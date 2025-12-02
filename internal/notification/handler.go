@@ -3,7 +3,7 @@ package notification
 import (
 	"encoding/json"
 	"errors"
-	"ez2boot/internal/contextkey"
+	"ez2boot/internal/ctxutil"
 	"ez2boot/internal/shared"
 	"net/http"
 )
@@ -18,13 +18,7 @@ func (h *Handler) GetNotificationTypes() http.HandlerFunc {
 
 func (h *Handler) GetUserNotificationSettings() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, ok := r.Context().Value(contextkey.UserIDKey).(int64)
-		if !ok {
-			h.Logger.Error("User ID not found in context")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User ID not found in context"})
-			return
-		}
+		userID := ctxutil.GetUserID(r.Context())
 
 		var n NotificationConfigResponse
 		n, err := h.Service.getUserNotificationSettings(userID)
@@ -41,13 +35,7 @@ func (h *Handler) GetUserNotificationSettings() http.HandlerFunc {
 
 func (h *Handler) SetUserNotificationSettings() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, ok := r.Context().Value(contextkey.UserIDKey).(int64)
-		if !ok {
-			h.Logger.Error("User ID not found in context")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User ID not found in context"})
-			return
-		}
+		userID := ctxutil.GetUserID(r.Context())
 
 		var req NotificationConfigRequest
 		json.NewDecoder(r.Body).Decode(&req)
@@ -99,13 +87,7 @@ func (h *Handler) SetUserNotificationSettings() http.HandlerFunc {
 
 func (h *Handler) DeleteUserNotificationSettings() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, ok := r.Context().Value(contextkey.UserIDKey).(int64)
-		if !ok {
-			h.Logger.Error("User ID not found in context")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User ID not found in context"})
-			return
-		}
+		userID := ctxutil.GetUserID(r.Context())
 
 		if err := h.Service.deleteUserNotificationSettings(userID); err != nil {
 			h.Logger.Error("Failed to delete user notification", "error", err)
