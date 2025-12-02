@@ -21,8 +21,8 @@
 <script setup>
 import { ref, reactive, onMounted, watch } from 'vue'
 import axios from 'axios'
-import EmailForm from '../notifications/Email.vue'
-import TelegramForm from '../notifications/Telegram.vue'
+import EmailForm from './notifications/Email.vue'
+import TelegramForm from './notifications/Telegram.vue'
 
 const selectedType = ref('')
 const supportedTypes = ref([])
