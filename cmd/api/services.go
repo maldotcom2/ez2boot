@@ -17,55 +17,60 @@ import (
 )
 
 func initServices(version string, buildDate string, cfg *config.Config, repo *db.Repository, logger *slog.Logger) (*middleware.Middleware, *worker.Worker, *Handlers, *Services) {
+
 	// Notification
-	notificationRepo := &notification.Repository{Base: repo}
-	notificationService := &notification.Service{
-		Repo:   notificationRepo,
-		Logger: logger,
-		Handlers: map[string]notification.ConfigHandler{
-			"telegram": &telegram.TelegramHandler{},
-			"email":    &email.EmailHandler{},
-		},
-	}
-	notificationHandler := &notification.Handler{Service: notificationService, Logger: logger}
+	notificationRepo := notification.NewRepository(repo)
+	notificationService := notification.NewService(notificationRepo, logger)
+	notificationHandler := notification.NewHandler(notificationService, logger)
+
+	/* 	notificationRepo := &notification.Repository{Base: repo}
+	   	notificationService := &notification.Service{
+	   		Repo:   notificationRepo,
+	   		Logger: logger,
+	   		Handlers: map[string]notification.ConfigHandler{
+	   			"telegram": &telegram.TelegramHandler{},
+	   			"email":    &email.EmailHandler{},
+	   		},
+	   	}
+	   	notificationHandler := &notification.Handler{Service: notificationService, Logger: logger} */
 
 	// Server
-	serverRepo := &server.Repository{Base: repo}
-	serverService := &server.Service{Repo: serverRepo, Logger: logger}
-	serverHandler := &server.Handler{Service: serverService, Logger: logger}
+	serverRepo := server.NewRepository(repo)
+	serverService := server.NewService(serverRepo, logger)
+	serverHandler := server.NewHandler(serverService, logger)
 
 	// User
-	userRepo := &user.Repository{Base: repo, Logger: logger}
-	userService := &user.Service{Repo: userRepo, Config: cfg, Logger: logger}
-	userHandler := &user.Handler{Service: userService, Logger: logger}
+	userRepo := user.NewRepository(repo, logger)
+	userService := user.NewService(userRepo, cfg, logger)
+	userHandler := user.NewHandler(userService, logger)
 
 	// Session
-	sessionRepo := &session.Repository{Base: repo}
-	sessionService := &session.Service{Repo: sessionRepo, NotificationService: notificationService, UserService: userService, Logger: logger}
-	sessionHandler := &session.Handler{Service: sessionService, Logger: logger}
+	sessionRepo := session.NewRepository(repo)
+	sessionService := session.NewService(sessionRepo, notificationService, userService, logger)
+	sessionHandler := session.NewHandler(sessionService, logger)
 
 	// Util
-	utilHandler := &util.Handler{Version: version, BuildDate: buildDate}
+	utilHandler := util.NewHandler(version, buildDate)
 
 	// Email
-	emailRepo := &email.Repository{Base: repo}
-	emailService := &email.Service{Repo: emailRepo, Logger: logger}
-	emailHandler := &email.Handler{Service: emailService, Logger: logger}
+	emailRepo := email.NewRepository(repo)
+	emailService := email.NewService(emailRepo, logger)
+	emailHandler := email.NewHandler(emailService, logger)
 
 	// Telegram
-	telegramRepo := &telegram.Repository{Base: repo}
-	telegramService := &telegram.Service{Repo: telegramRepo, Logger: logger}
-	telegramHandler := &telegram.Handler{Service: telegramService, Logger: logger}
+	telegramRepo := telegram.NewRepository(repo)
+	telegramService := telegram.NewService(telegramRepo, logger)
+	telegramHandler := telegram.NewHandler(telegramService, logger)
 
 	// aws
-	awsRepo := &aws.Repository{Base: repo}
-	awsService := &aws.Service{Repo: awsRepo, Config: cfg, ServerService: serverService, Logger: logger}
+	awsRepo := aws.NewRepository(repo)
+	awsService := aws.NewService(awsRepo, cfg, serverService, logger)
 
 	// Middlware
-	mw := &middleware.Middleware{UserService: userService, Config: cfg, Logger: logger}
+	mw := middleware.NewMiddleware(userService, cfg, logger)
 
 	// Worker
-	wkr := &worker.Worker{ServerService: serverService, SessionService: sessionService, UserService: userService, NotificationService: notificationService, Config: cfg, Logger: logger}
+	wkr := worker.NewWorker(serverService, sessionService, userService, notificationService, cfg, logger)
 
 	handlers := &Handlers{
 		UserHandler:         userHandler,
