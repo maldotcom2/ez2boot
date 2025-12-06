@@ -23,17 +23,6 @@ func initServices(version string, buildDate string, cfg *config.Config, repo *db
 	notificationService := notification.NewService(notificationRepo, logger)
 	notificationHandler := notification.NewHandler(notificationService, logger)
 
-	/* 	notificationRepo := &notification.Repository{Base: repo}
-	   	notificationService := &notification.Service{
-	   		Repo:   notificationRepo,
-	   		Logger: logger,
-	   		Handlers: map[string]notification.ConfigHandler{
-	   			"telegram": &telegram.TelegramHandler{},
-	   			"email":    &email.EmailHandler{},
-	   		},
-	   	}
-	   	notificationHandler := &notification.Handler{Service: notificationService, Logger: logger} */
-
 	// Server
 	serverRepo := server.NewRepository(repo)
 	serverService := server.NewService(serverRepo, logger)

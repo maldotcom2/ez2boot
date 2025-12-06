@@ -7,16 +7,16 @@ import (
 )
 
 // Global in-memory store of available notification channels
-var registry = make(map[string]Sender)
+var registry = make(map[string]NotificationChannel)
 
 // Add sender to registry - notification packages register via their inits when imported
-func Register(sender Sender) {
+func Register(sender NotificationChannel) {
 	registry[sender.Type()] = sender
 }
 
 // Retrieves sender by type name, return value can then be called for sending notification, eg sender, ok := GetSender("email"). sender.Send(params)
 // Used by notification worker
-func (s *Service) getNotificationSender(typeName string) (Sender, bool) {
+func (s *Service) getNotificationSender(typeName string) (NotificationChannel, bool) {
 	sender, ok := registry[typeName]
 	return sender, ok
 }
@@ -62,7 +62,7 @@ func (s *Service) getUserNotificationSettings(userID int64) (NotificationConfigR
 // Add or update personal notification options
 func (s *Service) setUserNotificationSettings(userID int64, req NotificationConfigRequest) error {
 	// Check the notification type is supported
-	handler, ok := s.Handlers[req.Type]
+	handler, ok := registry[req.Type]
 	if !ok {
 		return shared.ErrNotificationTypeNotSupported
 	}

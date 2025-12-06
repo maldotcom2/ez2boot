@@ -29,6 +29,4 @@ type EmailConfig struct {
 	Auth     bool   `json:"auth"`
 }
 
-type EmailNotification struct{}
-
-type EmailHandler struct{}
+type EmailChannel struct{}

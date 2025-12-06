@@ -24,6 +24,4 @@ type TelegramConfig struct {
 	ChatID string `json:"chat_id"`
 }
 
-type TelegramNotification struct{}
-
-type TelegramHandler struct{}
+type TelegramChannel struct{}
