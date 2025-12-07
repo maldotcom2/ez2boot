@@ -91,7 +91,6 @@ func (s *Service) HasUsers() (bool, error) {
 	return hasUsers, nil
 }
 
-// TODO improve validation here
 func (s *Service) createUser(req CreateUserRequest) error {
 	// Check email
 	if err := s.validateEmail(req.Email); err != nil {

@@ -19,6 +19,7 @@ func startWorkers(ctx context.Context, cfg *config.Config, wkr *worker.Worker, s
 		manager = services.AWSService
 	default:
 		logger.Error("Unsupported provider", "provider", cfg.CloudProvider)
+		return
 	}
 
 	// Start scraper
