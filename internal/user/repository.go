@@ -30,6 +30,17 @@ func (r *Repository) getUsers() ([]User, error) {
 	return users, nil
 }
 
+func (r *Repository) getUserAuthorisation(userID int64) (UserAuthRequest, error) {
+	query := `SELECT id, email, is_active, is_admin, api_enabled, ui_enabled FROM users WHERE id = $1`
+
+	var u UserAuthRequest
+	if err := r.Base.DB.QueryRow(query, userID).Scan(&u.UserID, &u.Email, &u.IsActive, &u.IsAdmin, &u.APIEnabled, &u.UIEnabled); err != nil {
+		return UserAuthRequest{}, err
+	}
+
+	return u, nil
+}
+
 // Bulk update from admin panel
 func (r *Repository) updateUserAuthorisation(users []UpdateUserRequest) error {
 	tx, err := r.Base.DB.Begin()
@@ -141,7 +152,7 @@ func (r *Repository) changePassword(email string, newHash string) error {
 	}
 
 	if rows == 0 {
-		return fmt.Errorf("Password was not updated for user: %s", email)
+		return fmt.Errorf("password was not updated for user: %s", email)
 	}
 
 	return nil
@@ -176,15 +187,4 @@ func (r *Repository) deleteExpiredUserSessions() (int64, error) {
 	}
 
 	return rows, nil
-}
-
-func (r *Repository) getUserAuthorisation(userID int64) (UserAuthRequest, error) {
-	query := `SELECT id, email, is_active, is_admin, api_enabled, ui_enabled FROM users WHERE id = $1`
-
-	var u UserAuthRequest
-	if err := r.Base.DB.QueryRow(query, userID).Scan(&u.UserID, &u.Email, &u.IsActive, &u.IsAdmin, &u.APIEnabled, &u.UIEnabled); err != nil {
-		return UserAuthRequest{}, err
-	}
-
-	return u, nil
 }

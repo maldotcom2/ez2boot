@@ -24,6 +24,23 @@ func (h *Handler) GetUsers() http.HandlerFunc {
 	}
 }
 
+// Get user authorisation for logged in user
+func (h *Handler) GetUserAuthorisation() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID := ctxutil.GetUserID(r.Context())
+
+		user, err := h.Service.GetUserAuthorisation(userID)
+		if err != nil {
+			h.Logger.Error("Error while fetching user authorisation")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Error while fetching user authorisation"})
+			return
+		}
+
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: user})
+	}
+}
+
 func (h *Handler) UpdateUserAuthorisation() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID := ctxutil.GetUserID(r.Context())
@@ -81,23 +98,6 @@ func (h *Handler) GetMode() http.HandlerFunc {
 func (h *Handler) CheckSession() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-	}
-}
-
-// Get user authorisation for logged in user
-func (h *Handler) GetUserAuthorisation() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		userID := ctxutil.GetUserID(r.Context())
-
-		user, err := h.Service.GetUserAuthorisation(userID)
-		if err != nil {
-			h.Logger.Error("Error while fetching user authorisation")
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Error while fetching user authorisation"})
-			return
-		}
-
-		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: user})
 	}
 }
 

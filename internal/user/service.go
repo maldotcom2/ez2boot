@@ -20,6 +20,16 @@ func (s *Service) getUsers() ([]User, error) {
 	return users, nil
 }
 
+// Get a user's authorisation, eg admin, API access, etc
+func (s *Service) GetUserAuthorisation(userID int64) (UserAuthRequest, error) {
+	user, err := s.Repo.getUserAuthorisation(userID)
+	if err != nil {
+		return UserAuthRequest{}, nil
+	}
+
+	return user, nil
+}
+
 func (s *Service) updateUserAuthorisation(users []UpdateUserRequest, currentUserID int64) error {
 	for _, u := range users {
 		if u.UserID == currentUserID {
@@ -225,16 +235,6 @@ func (s *Service) GetSessionStatus(token string) (UserSession, error) {
 	}
 
 	return userSession, nil
-}
-
-// Get a user's authorisation, eg admin, API access, etc
-func (s *Service) GetUserAuthorisation(userID int64) (UserAuthRequest, error) {
-	user, err := s.Repo.getUserAuthorisation(userID)
-	if err != nil {
-		return UserAuthRequest{}, nil
-	}
-
-	return user, nil
 }
 
 func (s *Service) ProcessUserSessions() error {

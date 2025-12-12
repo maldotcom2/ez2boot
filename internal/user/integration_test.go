@@ -3,15 +3,131 @@ package user
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"ez2boot/internal/ctxutil"
+	"ez2boot/internal/shared"
 	"ez2boot/internal/testutil"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
 	_ "github.com/mattn/go-sqlite3"
 )
+
+func TestGetUsers_Success(t *testing.T) {
+	// Create a test env
+	env := testutil.NewTestEnv(t)
+
+	// Domain constructors
+	userRepo := NewRepository(env.Base, env.Logger)
+	userSvc := NewService(userRepo, env.Cfg, env.Logger)
+	handler := NewHandler(userSvc, env.Logger)
+
+	// Create users
+	testutil.InsertUser(t, env.DB, "example@example.com", false)
+	testutil.InsertUser(t, env.DB, "example2@example.com", false)
+
+	// Call endpoint
+	req := httptest.NewRequest("GET", "/users", nil)
+	w := httptest.NewRecorder()
+	handler.GetUsers().ServeHTTP(w, req)
+
+	// Code check
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d, body=%s", w.Code, w.Body.String())
+	}
+
+	var got shared.ApiResponse[[]User]
+
+	if err := json.Unmarshal(w.Body.Bytes(), &got); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+
+	// Expected API response
+	want := shared.ApiResponse[[]User]{
+		Success: true,
+		Data: []User{
+			{
+				UserID:     1,
+				Email:      "example@example.com",
+				IsActive:   true,
+				IsAdmin:    false,
+				APIEnabled: true,
+				UIEnabled:  true,
+				LastLogin:  nil,
+			},
+			{
+				UserID:     2,
+				Email:      "example2@example.com",
+				IsActive:   true,
+				IsAdmin:    false,
+				APIEnabled: true,
+				UIEnabled:  true,
+				LastLogin:  nil,
+			},
+		},
+		Error: "",
+	}
+
+	// Compare response body
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("body mismatch\n got:  %#v\n want: %#v", got, want)
+	}
+
+}
+
+func TestGetUserAuthorisation_Success(t *testing.T) {
+	// Create a test env
+	env := testutil.NewTestEnv(t)
+
+	// Domain constructors
+	userRepo := NewRepository(env.Base, env.Logger)
+	userSvc := NewService(userRepo, env.Cfg, env.Logger)
+	handler := NewHandler(userSvc, env.Logger)
+
+	// Create target user
+	testutil.InsertUser(t, env.DB, "example@example.com", false)
+
+	// Call endpoint with required userID in context
+	req := httptest.NewRequest("GET", "/user/auth", nil)
+	ctx := context.WithValue(req.Context(), ctxutil.UserIDKey, int64(1))
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+	handler.GetUserAuthorisation().ServeHTTP(w, req)
+
+	// Code check
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d, body=%s", w.Code, w.Body.String())
+	}
+
+	var got shared.ApiResponse[UserAuthRequest]
+
+	if err := json.Unmarshal(w.Body.Bytes(), &got); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+
+	// Expected API response
+	want := shared.ApiResponse[UserAuthRequest]{
+		Success: true,
+		Data: UserAuthRequest{
+			UserID:     1,
+			Email:      "example@example.com",
+			IsActive:   true,
+			IsAdmin:    false,
+			APIEnabled: true,
+			UIEnabled:  true,
+		},
+		Error: "",
+	}
+
+	// Compare response body
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("body mismatch\n got:  %#v\n want: %#v", got, want)
+	}
+
+}
 
 func TestCreateUser_Success(t *testing.T) {
 	// Create a test env
@@ -23,13 +139,9 @@ func TestCreateUser_Success(t *testing.T) {
 	handler := NewHandler(userSvc, env.Logger)
 
 	// Create admin user which is required for user creation
-	query := `INSERT INTO users (id, email, password_hash, is_active, is_admin, api_enabled, ui_enabled, identity_provider)
-    		VALUES (1, 'admin@example.com', 'x', 1, 1, 1, 1, 'local')`
+	testutil.InsertUser(t, env.DB, "admin@example.com", true)
 
-	if _, err := env.DB.Exec(query); err != nil {
-		t.Fatalf("failed to insert admin user: %v", err)
-	}
-
+	// Request body
 	body := `{
         "email": "test@example.com",
         "password": "strongpassword123",
@@ -39,16 +151,14 @@ func TestCreateUser_Success(t *testing.T) {
         "ui_enabled": true
     }`
 
+	// Call endpoint with required userID in context
 	req := httptest.NewRequest("POST", "/user/new", strings.NewReader(body))
-
 	ctx := context.WithValue(req.Context(), ctxutil.UserIDKey, int64(1))
-
 	req = req.WithContext(ctx)
-
 	w := httptest.NewRecorder()
-
 	handler.CreateUser().ServeHTTP(w, req)
 
+	// Code check
 	if w.Code != http.StatusCreated {
 		t.Fatalf("expected 201, got %d, body=%s", w.Code, w.Body.String())
 	}
@@ -74,13 +184,9 @@ func TestCreateUser_NotAdmin_ReturnsForbidden(t *testing.T) {
 	handler := NewHandler(userSvc, env.Logger)
 
 	// Create non-admin user
-	query := `INSERT INTO users (id, email, password_hash, is_active, is_admin, api_enabled, ui_enabled, identity_provider)
-    		VALUES (1, 'admin@example.com', 'x', 1, 0, 1, 1, 'local')`
+	testutil.InsertUser(t, env.DB, "example@example.com", false)
 
-	if _, err := env.DB.Exec(query); err != nil {
-		t.Fatalf("failed to insert user: %v", err)
-	}
-
+	// Request body
 	body := `{
         "email": "test@example.com",
         "password": "strongpassword123",
@@ -90,16 +196,14 @@ func TestCreateUser_NotAdmin_ReturnsForbidden(t *testing.T) {
         "ui_enabled": true
     }`
 
+	// Call endpoint with required userID in context
 	req := httptest.NewRequest("POST", "/user/new", strings.NewReader(body))
-
 	ctx := context.WithValue(req.Context(), ctxutil.UserIDKey, int64(1))
-
 	req = req.WithContext(ctx)
-
 	w := httptest.NewRecorder()
-
 	handler.CreateUser().ServeHTTP(w, req)
 
+	// Code check
 	if w.Code != http.StatusForbidden {
 		t.Fatalf("expected 403, got %d, body=%s", w.Code, w.Body.String())
 	}
