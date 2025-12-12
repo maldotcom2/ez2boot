@@ -129,6 +129,51 @@ func TestGetUserAuthorisation_Success(t *testing.T) {
 
 }
 
+func TestUpdateUserAuthorisation_Success(t *testing.T) {
+	// Create a test env
+	env := testutil.NewTestEnv(t)
+
+	// Domain constructors
+	userRepo := NewRepository(env.Base, env.Logger)
+	userSvc := NewService(userRepo, env.Cfg, env.Logger)
+	handler := NewHandler(userSvc, env.Logger)
+
+	// Create users, caller must be admin
+	testutil.InsertUser(t, env.DB, "admin@example.com", true)
+	testutil.InsertUser(t, env.DB, "example@example.com", false)
+
+	// Request body
+	body := `[{
+		"user_id": 2,
+        "is_active": true,
+        "is_admin": false,
+        "api_enabled": false,
+        "ui_enabled": true
+    }]`
+
+	// Call endpoint with required userID in context
+	req := httptest.NewRequest("POST", "/user/auth/update", strings.NewReader(body))
+	ctx := context.WithValue(req.Context(), ctxutil.UserIDKey, int64(1))
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+	handler.UpdateUserAuthorisation().ServeHTTP(w, req)
+
+	// Code check
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d, body=%s", w.Code, w.Body.String())
+	}
+
+	// Verify DB change
+	var apiEnabled int64
+	row := env.DB.QueryRow("SELECT api_enabled FROM users WHERE email = $1", "example@example.com")
+	if err := row.Scan(&apiEnabled); err != nil {
+		t.Fatalf("Failed to select value: %v", err)
+	}
+	if apiEnabled != 0 {
+		t.Fatalf("Did not update authorisation for user, expected 0, got %d", apiEnabled)
+	}
+}
+
 func TestCreateUser_Success(t *testing.T) {
 	// Create a test env
 	env := testutil.NewTestEnv(t)
