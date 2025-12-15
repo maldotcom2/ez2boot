@@ -6,6 +6,7 @@ import (
 	"ez2boot/internal/db"
 	"io"
 	"log/slog"
+	"net/http"
 	"testing"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -16,6 +17,7 @@ type TestEnv struct {
 	Logger *slog.Logger
 	Base   *db.Repository
 	Cfg    *config.Config
+	App    http.Handler
 }
 
 // Build test environment - in memory only
@@ -54,19 +56,21 @@ func NewTestEnv(t *testing.T) *TestEnv {
 		DB:     testDB,
 		Logger: logger,
 		Base:   baseRepo,
-		Cfg:    &config.Config{},
+		Cfg: &config.Config{
+			RateLimit: 30,
+		},
 	}
 
 	return env
 }
 
-func InsertUser(t *testing.T, db *sql.DB, email string, admin bool) {
+func InsertUser(t *testing.T, db *sql.DB, email string, passwordHash string, isActive bool, isAdmin bool, apiEnabled bool, uiEnabled bool) {
 	t.Helper()
 
 	_, err := db.Exec(`
         INSERT INTO users (email, password_hash, is_active, is_admin, api_enabled, ui_enabled, identity_provider)
-        VALUES ($1, 'x', 1, $2, 1, 1, 'local')
-    `, email, admin)
+        VALUES ($1, $2, $3, $4, $5, $6, 'local')
+    `, email, passwordHash, isActive, isAdmin, apiEnabled, uiEnabled)
 	if err != nil {
 		t.Fatalf("failed to insert user: %v", err)
 	}

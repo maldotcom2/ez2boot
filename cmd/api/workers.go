@@ -2,13 +2,14 @@ package main
 
 import (
 	"context"
+	"ez2boot/internal/app"
 	"ez2boot/internal/config"
 	"ez2boot/internal/provider"
 	"ez2boot/internal/worker"
 	"log/slog"
 )
 
-func startWorkers(ctx context.Context, cfg *config.Config, wkr *worker.Worker, services *Services, logger *slog.Logger) {
+func startWorkers(ctx context.Context, cfg *config.Config, wkr *worker.Worker, services *app.Services, logger *slog.Logger) {
 	// Assign scrape implementation based off configured cloud provider
 	var scraper provider.Scraper
 	var manager provider.Manager

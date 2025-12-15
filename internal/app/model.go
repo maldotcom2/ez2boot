@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"ez2boot/internal/notification"

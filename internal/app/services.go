@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"ez2boot/internal/config"
@@ -16,7 +16,7 @@ import (
 	"log/slog"
 )
 
-func initServices(version string, buildDate string, cfg *config.Config, repo *db.Repository, logger *slog.Logger) (*middleware.Middleware, *worker.Worker, *Handlers, *Services) {
+func InitServices(version string, buildDate string, cfg *config.Config, repo *db.Repository, logger *slog.Logger) (*middleware.Middleware, *worker.Worker, *Handlers, *Services) {
 
 	// Notification
 	notificationRepo := notification.NewRepository(repo)

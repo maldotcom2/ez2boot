@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"ez2boot/internal/config"
@@ -9,7 +9,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func setupBackendRoutes(
+func SetupBackendRoutes(
 	cfg *config.Config,
 	router *mux.Router,
 	mw *middleware.Middleware,
@@ -76,7 +76,7 @@ func setupBackendRoutes(
 	uiRouter.HandleFunc("/notification/types", handlers.NotificationHandler.GetNotificationTypes()).Methods("GET")
 }
 
-func setupFrontendRoutes(router *mux.Router) {
+func SetupFrontendRoutes(router *mux.Router) {
 	// Serve static frontend (Vue build output)
 	staticDir := "./web"
 

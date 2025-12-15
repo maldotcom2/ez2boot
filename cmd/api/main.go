@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
+	"ez2boot/internal/app"
 	"ez2boot/internal/config"
+	"ez2boot/internal/router"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-
-	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -31,7 +31,7 @@ func main() {
 	defer conn.Close()
 
 	// Setup domain/service structs
-	mw, wkr, handlers, services := initServices(version, buildDate, cfg, repo, logger)
+	mw, wkr, handlers, services := app.InitServices(version, buildDate, cfg, repo, logger)
 
 	// Setup DB tables
 	if err := repo.SetupDB(); err != nil {
@@ -49,14 +49,7 @@ func main() {
 	// No users = setup mode
 	cfg.SetupMode = !setupMode
 
-	// Create router
-	router := mux.NewRouter()
-
-	// Setup backend routes
-	setupBackendRoutes(cfg, router, mw, handlers)
-
-	// Setup frontend routes
-	setupFrontendRoutes(router)
+	router := router.BuildRouter(cfg, mw, handlers)
 
 	// Set Go routine context
 	ctx, cancel := context.WithCancel(context.Background())
