@@ -2,21 +2,67 @@ package user_test
 
 import (
 	"bytes"
-	"context"
 	"database/sql"
 	"encoding/json"
-	"ez2boot/internal/ctxutil"
 	"ez2boot/internal/shared"
 	"ez2boot/internal/testutil"
 	"ez2boot/internal/user"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
-	"strings"
 	"testing"
 
 	_ "github.com/mattn/go-sqlite3"
 )
+
+func TestLogin_Success(t *testing.T) {
+	// Create a test env
+	env := testutil.NewTestEnv(t)
+
+	// Create user
+	email := "example@example.com"
+	password := "testpassword123"
+	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
+	testutil.InsertUser(t, env.DB, email, hash, true, false, true, true)
+
+	// Helper checks cookie is returned
+	_ = testutil.LoginAndGetCookies(t, env.Router, email, password)
+}
+
+func TestLogin_WrongPassword_ReturnsUnauth(t *testing.T) {
+	// Create a test env
+	env := testutil.NewTestEnv(t)
+
+	// Create user
+	email := "example@example.com"
+
+	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
+	testutil.InsertUser(t, env.DB, email, hash, true, false, true, true)
+
+	// Attempt login with wrong password
+	loginPayload := user.UserLogin{
+		Email:    email,
+		Password: "badpassword123",
+	}
+
+	loginBody, _ := json.Marshal(loginPayload)
+	req := httptest.NewRequest("POST", "/ui/user/login", bytes.NewReader(loginBody))
+
+	// Record the response
+	w := httptest.NewRecorder()
+	env.Router.ServeHTTP(w, req)
+
+	// Expect 401 Unauthorized
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d, body=%s", w.Code, w.Body.String())
+	}
+
+	// Expect no session cookies to be set
+	cookies := w.Result().Cookies()
+	if len(cookies) != 0 {
+		t.Fatalf("expected no cookies, got %d cookies", len(cookies))
+	}
+}
 
 func TestGetUsers_Success(t *testing.T) {
 	// Create a test env
@@ -30,25 +76,7 @@ func TestGetUsers_Success(t *testing.T) {
 	testutil.InsertUser(t, env.DB, "example@example.com", "x", true, false, true, true)
 	testutil.InsertUser(t, env.DB, "example2@example.com", "x", true, false, true, true)
 
-	// Login
-	loginPayload := user.UserLogin{
-		Email:    adminEmail,
-		Password: adminPassword,
-	}
-	loginBody, _ := json.Marshal(loginPayload)
-	loginReq := httptest.NewRequest("POST", "/ui/user/login", bytes.NewReader(loginBody))
-
-	loginRec := httptest.NewRecorder()
-	env.Router.ServeHTTP(loginRec, loginReq)
-
-	if loginRec.Code != http.StatusOK {
-		t.Fatalf("login failed, expected 200, got %d, body=%s", loginRec.Code, loginRec.Body.String())
-	}
-
-	cookies := loginRec.Result().Cookies()
-	if len(cookies) == 0 {
-		t.Fatal("login did not set a cookie")
-	}
+	cookies := testutil.LoginAndGetCookies(t, env.Router, adminEmail, adminPassword)
 
 	// Prepare HTTP request to the real route
 	req := httptest.NewRequest("GET", "/ui/users", nil)
@@ -121,20 +149,23 @@ func TestGetUserAuthorisation_Success(t *testing.T) {
 	// Create a test env
 	env := testutil.NewTestEnv(t)
 
-	// Domain constructors
-	userRepo := user.NewRepository(env.Base, env.Logger)
-	userSvc := user.NewService(userRepo, env.Cfg, env.Logger)
-	handler := user.NewHandler(userSvc, env.Logger)
+	// Create user
+	email := "example@example.com"
+	password := "testpassword123"
+	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
+	testutil.InsertUser(t, env.DB, email, hash, true, false, true, true)
 
-	// Create target user
-	testutil.InsertUser(t, env.DB, "example@example.com", "x", true, false, true, true)
+	cookies := testutil.LoginAndGetCookies(t, env.Router, email, password)
 
-	// Call endpoint with required userID in context
-	req := httptest.NewRequest("GET", "/user/auth", nil)
-	ctx := context.WithValue(req.Context(), ctxutil.UserIDKey, int64(1))
-	req = req.WithContext(ctx)
+	// Prepare HTTP request to the real route
+	req := httptest.NewRequest("GET", "/ui/user/auth", nil)
+	for _, c := range cookies {
+		req.AddCookie(c)
+	}
+
+	// Record the response
 	w := httptest.NewRecorder()
-	handler.GetUserAuthorisation().ServeHTTP(w, req)
+	env.Router.ServeHTTP(w, req)
 
 	// Code check
 	if w.Code != http.StatusOK {
@@ -172,30 +203,35 @@ func TestUpdateUserAuthorisation_Success(t *testing.T) {
 	// Create a test env
 	env := testutil.NewTestEnv(t)
 
-	// Domain constructors
-	userRepo := user.NewRepository(env.Base, env.Logger)
-	userSvc := user.NewService(userRepo, env.Cfg, env.Logger)
-	handler := user.NewHandler(userSvc, env.Logger)
-
-	// Create users, caller must be admin
-	testutil.InsertUser(t, env.DB, "admin@example.com", "x", true, true, true, true)
+	// Create users
+	adminEmail := "admin@example.com"
+	adminPassword := "testpassword123"
+	adminHash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
+	testutil.InsertUser(t, env.DB, adminEmail, adminHash, true, true, true, true)
 	testutil.InsertUser(t, env.DB, "example@example.com", "x", true, false, true, true)
 
-	// Request body
-	body := `[{
-		"user_id": 2,
-        "is_active": true,
-        "is_admin": false,
-        "api_enabled": false,
-        "ui_enabled": true
-    }]`
+	cookies := testutil.LoginAndGetCookies(t, env.Router, adminEmail, adminPassword)
 
-	// Call endpoint with required userID in context
-	req := httptest.NewRequest("POST", "/user/auth/update", strings.NewReader(body))
-	ctx := context.WithValue(req.Context(), ctxutil.UserIDKey, int64(1))
-	req = req.WithContext(ctx)
+	// Prepare HTTP request to the real route
+	reqPayload := []user.UserAuthRequest{
+		{
+			UserID:     2,
+			IsActive:   true,
+			IsAdmin:    false,
+			APIEnabled: false,
+			UIEnabled:  true,
+		},
+	}
+
+	body, _ := json.Marshal(reqPayload)
+	req := httptest.NewRequest("POST", "/ui/user/auth/update", bytes.NewReader(body))
+	for _, c := range cookies {
+		req.AddCookie(c)
+	}
+
+	// Record the response
 	w := httptest.NewRecorder()
-	handler.UpdateUserAuthorisation().ServeHTTP(w, req)
+	env.Router.ServeHTTP(w, req)
 
 	// Code check
 	if w.Code != http.StatusOK {
@@ -217,30 +253,33 @@ func TestCreateUser_Success(t *testing.T) {
 	// Create a test env
 	env := testutil.NewTestEnv(t)
 
-	// Domain constructors
-	userRepo := user.NewRepository(env.Base, env.Logger)
-	userSvc := user.NewService(userRepo, env.Cfg, env.Logger)
-	handler := user.NewHandler(userSvc, env.Logger)
+	// Create users
+	adminEmail := "admin@example.com"
+	adminPassword := "testpassword123"
+	adminHash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
+	testutil.InsertUser(t, env.DB, adminEmail, adminHash, true, true, true, true)
 
-	// Create admin user which is required for user creation
-	testutil.InsertUser(t, env.DB, "admin@example.com", "x", true, true, true, true)
+	cookies := testutil.LoginAndGetCookies(t, env.Router, adminEmail, adminPassword)
 
-	// Request body
-	body := `{
-        "email": "test@example.com",
-        "password": "strongpassword123",
-        "is_active": true,
-        "is_admin": false,
-        "api_enabled": true,
-        "ui_enabled": true
-    }`
+	// Prepare HTTP request to the real route
+	reqPayload := user.CreateUserRequest{
+		Email:      "test@example.com",
+		Password:   "strongpassword123",
+		IsActive:   true,
+		IsAdmin:    false,
+		APIEnabled: true,
+		UIEnabled:  true,
+	}
 
-	// Call endpoint with required userID in context
-	req := httptest.NewRequest("POST", "/user/new", strings.NewReader(body))
-	ctx := context.WithValue(req.Context(), ctxutil.UserIDKey, int64(1))
-	req = req.WithContext(ctx)
+	body, _ := json.Marshal(reqPayload)
+	req := httptest.NewRequest("POST", "/ui/user/new", bytes.NewReader(body))
+	for _, c := range cookies {
+		req.AddCookie(c)
+	}
+
+	// Record the response
 	w := httptest.NewRecorder()
-	handler.CreateUser().ServeHTTP(w, req)
+	env.Router.ServeHTTP(w, req)
 
 	// Code check
 	if w.Code != http.StatusCreated {
@@ -249,7 +288,7 @@ func TestCreateUser_Success(t *testing.T) {
 
 	// Verify DB row exists
 	var email string
-	row := env.DB.QueryRow("SELECT email FROM users WHERE email = ?", "test@example.com")
+	row := env.DB.QueryRow("SELECT email FROM users WHERE email = $1", "test@example.com")
 	if err := row.Scan(&email); err != nil {
 		t.Fatalf("user not inserted: %v", err)
 	}
@@ -262,30 +301,33 @@ func TestCreateUser_NotAdmin_ReturnsForbidden(t *testing.T) {
 	// Create a test env
 	env := testutil.NewTestEnv(t)
 
-	// Domain constructors
-	userRepo := user.NewRepository(env.Base, env.Logger)
-	userSvc := user.NewService(userRepo, env.Cfg, env.Logger)
-	handler := user.NewHandler(userSvc, env.Logger)
-
 	// Create non-admin user
-	testutil.InsertUser(t, env.DB, "example@example.com", "x", true, false, true, true)
+	email := "example@example.com"
+	password := "testpassword123"
+	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
+	testutil.InsertUser(t, env.DB, email, hash, true, false, true, true)
 
-	// Request body
-	body := `{
-        "email": "test@example.com",
-        "password": "strongpassword123",
-        "is_active": true,
-        "is_admin": false,
-        "api_enabled": true,
-        "ui_enabled": true
-    }`
+	cookies := testutil.LoginAndGetCookies(t, env.Router, email, password)
 
-	// Call endpoint with required userID in context
-	req := httptest.NewRequest("POST", "/user/new", strings.NewReader(body))
-	ctx := context.WithValue(req.Context(), ctxutil.UserIDKey, int64(1))
-	req = req.WithContext(ctx)
+	// Prepare HTTP request to the real route
+	reqPayload := user.CreateUserRequest{
+		Email:      "test@example.com",
+		Password:   "strongpassword123",
+		IsActive:   true,
+		IsAdmin:    false,
+		APIEnabled: true,
+		UIEnabled:  true,
+	}
+
+	body, _ := json.Marshal(reqPayload)
+	req := httptest.NewRequest("POST", "/ui/user/new", bytes.NewReader(body))
+	for _, c := range cookies {
+		req.AddCookie(c)
+	}
+
+	// Record the response
 	w := httptest.NewRecorder()
-	handler.CreateUser().ServeHTTP(w, req)
+	env.Router.ServeHTTP(w, req)
 
 	// Code check
 	if w.Code != http.StatusForbidden {
@@ -293,11 +335,11 @@ func TestCreateUser_NotAdmin_ReturnsForbidden(t *testing.T) {
 	}
 
 	// Check if user was created anyway
-	var email string
+	var eml string
 	row := env.DB.QueryRow("SELECT email FROM users WHERE email = ?", "test@example.com")
-	err := row.Scan(&email)
+	err := row.Scan(&eml)
 	if err == nil {
-		t.Fatalf("user was created by non-admin: %s", email)
+		t.Fatalf("user was created by non-admin: %s", eml)
 	}
 	if err != sql.ErrNoRows {
 		t.Fatalf("unexpected DB error: %v", err)
