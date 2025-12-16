@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"database/sql"
+	"ez2boot/internal/app"
 	"ez2boot/internal/config"
 	"ez2boot/internal/db"
 	"io"
@@ -17,7 +18,7 @@ type TestEnv struct {
 	Logger *slog.Logger
 	Base   *db.Repository
 	Cfg    *config.Config
-	App    http.Handler
+	Router http.Handler
 }
 
 // Build test environment - in memory only
@@ -52,16 +53,22 @@ func NewTestEnv(t *testing.T) *TestEnv {
 		t.Fatalf("failed to setup DB: %v", err)
 	}
 
-	env := &TestEnv{
+	cfg := &config.Config{
+		RateLimit: 30,
+	}
+
+	router, _, _, err := app.NewApp("dev", "unknown", cfg, baseRepo, logger)
+	if err != nil {
+		t.Fatalf("failed to initialize app: %v", err)
+	}
+
+	return &TestEnv{
 		DB:     testDB,
 		Logger: logger,
 		Base:   baseRepo,
-		Cfg: &config.Config{
-			RateLimit: 30,
-		},
+		Cfg:    cfg,
+		Router: router,
 	}
-
-	return env
 }
 
 func InsertUser(t *testing.T, db *sql.DB, email string, passwordHash string, isActive bool, isAdmin bool, apiEnabled bool, uiEnabled bool) {

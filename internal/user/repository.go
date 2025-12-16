@@ -88,16 +88,6 @@ func (r *Repository) deleteUserSession(tokenHash string) error {
 	return nil
 }
 
-// Database contains users true or false
-func (r *Repository) hasUsers() (bool, error) {
-	var count int64
-	if err := r.Base.DB.QueryRow("SELECT COUNT(*) FROM users").Scan(&count); err != nil {
-		return false, err
-	}
-
-	return count > 0, nil
-}
-
 // Create new user
 func (r *Repository) createUser(u CreateUser) error {
 	if _, err := r.Base.DB.Exec("INSERT INTO users (email, password_hash, is_active, is_admin, api_enabled, ui_enabled, identity_provider) VALUES ($1, $2, $3, $4, $5, $6, $7)", u.Email, u.PasswordHash, u.IsActive, u.IsAdmin, u.APIEnabled, u.UIEnabled, "local"); err != nil {

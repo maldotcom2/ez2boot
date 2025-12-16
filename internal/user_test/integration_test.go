@@ -5,9 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"ez2boot/internal/app"
 	"ez2boot/internal/ctxutil"
-	"ez2boot/internal/router"
 	"ez2boot/internal/shared"
 	"ez2boot/internal/testutil"
 	"ez2boot/internal/user"
@@ -23,12 +21,6 @@ import (
 func TestGetUsers_Success(t *testing.T) {
 	// Create a test env
 	env := testutil.NewTestEnv(t)
-
-	// Initialise services, handlers, mw
-	mw, _, handlers, _ := app.InitServices("dev", "unknown", env.Cfg, env.Base, env.Logger)
-
-	// Build router
-	router := router.BuildRouter(env.Cfg, mw, handlers)
 
 	// Create users
 	adminEmail := "admin@example.com"
@@ -47,7 +39,7 @@ func TestGetUsers_Success(t *testing.T) {
 	loginReq := httptest.NewRequest("POST", "/ui/user/login", bytes.NewReader(loginBody))
 
 	loginRec := httptest.NewRecorder()
-	router.ServeHTTP(loginRec, loginReq)
+	env.Router.ServeHTTP(loginRec, loginReq)
 
 	if loginRec.Code != http.StatusOK {
 		t.Fatalf("login failed, expected 200, got %d, body=%s", loginRec.Code, loginRec.Body.String())
@@ -66,7 +58,7 @@ func TestGetUsers_Success(t *testing.T) {
 
 	// Record the response
 	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
+	env.Router.ServeHTTP(w, req)
 
 	// Check HTTP status code
 	if w.Code != http.StatusOK {

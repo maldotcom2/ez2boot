@@ -91,16 +91,6 @@ func (s *Service) logout(token string) error {
 	return nil
 }
 
-// Check if any users exist in DB
-func (s *Service) HasUsers() (bool, error) {
-	hasUsers, err := s.Repo.hasUsers()
-	if err != nil {
-		return false, err
-	}
-
-	return hasUsers, nil
-}
-
 func (s *Service) createUser(req CreateUserRequest) error {
 	// Check email
 	if err := s.validateEmail(req.Email); err != nil {
