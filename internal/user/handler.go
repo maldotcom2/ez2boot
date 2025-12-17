@@ -10,97 +10,6 @@ import (
 	"time"
 )
 
-func (h *Handler) GetUsers() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		users, err := h.Service.getUsers()
-		if err != nil {
-			h.Logger.Error("Error while fetching users", "error", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Error while fetching users"})
-			return
-		}
-
-		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: users})
-	}
-}
-
-// Get user authorisation for logged in user
-func (h *Handler) GetUserAuthorisation() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		userID := ctxutil.GetUserID(r.Context())
-
-		user, err := h.Service.GetUserAuthorisation(userID)
-		if err != nil {
-			h.Logger.Error("Error while fetching user authorisation")
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Error while fetching user authorisation"})
-			return
-		}
-
-		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: user})
-	}
-}
-
-func (h *Handler) UpdateUserAuthorisation() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		userID := ctxutil.GetUserID(r.Context())
-
-		var req []UpdateUserRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			h.Logger.Error("Malformed request", "error", err)
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
-			return
-		}
-
-		// Admin check
-		if !h.userIsAdmin(w, r) {
-			return // Response written by helper
-		}
-
-		if err := h.Service.updateUserAuthorisation(req, userID); err != nil {
-			var resp shared.ApiResponse[any]
-			switch {
-			case errors.Is(err, shared.ErrCannotModifyOwnAuth):
-				h.Logger.Error("User cannot modify their own authorisations")
-				w.WriteHeader(http.StatusBadRequest)
-				resp = shared.ApiResponse[any]{
-					Success: false,
-					Error:   err.Error(),
-				}
-			default:
-				h.Logger.Info("Error updating user authorisation", "error", err)
-				w.WriteHeader(http.StatusInternalServerError)
-				resp = (shared.ApiResponse[any]{
-					Success: false,
-					Error:   "Error updating user authorisation"})
-			}
-
-			json.NewEncoder(w).Encode(resp)
-			return
-		}
-	}
-}
-
-// UI endpoint for runtime state and bootstrap flow // TODO Does this belong here?
-func (h *Handler) GetMode() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// Get mode from config
-		setupMode := h.Service.Config.SetupMode
-
-		response := SetupResponse{SetupMode: setupMode}
-
-		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: response})
-	}
-}
-
-// Session validity check for UI
-func (h *Handler) CheckSession() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}
-}
-
 // Login session user
 func (h *Handler) Login() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -195,6 +104,97 @@ func (h *Handler) Logout() http.HandlerFunc {
 
 		h.Logger.Info("User logged out", "email", email)
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
+	}
+}
+
+func (h *Handler) GetUsers() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		users, err := h.Service.getUsers()
+		if err != nil {
+			h.Logger.Error("Error while fetching users", "error", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Error while fetching users"})
+			return
+		}
+
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: users})
+	}
+}
+
+// Get user authorisation for logged in user
+func (h *Handler) GetUserAuthorisation() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID := ctxutil.GetUserID(r.Context())
+
+		user, err := h.Service.GetUserAuthorisation(userID)
+		if err != nil {
+			h.Logger.Error("Error while fetching user authorisation")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Error while fetching user authorisation"})
+			return
+		}
+
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: user})
+	}
+}
+
+func (h *Handler) UpdateUserAuthorisation() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID := ctxutil.GetUserID(r.Context())
+
+		var req []UpdateUserRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			h.Logger.Error("Malformed request", "error", err)
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
+			return
+		}
+
+		// Admin check
+		if !h.userIsAdmin(w, r) {
+			return // Response written by helper
+		}
+
+		if err := h.Service.updateUserAuthorisation(req, userID); err != nil {
+			var resp shared.ApiResponse[any]
+			switch {
+			case errors.Is(err, shared.ErrCannotModifyOwnAuth):
+				h.Logger.Error("User cannot modify their own authorisations")
+				w.WriteHeader(http.StatusBadRequest)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   err.Error(),
+				}
+			default:
+				h.Logger.Info("Error updating user authorisation", "error", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				resp = (shared.ApiResponse[any]{
+					Success: false,
+					Error:   "Error updating user authorisation"})
+			}
+
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
+	}
+}
+
+// UI endpoint for runtime state and bootstrap flow // TODO Does this belong here?
+func (h *Handler) GetMode() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Get mode from config
+		setupMode := h.Service.Config.SetupMode
+
+		response := SetupResponse{SetupMode: setupMode}
+
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: response})
+	}
+}
+
+// Session validity check for UI
+func (h *Handler) CheckSession() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
 	}
 }
 

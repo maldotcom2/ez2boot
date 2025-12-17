@@ -11,39 +11,6 @@ import (
 	"github.com/alexedwards/argon2id"
 )
 
-func (s *Service) getUsers() ([]User, error) {
-	users, err := s.Repo.getUsers()
-	if err != nil {
-		return nil, err
-	}
-
-	return users, nil
-}
-
-// Get a user's authorisation, eg admin, API access, etc
-func (s *Service) GetUserAuthorisation(userID int64) (UserAuthRequest, error) {
-	user, err := s.Repo.getUserAuthorisation(userID)
-	if err != nil {
-		return UserAuthRequest{}, nil
-	}
-
-	return user, nil
-}
-
-func (s *Service) updateUserAuthorisation(users []UpdateUserRequest, currentUserID int64) error {
-	for _, u := range users {
-		if u.UserID == currentUserID {
-			return shared.ErrCannotModifyOwnAuth
-		}
-	}
-
-	if err := s.Repo.updateUserAuthorisation(users); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // Attempt user login using even-time
 func (s *Service) login(u UserLogin) (string, error) {
 	if u.Email == "" || u.Password == "" {
@@ -85,6 +52,39 @@ func (s *Service) logout(token string) error {
 	hash := util.HashToken(token)
 
 	if err := s.Repo.deleteUserSession(hash); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Service) getUsers() ([]User, error) {
+	users, err := s.Repo.getUsers()
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
+// Get a user's authorisation, eg admin, API access, etc
+func (s *Service) GetUserAuthorisation(userID int64) (UserAuthRequest, error) {
+	user, err := s.Repo.getUserAuthorisation(userID)
+	if err != nil {
+		return UserAuthRequest{}, nil
+	}
+
+	return user, nil
+}
+
+func (s *Service) updateUserAuthorisation(users []UpdateUserRequest, currentUserID int64) error {
+	for _, u := range users {
+		if u.UserID == currentUserID {
+			return shared.ErrCannotModifyOwnAuth
+		}
+	}
+
+	if err := s.Repo.updateUserAuthorisation(users); err != nil {
 		return err
 	}
 

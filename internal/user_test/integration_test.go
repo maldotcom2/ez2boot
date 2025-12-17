@@ -25,7 +25,7 @@ func TestLogin_Success(t *testing.T) {
 	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
 	testutil.InsertUser(t, env.DB, email, hash, true, false, true, true)
 
-	// Helper checks cookie is returned
+	// Helper confirms login
 	_ = testutil.LoginAndGetCookies(t, env.Router, email, password)
 }
 
@@ -54,13 +54,53 @@ func TestLogin_WrongPassword_ReturnsUnauth(t *testing.T) {
 
 	// Expect 401 Unauthorized
 	if w.Code != http.StatusUnauthorized {
-		t.Fatalf("expected 401, got %d, body=%s", w.Code, w.Body.String())
+		t.Fatalf("want 401, got %d, body=%s", w.Code, w.Body.String())
 	}
 
 	// Expect no session cookies to be set
 	cookies := w.Result().Cookies()
 	if len(cookies) != 0 {
-		t.Fatalf("expected no cookies, got %d cookies", len(cookies))
+		t.Fatalf("want no cookies, got %d cookies", len(cookies))
+	}
+}
+
+func TestLogout_Success(t *testing.T) {
+	// Create a test env
+	env := testutil.NewTestEnv(t)
+
+	// Create user
+	email := "example@example.com"
+	password := "testpassword123"
+	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
+	testutil.InsertUser(t, env.DB, email, hash, true, false, true, true)
+
+	// Helper confirms login
+	cookies := testutil.LoginAndGetCookies(t, env.Router, email, password)
+
+	// Prepare HTTP request to the real route
+	req := httptest.NewRequest("POST", "/ui/user/logout", nil)
+	for _, c := range cookies {
+		req.AddCookie(c)
+	}
+
+	// Record the response
+	w := httptest.NewRecorder()
+	env.Router.ServeHTTP(w, req)
+
+	// Check HTTP status code
+	if w.Code != http.StatusOK {
+		t.Fatalf("want 200, got %d, body=%s", w.Code, w.Body.String())
+	}
+
+	// Verify DB change
+	var count int64
+	err := env.DB.QueryRow("SELECT COUNT(*) FROM user_sessions WHERE user_id = $1", 1).Scan(&count)
+	if err != nil {
+		t.Fatalf("db query failed: %v", err)
+	}
+
+	if count != 0 {
+		t.Fatalf("row count for user session want: 0, found %d rows", count)
 	}
 }
 
@@ -90,7 +130,7 @@ func TestGetUsers_Success(t *testing.T) {
 
 	// Check HTTP status code
 	if w.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d, body=%s", w.Code, w.Body.String())
+		t.Fatalf("want 200, got %d, body=%s", w.Code, w.Body.String())
 	}
 
 	// Decode response
@@ -169,7 +209,7 @@ func TestGetUserAuthorisation_Success(t *testing.T) {
 
 	// Code check
 	if w.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d, body=%s", w.Code, w.Body.String())
+		t.Fatalf("want 200, got %d, body=%s", w.Code, w.Body.String())
 	}
 
 	var got shared.ApiResponse[user.UserAuthRequest]
@@ -235,7 +275,7 @@ func TestUpdateUserAuthorisation_Success(t *testing.T) {
 
 	// Code check
 	if w.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d, body=%s", w.Code, w.Body.String())
+		t.Fatalf("want 200, got %d, body=%s", w.Code, w.Body.String())
 	}
 
 	// Verify DB change
@@ -245,7 +285,7 @@ func TestUpdateUserAuthorisation_Success(t *testing.T) {
 		t.Fatalf("Failed to select value: %v", err)
 	}
 	if apiEnabled != 0 {
-		t.Fatalf("Did not update authorisation for user, expected 0, got %d", apiEnabled)
+		t.Fatalf("Did not update authorisation for user, want 0, got %d", apiEnabled)
 	}
 }
 
@@ -283,7 +323,7 @@ func TestCreateUser_Success(t *testing.T) {
 
 	// Code check
 	if w.Code != http.StatusCreated {
-		t.Fatalf("expected 201, got %d, body=%s", w.Code, w.Body.String())
+		t.Fatalf("want 201, got %d, body=%s", w.Code, w.Body.String())
 	}
 
 	// Verify DB row exists
@@ -331,12 +371,12 @@ func TestCreateUser_NotAdmin_ReturnsForbidden(t *testing.T) {
 
 	// Code check
 	if w.Code != http.StatusForbidden {
-		t.Fatalf("expected 403, got %d, body=%s", w.Code, w.Body.String())
+		t.Fatalf("want 403, got %d, body=%s", w.Code, w.Body.String())
 	}
 
 	// Check if user was created anyway
 	var eml string
-	row := env.DB.QueryRow("SELECT email FROM users WHERE email = ?", "test@example.com")
+	row := env.DB.QueryRow("SELECT email FROM users WHERE email = $1", "test@example.com")
 	err := row.Scan(&eml)
 	if err == nil {
 		t.Fatalf("user was created by non-admin: %s", eml)
@@ -344,4 +384,182 @@ func TestCreateUser_NotAdmin_ReturnsForbidden(t *testing.T) {
 	if err != sql.ErrNoRows {
 		t.Fatalf("unexpected DB error: %v", err)
 	}
+}
+
+func TestDeleteUser_Success(t *testing.T) {
+	// Create a test env
+	env := testutil.NewTestEnv(t)
+
+	// Create users
+	adminEmail := "admin@example.com"
+	adminPassword := "testpassword123"
+	adminHash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
+	testutil.InsertUser(t, env.DB, adminEmail, adminHash, true, true, true, true)
+	testutil.InsertUser(t, env.DB, "example@example.com", "x", true, false, true, true)
+
+	cookies := testutil.LoginAndGetCookies(t, env.Router, adminEmail, adminPassword)
+
+	// Prepare HTTP request to the real route
+	reqPayload := user.DeleteUserRequest{
+		UserID: 2,
+	}
+
+	body, _ := json.Marshal(reqPayload)
+	req := httptest.NewRequest("DELETE", "/ui/user/delete", bytes.NewReader(body))
+	for _, c := range cookies {
+		req.AddCookie(c)
+	}
+
+	// Record the response
+	w := httptest.NewRecorder()
+	env.Router.ServeHTTP(w, req)
+
+	// Code check
+	if w.Code != http.StatusOK {
+		t.Fatalf("want 200, got %d, body=%s", w.Code, w.Body.String())
+	}
+
+	// Verify DB row removed
+	var email string
+	row := env.DB.QueryRow("SELECT email FROM users WHERE email = $1", "example@example.com")
+	err := row.Scan(&email)
+	if err == nil {
+		t.Fatalf("user still exists: %s", email)
+	}
+
+	if err != sql.ErrNoRows {
+		t.Fatalf("unexpected DB error: %v", err)
+	}
+}
+
+func TestCreateFirstTimeUser_Success(t *testing.T) {
+	// Create a test env
+	env := testutil.NewTestEnv(t)
+
+	// Prepare HTTP request to the real route
+	reqPayload := user.CreateUserRequest{
+		Email:    "admin@example.com",
+		Password: "testpassword123",
+	}
+
+	body, _ := json.Marshal(reqPayload)
+	req := httptest.NewRequest("POST", "/ui/setup", bytes.NewReader(body))
+
+	// Record the response
+	w := httptest.NewRecorder()
+	env.Router.ServeHTTP(w, req)
+
+	// Code check
+	if w.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d, body=%s", w.Code, w.Body.String())
+	}
+
+	// Verify DB entry
+	var u user.User
+	row := env.DB.QueryRow("SELECT email, is_active, is_admin, ui_enabled, api_enabled FROM users WHERE email = $1", "admin@example.com")
+	if err := row.Scan(&u.Email, &u.IsActive, &u.IsAdmin, &u.UIEnabled, &u.APIEnabled); err != nil {
+		t.Fatalf("user not inserted: %v", err)
+	}
+	if u.IsActive != true {
+		t.Fatalf("IsActive want: true, got: %v", u.IsActive)
+	}
+	if u.IsAdmin != true {
+		t.Fatalf("IsAdmin want: true, got: %v", u.IsAdmin)
+	}
+	if u.UIEnabled != true {
+		t.Fatalf("UIEnabled want: true, got: %v", u.UIEnabled)
+	}
+	if u.APIEnabled != true {
+		t.Fatalf("APIEnabled want: true, got: %v", u.APIEnabled)
+	}
+}
+
+func TestCreateFirstTimeUser_SecondUser_ReturnsForbidden(t *testing.T) {
+	// Create a test env
+	env := testutil.NewTestEnv(t)
+
+	// Prepare HTTP request to the real route
+	firstReqPayload := user.CreateUserRequest{
+		Email:    "admin@example.com",
+		Password: "testpassword123",
+	}
+
+	body, _ := json.Marshal(firstReqPayload)
+	req := httptest.NewRequest("POST", "/ui/setup", bytes.NewReader(body))
+
+	// Record the response
+	w := httptest.NewRecorder()
+	env.Router.ServeHTTP(w, req)
+
+	// Code check
+	if w.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d, body=%s", w.Code, w.Body.String())
+	}
+
+	// Prepare HTTP request to the real route
+	secondReqPayload := user.CreateUserRequest{
+		Email:    "admin2@example.com",
+		Password: "testpassword456",
+	}
+
+	body, _ = json.Marshal(secondReqPayload)
+	req = httptest.NewRequest("POST", "/ui/setup", bytes.NewReader(body))
+
+	// Record the response
+	w = httptest.NewRecorder()
+	env.Router.ServeHTTP(w, req)
+
+	// Code check
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("expected 403, got %d, body=%s", w.Code, w.Body.String())
+	}
+
+	// Verify no second user
+	var count int
+	err := env.DB.QueryRow("SELECT COUNT(*) FROM users WHERE email = $1", "admin2@example.com").Scan(&count)
+	if err != nil {
+		t.Fatalf("db query failed: %v", err)
+	}
+
+	if count != 0 {
+		t.Fatalf("row count for second user want: 0, found %d rows", count)
+	}
+}
+
+func TestChangePassword_Success(t *testing.T) {
+	// Create a test env
+	env := testutil.NewTestEnv(t)
+
+	// Create users
+	adminEmail := "admin@example.com"
+	adminPassword := "testpassword123"
+	adminNewPassword := "testpassword456"
+	adminHash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
+	testutil.InsertUser(t, env.DB, adminEmail, adminHash, true, true, true, true)
+
+	cookies := testutil.LoginAndGetCookies(t, env.Router, adminEmail, adminPassword)
+
+	// Prepare HTTP request to the real route
+	reqPayload := user.ChangePasswordRequest{
+		OldPassword: adminPassword,
+		NewPassword: adminNewPassword,
+	}
+
+	body, _ := json.Marshal(reqPayload)
+	req := httptest.NewRequest("PUT", "/ui/user/changepassword", bytes.NewReader(body))
+	for _, c := range cookies {
+		req.AddCookie(c)
+	}
+
+	// Record the response
+	w := httptest.NewRecorder()
+	env.Router.ServeHTTP(w, req)
+
+	// Code check
+	if w.Code != http.StatusOK {
+		t.Fatalf("want 200, got %d, body=%s", w.Code, w.Body.String())
+	}
+
+	// Attempt login with new password
+	_ = testutil.LoginAndGetCookies(t, env.Router, adminEmail, adminNewPassword)
 }

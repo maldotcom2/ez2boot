@@ -8,6 +8,26 @@ import (
 	"github.com/mattn/go-sqlite3"
 )
 
+// Login UI user
+func (r *Repository) createUserSession(tokenHash string, expiry int64, userID int64) error {
+	// Write hash, expiry and user ID
+	if _, err := r.Base.DB.Exec("INSERT INTO user_sessions (token_hash, session_expiry, user_id) VALUES ($1, $2, $3)", tokenHash, expiry, userID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Delete provided session
+func (r *Repository) deleteUserSession(tokenHash string) error {
+	_, err := r.Base.DB.Exec("DELETE FROM user_sessions WHERE token_hash = $1", tokenHash)
+	if err != nil {
+		return err
+	}
+	// No check for 0 rows because logout is a protected route, auth is implicit
+	return nil
+}
+
 func (r *Repository) getUsers() ([]User, error) {
 	rows, err := r.Base.DB.Query("SELECT id, email, is_active, is_admin, api_enabled, ui_enabled, last_login FROM users")
 	if err != nil {
@@ -60,31 +80,11 @@ func (r *Repository) updateUserAuthorisation(users []UpdateUserRequest) error {
 	return nil
 }
 
-// Login UI user
-func (r *Repository) createUserSession(tokenHash string, expiry int64, userID int64) error {
-	// Write hash, expiry and user ID
-	if _, err := r.Base.DB.Exec("INSERT INTO user_sessions (token_hash, session_expiry, user_id) VALUES ($1, $2, $3)", tokenHash, expiry, userID); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (r *Repository) updateLastLogin(userID int64) error {
 	if _, err := r.Base.DB.Exec("UPDATE users SET last_login = $1 WHERE id = $2", time.Now().Unix(), userID); err != nil {
 		return err
 	}
 
-	return nil
-}
-
-// Delete provided session
-func (r *Repository) deleteUserSession(tokenHash string) error {
-	_, err := r.Base.DB.Exec("DELETE FROM user_sessions WHERE token_hash = $1", tokenHash)
-	if err != nil {
-		return err
-	}
-	// No check for 0 rows because logout is a protected route, auth is implicit
 	return nil
 }
 
