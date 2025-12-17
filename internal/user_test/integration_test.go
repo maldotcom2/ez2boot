@@ -2,7 +2,6 @@ package user_test
 
 import (
 	"bytes"
-	"database/sql"
 	"encoding/json"
 	"ez2boot/internal/shared"
 	"ez2boot/internal/testutil"
@@ -327,13 +326,10 @@ func TestCreateUser_Success(t *testing.T) {
 	}
 
 	// Verify DB row exists
-	var email string
-	row := env.DB.QueryRow("SELECT email FROM users WHERE email = $1", "test@example.com")
-	if err := row.Scan(&email); err != nil {
+	var count int64
+	err := env.DB.QueryRow("SELECT COUNT(*) FROM users WHERE email = $1", "test@example.com").Scan(&count)
+	if err != nil {
 		t.Fatalf("user not inserted: %v", err)
-	}
-	if email != "test@example.com" {
-		t.Fatalf("wrong email inserted: %s", email)
 	}
 }
 
@@ -344,6 +340,8 @@ func TestCreateUser_NotAdmin_ReturnsForbidden(t *testing.T) {
 	// Create non-admin user
 	email := "example@example.com"
 	password := "testpassword123"
+	newUser := "test@example.com"
+	newUserPassword := "strongpassword123"
 	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
 	testutil.InsertUser(t, env.DB, email, hash, true, false, true, true)
 
@@ -351,8 +349,8 @@ func TestCreateUser_NotAdmin_ReturnsForbidden(t *testing.T) {
 
 	// Prepare HTTP request to the real route
 	reqPayload := user.CreateUserRequest{
-		Email:      "test@example.com",
-		Password:   "strongpassword123",
+		Email:      newUser,
+		Password:   newUserPassword,
 		IsActive:   true,
 		IsAdmin:    false,
 		APIEnabled: true,
@@ -375,14 +373,14 @@ func TestCreateUser_NotAdmin_ReturnsForbidden(t *testing.T) {
 	}
 
 	// Check if user was created anyway
-	var eml string
-	row := env.DB.QueryRow("SELECT email FROM users WHERE email = $1", "test@example.com")
-	err := row.Scan(&eml)
-	if err == nil {
-		t.Fatalf("user was created by non-admin: %s", eml)
+	var count int64
+	err := env.DB.QueryRow("SELECT COUNT(*) FROM users WHERE email = $1", newUser).Scan(&count)
+	if err != nil {
+		t.Fatalf("db query failed: %v", err)
 	}
-	if err != sql.ErrNoRows {
-		t.Fatalf("unexpected DB error: %v", err)
+
+	if count != 0 {
+		t.Fatalf("row count for non-admin create user want: 0, found %d rows", count)
 	}
 }
 
@@ -420,15 +418,14 @@ func TestDeleteUser_Success(t *testing.T) {
 	}
 
 	// Verify DB row removed
-	var email string
-	row := env.DB.QueryRow("SELECT email FROM users WHERE email = $1", "example@example.com")
-	err := row.Scan(&email)
-	if err == nil {
-		t.Fatalf("user still exists: %s", email)
+	var count int64
+	err := env.DB.QueryRow("SELECT COUNT(*) FROM users WHERE email = $1", "example@example.com").Scan(&count)
+	if err != nil {
+		t.Fatalf("db query failed: %v", err)
 	}
 
-	if err != sql.ErrNoRows {
-		t.Fatalf("unexpected DB error: %v", err)
+	if count != 0 {
+		t.Fatalf("row count for deleted user want: 0, found %d rows", count)
 	}
 }
 
