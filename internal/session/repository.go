@@ -3,7 +3,6 @@ package session
 import (
 	"database/sql"
 	"ez2boot/internal/shared"
-	"ez2boot/internal/util"
 	"fmt"
 	"time"
 )
@@ -123,79 +122,61 @@ func (r *Repository) getExpiredServerSessions() ([]ServerSession, error) {
 }
 
 // Create a new session
-func (r *Repository) newServerSession(session ServerSession) (ServerSession, error) {
+func (r *Repository) newServerSession(session ServerSessionRequest) error {
 	tx, err := r.Base.DB.Begin()
 	if err != nil {
-		return ServerSession{}, err
+		return err
 	}
 
 	// Set server table for state worker
 	result, err := tx.Exec("UPDATE servers SET next_state = $1, time_last_on = $2, last_user_id = $3 WHERE server_group = $4", "on", time.Now().Unix(), session.UserID, session.ServerGroup)
 	if err != nil {
 		tx.Rollback()
-		return ServerSession{}, err
+		return err
 	}
 
 	// Impact check
 	rows, err := result.RowsAffected()
 	if err != nil {
 		tx.Rollback()
-		return ServerSession{}, err
+		return err
 	}
 
 	if rows == 0 {
 		tx.Rollback()
-		return ServerSession{}, fmt.Errorf("No servers found for server_group: %s", session.ServerGroup)
+		return fmt.Errorf("no servers found for server_group: %s", session.ServerGroup)
 	}
 
-	// Get expiry
-	sessionExpiry, err := util.GetExpiryFromDuration(session.Duration)
-	if err != nil {
+	if _, err = tx.Exec("INSERT INTO server_sessions (user_id, server_group, expiry, warning_notified, on_notified) VALUES ($1, $2, $3, $4, $5)", session.UserID, session.ServerGroup, session.Expiry, 0, 0); err != nil {
 		tx.Rollback()
-		return ServerSession{}, err
-	}
-
-	// Convert epoch to time and add to struct
-	session.Expiry = time.Unix(sessionExpiry, 0).UTC()
-
-	if _, err = tx.Exec("INSERT INTO server_sessions (user_id, server_group, expiry, warning_notified, on_notified) VALUES ($1, $2, $3, $4, $5)", session.UserID, session.ServerGroup, sessionExpiry, 0, 0); err != nil {
-		tx.Rollback()
-		return ServerSession{}, err
+		return err
 	}
 
 	if err = tx.Commit(); err != nil {
-		return ServerSession{}, err
+		return err
 	}
 
-	return session, nil
+	return nil
 }
 
 // Update existing session
-func (r *Repository) updateServerSession(session ServerSession) (ServerSession, error) {
-	newExpiry, err := util.GetExpiryFromDuration(session.Duration)
+func (r *Repository) updateServerSession(session ServerSessionRequest) error {
+	result, err := r.Base.DB.Exec("UPDATE server_sessions SET expiry = $1, warning_notified = $2 WHERE server_group = $3 AND user_id = $4 AND expiry > $5", session.Expiry, 0, session.ServerGroup, session.UserID, time.Now().Unix())
 	if err != nil {
-		return ServerSession{}, err
-	}
-
-	result, err := r.Base.DB.Exec("UPDATE server_sessions SET expiry = $1, warning_notified = $2 WHERE server_group = $3 AND user_id = $4 AND expiry > $5", newExpiry, 0, session.ServerGroup, session.UserID, time.Now().Unix())
-	if err != nil {
-		return ServerSession{}, err
+		return err
 	}
 
 	// Impact check
 	rows, err := result.RowsAffected()
 	if err != nil {
-		return ServerSession{}, err
+		return err
 	}
 
 	if rows == 0 {
-		return ServerSession{}, shared.ErrNoRowsUpdated
+		return shared.ErrNoRowsUpdated
 	}
 
-	// Convert epoch to time and add to struct
-	session.Expiry = time.Unix(newExpiry, 0).UTC()
-
-	return session, nil
+	return nil
 }
 
 // Set servers next_state off and mark session for cleanup

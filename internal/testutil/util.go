@@ -92,6 +92,17 @@ func InsertUser(t *testing.T, db *sql.DB, email string, passwordHash string, isA
 	}
 }
 
+// Insert a dummy server session into test database
+func InsertServer(t *testing.T, db *sql.DB, uniqueID string, name string, state string, serverGroup string, timeAdded int64) {
+	t.Helper()
+
+	_, err := db.Exec(`INSERT INTO servers (unique_id, name, state, server_group, time_added)
+        				VALUES ($1, $2, $3, $4, $5)`, uniqueID, name, state, serverGroup, timeAdded)
+	if err != nil {
+		t.Fatalf("failed to insert server: %v", err)
+	}
+}
+
 func LoginAndGetCookies(t *testing.T, router http.Handler, email, password string) []*http.Cookie {
 	t.Helper()
 

@@ -2,7 +2,9 @@ package session
 
 import (
 	"ez2boot/internal/notification"
+	"ez2boot/internal/util"
 	"fmt"
+	"time"
 )
 
 func (s *Service) getServerSessions() ([]ServerSession, error) {
@@ -23,38 +25,50 @@ func (s *Service) getServerSessionSummary() ([]ServerSessionSummary, error) {
 	return summary, nil
 }
 
-func (s *Service) newServerSession(session ServerSession) (ServerSession, error) {
+func (s *Service) newServerSession(session ServerSessionRequest) (time.Time, error) {
 	if err := s.validateServerSession(session); err != nil {
-		return ServerSession{}, err
+		return time.Time{}, err
 	}
 
-	// Get email for user
-	email, err := s.UserService.GetEmailFromUserID(session.UserID)
+	// Get expiry as epoch
+	sessionExpiry, err := util.GetExpiryFromDuration(session.Duration)
 	if err != nil {
-		return ServerSession{}, err
+		return time.Time{}, err
 	}
 
-	session.Email = email
+	// Add expiry
+	session.Expiry = sessionExpiry
 
-	session, err = s.Repo.newServerSession(session)
+	err = s.Repo.newServerSession(session)
 	if err != nil {
-		return ServerSession{}, err
+		return time.Time{}, err
 	}
 
-	return session, nil
+	// Time in time format
+	return time.Unix(sessionExpiry, 0).UTC(), nil
 }
 
-func (s *Service) updateServerSession(session ServerSession) (ServerSession, error) {
+func (s *Service) updateServerSession(session ServerSessionRequest) (time.Time, error) {
 	if err := s.validateServerSession(session); err != nil {
-		return ServerSession{}, err
+		return time.Time{}, err
 	}
 
-	updatedSession, err := s.Repo.updateServerSession(session)
+	// Get new expiry as epoch
+	newExpiry, err := util.GetExpiryFromDuration(session.Duration)
 	if err != nil {
-		return ServerSession{}, err
+		return time.Time{}, err
 	}
 
-	return updatedSession, nil
+	// Add expiry
+	session.Expiry = newExpiry
+
+	err = s.Repo.updateServerSession(session)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	// Time in time format
+	return time.Unix(newExpiry, 0).UTC(), nil
 }
 
 // High level for processing server sessions in each state - called by go routine worker

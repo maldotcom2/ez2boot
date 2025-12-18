@@ -2,13 +2,13 @@ package session
 
 import "errors"
 
-func (s *Service) validateServerSession(session ServerSession) error {
+func (s *Service) validateServerSession(session ServerSessionRequest) error {
 	if session.ServerGroup == "" {
-		return errors.New("Missing server group ")
+		return errors.New("missing server group ")
 	}
 
 	if session.Duration == "" {
-		return errors.New("Missing duration")
+		return errors.New("missing duration")
 	}
 
 	return nil

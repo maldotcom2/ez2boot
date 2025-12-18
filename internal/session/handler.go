@@ -40,12 +40,12 @@ func (h *Handler) NewServerSession() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID := ctxutil.GetUserID(r.Context())
 
-		var session ServerSession
+		var session ServerSessionRequest
 		json.NewDecoder(r.Body).Decode(&session)
 		session.UserID = userID
 
 		// Create the session
-		session, err := h.Service.newServerSession(session)
+		expiry, err := h.Service.newServerSession(session)
 		if err != nil {
 			h.Logger.Error("Failed to create new session", "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -53,7 +53,13 @@ func (h *Handler) NewServerSession() http.HandlerFunc {
 			return
 		}
 
-		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: session})
+		res := ServerSessionResponse{
+			ServerGroup: session.ServerGroup,
+			Duration:    session.Duration,
+			Expiry:      expiry,
+		}
+
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: res})
 	}
 }
 
@@ -61,11 +67,11 @@ func (h *Handler) UpdateServerSession() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID := ctxutil.GetUserID(r.Context())
 
-		var session ServerSession
+		var session ServerSessionRequest
 		json.NewDecoder(r.Body).Decode(&session)
 		session.UserID = userID
 
-		session, err := h.Service.updateServerSession(session) //TODO make this more clear
+		expiry, err := h.Service.updateServerSession(session)
 		if err != nil {
 			if errors.Is(err, shared.ErrNoRowsUpdated) {
 				h.Logger.Error("Requsted session for update was either not found or not owned", "error", err)
@@ -79,6 +85,12 @@ func (h *Handler) UpdateServerSession() http.HandlerFunc {
 			return
 		}
 
-		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: session})
+		res := ServerSessionResponse{
+			ServerGroup: session.ServerGroup,
+			Duration:    session.Duration,
+			Expiry:      expiry,
+		}
+
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: res})
 	}
 }

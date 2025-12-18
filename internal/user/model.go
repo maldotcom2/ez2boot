@@ -28,7 +28,7 @@ type UserLogin struct {
 }
 
 type ChangePasswordRequest struct {
-	UserID      int64
+	UserID      int64  `json:"-"`
 	OldPassword string `json:"old_password"`
 	NewPassword string `json:"new_password"`
 }
@@ -65,7 +65,7 @@ type DeleteUserRequest struct {
 }
 
 type CreateUserRequest struct {
-	UserID     int64
+	UserID     int64  `json:"-"`
 	Email      string `json:"email"`
 	Password   string `json:"password"`
 	IsActive   bool   `json:"is_active"`

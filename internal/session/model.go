@@ -25,9 +25,22 @@ type Handler struct {
 }
 
 type ServerSession struct {
-	Id          int64
-	UserID      int64
-	Email       string
+	Id          int64     `json:"-"`
+	UserID      int64     `json:"-"`
+	Email       string    `json:"-"`
+	ServerGroup string    `json:"server_group"`
+	Duration    string    `json:"duration"`
+	Expiry      time.Time `json:"expiry"`
+}
+
+type ServerSessionRequest struct {
+	UserID      int64  `json:"-"`
+	ServerGroup string `json:"server_group"`
+	Duration    string `json:"duration"`
+	Expiry      int64  `json:"-"`
+}
+
+type ServerSessionResponse struct {
 	ServerGroup string    `json:"server_group"`
 	Duration    string    `json:"duration"`
 	Expiry      time.Time `json:"expiry"`
