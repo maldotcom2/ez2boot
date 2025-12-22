@@ -279,8 +279,8 @@ func TestUpdateUserAuthorisation_Success(t *testing.T) {
 
 	// Verify DB change
 	var apiEnabled int64
-	row := env.DB.QueryRow("SELECT api_enabled FROM users WHERE email = $1", "example@example.com")
-	if err := row.Scan(&apiEnabled); err != nil {
+	err := env.DB.QueryRow("SELECT api_enabled FROM users WHERE email = $1", "example@example.com").Scan(&apiEnabled)
+	if err != nil {
 		t.Fatalf("Failed to select value: %v", err)
 	}
 	if apiEnabled != 0 {

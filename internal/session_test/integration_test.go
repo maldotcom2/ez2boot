@@ -74,4 +74,22 @@ func TestNewServerSession_Success(t *testing.T) {
 	if got.Data.Expiry.Before(wantExpiry.Add(-1*time.Second)) || got.Data.Expiry.After(wantExpiry.Add(1*time.Second)) {
 		t.Fatalf("expiry mismatch, got: %v, want: ~%v", got.Data.Expiry, wantExpiry)
 	}
+
+	// Verify DB state
+	var sg string
+	var exp int64
+	maxExp := (wantExpiry.Unix() + 1)
+	minExp := (wantExpiry.Unix() - 1)
+	err := env.DB.QueryRow("SELECT server_group, expiry FROM server_sessions WHERE user_id = $1", 1).Scan(&sg, &exp)
+	if err != nil {
+		t.Fatalf("Failed to select value: %v", err)
+	}
+
+	if exp < minExp || exp > maxExp {
+		t.Fatalf("Session expiry incorrect: want range: %d-%d, got: %d", minExp, maxExp, exp)
+	}
+
+	if sg != wantServerGroup {
+		t.Fatalf("Server group incorrect: want: %s, got: %s", wantServerGroup, sg)
+	}
 }
