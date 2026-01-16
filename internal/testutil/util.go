@@ -8,6 +8,7 @@ import (
 	"ez2boot/internal/config"
 	"ez2boot/internal/db"
 	"ez2boot/internal/user"
+	"ez2boot/internal/worker"
 	"io"
 	"log/slog"
 	"net/http"
@@ -24,6 +25,7 @@ type TestEnv struct {
 	Base   *db.Repository
 	Cfg    *config.Config
 	Router http.Handler
+	Worker *worker.Worker
 }
 
 // Build test environment - in memory only
@@ -67,7 +69,7 @@ func NewTestEnv(t *testing.T) *TestEnv {
 		UserSessionDuration: 1 * time.Hour, // Prevent intermittent 401s during test
 	}
 
-	router, _, _, err := app.NewApp("dev", "unknown", cfg, baseRepo, logger)
+	router, _, wkr, err := app.NewApp("dev", "unknown", cfg, baseRepo, logger)
 	if err != nil {
 		t.Fatalf("failed to initialize app: %v", err)
 	}
@@ -78,6 +80,7 @@ func NewTestEnv(t *testing.T) *TestEnv {
 		Base:   baseRepo,
 		Cfg:    cfg,
 		Router: router,
+		Worker: wkr,
 	}
 }
 
@@ -103,6 +106,7 @@ func InsertServer(t *testing.T, db *sql.DB, uniqueID string, name string, state 
 	}
 }
 
+// Logs in a UI user and returns cookie
 func LoginAndGetCookies(t *testing.T, router http.Handler, email, password string) []*http.Cookie {
 	t.Helper()
 
@@ -126,4 +130,19 @@ func LoginAndGetCookies(t *testing.T, router http.Handler, email, password strin
 	}
 
 	return cookies
+}
+
+// Inserts a pending new server session
+func InsertServerSession(t *testing.T, db *sql.DB, userID int64, serverGroup string, expiry int64) {
+	t.Helper()
+
+	// Set server table for state worker
+	if _, err := db.Exec("UPDATE servers SET next_state = $1, time_last_on = $2, last_user_id = $3 WHERE server_group = $4", "on", time.Now().Unix(), userID, serverGroup); err != nil {
+		t.Fatal("failed to update server state")
+	}
+
+	// Set server session
+	if _, err := db.Exec("INSERT INTO server_sessions (user_id, server_group, expiry, warning_notified, on_notified) VALUES ($1, $2, $3, $4, $5)", userID, serverGroup, expiry, 0, 0); err != nil {
+		t.Fatal("failed to insert new server session")
+	}
 }
