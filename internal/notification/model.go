@@ -1,6 +1,7 @@
 package notification
 
 import (
+	"ez2boot/internal/audit"
 	"ez2boot/internal/db"
 	"log/slog"
 )
@@ -12,11 +13,11 @@ type Repository struct {
 type Service struct {
 	Repo   *Repository
 	Logger *slog.Logger
-	//Handlers map[string]ConfigHandler // type specific handlers
 }
 
 type Handler struct {
 	Service *Service
+	Audit   *audit.Service
 	Logger  *slog.Logger
 }
 

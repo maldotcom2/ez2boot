@@ -1,13 +1,15 @@
 package notification
 
 import (
+	"ez2boot/internal/audit"
 	"ez2boot/internal/db"
 	"log/slog"
 )
 
-func NewHandler(notificationService *Service, logger *slog.Logger) *Handler {
+func NewHandler(notificationService *Service, audit *audit.Service, logger *slog.Logger) *Handler {
 	return &Handler{
 		Service: notificationService,
+		Audit:   audit,
 		Logger:  logger,
 	}
 }

@@ -31,11 +31,12 @@ func (s *Service) login(u UserLogin) (string, error) {
 
 	// Authenticate
 	userID, authenticated, err := s.AuthenticateUser(u.Email, u.Password)
-	if err != nil {
+	if err != nil && err != shared.ErrUserNotFound {
 		return "", err
 	}
 
-	if !authenticated {
+	// Auth fail, or user not exist
+	if !authenticated || err == shared.ErrUserNotFound {
 		return "", shared.ErrAuthenticationFailed
 	}
 
@@ -138,7 +139,7 @@ func (s *Service) deleteUser(targetUserID int64, currentUserID int64) error {
 	return nil
 }
 
-// Change a password for authenticated user
+// Change a password for authenticated user TODO: fix overuse of email here
 func (s *Service) changePassword(req ChangePasswordRequest) (string, error) {
 	// Get email of authenticated user
 	email, err := s.GetEmailFromUserID(req.UserID)

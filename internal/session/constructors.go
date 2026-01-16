@@ -1,15 +1,17 @@
 package session
 
 import (
+	"ez2boot/internal/audit"
 	"ez2boot/internal/db"
 	"ez2boot/internal/notification"
 	"ez2boot/internal/user"
 	"log/slog"
 )
 
-func NewHandler(sessionService *Service, logger *slog.Logger) *Handler {
+func NewHandler(sessionService *Service, audit *audit.Service, logger *slog.Logger) *Handler {
 	return &Handler{
 		Service: sessionService,
+		Audit:   audit,
 		Logger:  logger,
 	}
 }

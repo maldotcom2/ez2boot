@@ -1,6 +1,7 @@
 package app
 
 import (
+	"ez2boot/internal/audit"
 	"ez2boot/internal/config"
 	"ez2boot/internal/db"
 	"ez2boot/internal/middleware"
@@ -18,25 +19,29 @@ import (
 
 func InitServices(version string, buildDate string, cfg *config.Config, repo *db.Repository, logger *slog.Logger) (*middleware.Middleware, *worker.Worker, *Handlers, *Services) {
 
+	// Audit
+	auditRepo := audit.NewRepository(repo)
+	auditService := audit.NewService(auditRepo, logger)
+
 	// Notification
 	notificationRepo := notification.NewRepository(repo)
 	notificationService := notification.NewService(notificationRepo, logger)
-	notificationHandler := notification.NewHandler(notificationService, logger)
+	notificationHandler := notification.NewHandler(notificationService, auditService, logger)
 
 	// Server
 	serverRepo := server.NewRepository(repo)
 	serverService := server.NewService(serverRepo, logger)
-	serverHandler := server.NewHandler(serverService, logger)
+	serverHandler := server.NewHandler(serverService, auditService, logger)
 
 	// User
 	userRepo := user.NewRepository(repo, logger)
 	userService := user.NewService(userRepo, cfg, logger)
-	userHandler := user.NewHandler(userService, logger)
+	userHandler := user.NewHandler(userService, auditService, logger)
 
 	// Session
 	sessionRepo := session.NewRepository(repo)
 	sessionService := session.NewService(sessionRepo, notificationService, userService, logger)
-	sessionHandler := session.NewHandler(sessionService, logger)
+	sessionHandler := session.NewHandler(sessionService, auditService, logger)
 
 	// Util
 	utilHandler := util.NewHandler(version, buildDate)
@@ -56,7 +61,7 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 	awsService := aws.NewService(awsRepo, cfg, serverService, logger)
 
 	// Middlware
-	mw := middleware.NewMiddleware(userService, cfg, logger)
+	mw := middleware.NewMiddleware(userService, cfg, auditService, logger)
 
 	// Worker
 	wkr := worker.NewWorker(serverService, sessionService, userService, notificationService, cfg, logger)

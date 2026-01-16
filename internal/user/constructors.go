@@ -1,14 +1,16 @@
 package user
 
 import (
+	"ez2boot/internal/audit"
 	"ez2boot/internal/config"
 	"ez2boot/internal/db"
 	"log/slog"
 )
 
-func NewHandler(userService *Service, logger *slog.Logger) *Handler {
+func NewHandler(userService *Service, audit *audit.Service, logger *slog.Logger) *Handler {
 	return &Handler{
 		Service: userService,
+		Audit:   audit,
 		Logger:  logger,
 	}
 }

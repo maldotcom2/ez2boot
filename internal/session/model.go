@@ -1,6 +1,7 @@
 package session
 
 import (
+	"ez2boot/internal/audit"
 	"ez2boot/internal/db"
 	"ez2boot/internal/notification"
 	"ez2boot/internal/user"
@@ -21,6 +22,7 @@ type Service struct {
 
 type Handler struct {
 	Service *Service
+	Audit   *audit.Service
 	Logger  *slog.Logger
 }
 

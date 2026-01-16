@@ -3,6 +3,7 @@ package user
 import (
 	"encoding/json"
 	"errors"
+	"ez2boot/internal/audit"
 	"ez2boot/internal/ctxutil"
 	"ez2boot/internal/shared"
 	"fmt"
@@ -36,6 +37,13 @@ func (h *Handler) Login() http.HandlerFunc {
 				}
 			case errors.Is(err, shared.ErrAuthenticationFailed):
 				h.Logger.Error("Invalid email or password", "email", u.Email, "error", err)
+				h.Audit.Log(audit.Event{
+					UserID:   0,
+					Email:    u.Email,
+					Action:   "user login",
+					Resource: "user",
+					Result:   "failed - authentication failed",
+				})
 				w.WriteHeader(http.StatusUnauthorized)
 				resp = shared.ApiResponse[any]{
 					Success: false,
@@ -65,6 +73,13 @@ func (h *Handler) Login() http.HandlerFunc {
 		})
 
 		h.Logger.Info("User logged in", "email", u.Email)
+		h.Audit.Log(audit.Event{
+			UserID:   0,
+			Email:    u.Email,
+			Action:   "user login",
+			Resource: "user",
+			Result:   "success",
+		})
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
