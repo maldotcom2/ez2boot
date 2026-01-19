@@ -15,12 +15,12 @@ type Repository struct {
 type Service struct {
 	Repo   *Repository
 	Config *config.Config
+	Audit  *audit.Service
 	Logger *slog.Logger
 }
 
 type Handler struct {
 	Service *Service
-	Audit   *audit.Service
 	Logger  *slog.Logger
 }
 

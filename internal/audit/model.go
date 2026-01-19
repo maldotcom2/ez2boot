@@ -15,9 +15,12 @@ type Service struct {
 }
 
 type Event struct {
-	UserID   int64
-	Email    string
-	Action   string
-	Resource string
-	Result   string
+	ActorUserID  int64
+	ActorEmail   string
+	TargetUserID int64
+	TargetEmail  string
+	Action       string
+	Resource     string
+	Success      bool
+	Reason       string
 }

@@ -35,8 +35,8 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 
 	// User
 	userRepo := user.NewRepository(repo, logger)
-	userService := user.NewService(userRepo, cfg, logger)
-	userHandler := user.NewHandler(userService, auditService, logger)
+	userService := user.NewService(userRepo, cfg, auditService, logger)
+	userHandler := user.NewHandler(userService, logger)
 
 	// Session
 	sessionRepo := session.NewRepository(repo)

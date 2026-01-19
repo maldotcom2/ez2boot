@@ -1,6 +1,7 @@
 package user
 
 import (
+	"database/sql"
 	"ez2boot/internal/shared"
 	"fmt"
 	"time"
@@ -61,21 +62,11 @@ func (r *Repository) getUserAuthorisation(userID int64) (UserAuthRequest, error)
 	return u, nil
 }
 
-// Bulk update from admin panel
-func (r *Repository) updateUserAuthorisation(users []UpdateUserRequest) error {
-	tx, err := r.Base.DB.Begin()
-	if err != nil {
+// Update from admin panel
+func (r *Repository) updateUserAuthorisation(tx *sql.Tx, u UpdateUserRequest) error {
+	if _, err := tx.Exec("UPDATE users SET is_active = $1, is_admin = $2, api_enabled = $3, ui_enabled = $4 WHERE id = $5", u.IsActive, u.IsAdmin, u.APIEnabled, u.UIEnabled, u.UserID); err != nil {
 		return err
 	}
-
-	for _, u := range users {
-		if _, err := tx.Exec("UPDATE users SET is_active = $1, is_admin = $2, api_enabled = $3, ui_enabled = $4 WHERE id = $5", u.IsActive, u.IsAdmin, u.APIEnabled, u.UIEnabled, u.UserID); err != nil {
-			tx.Rollback()
-			return err
-		}
-	}
-
-	tx.Commit()
 
 	return nil
 }

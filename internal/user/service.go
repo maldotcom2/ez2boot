@@ -1,8 +1,11 @@
 package user
 
 import (
+	"context"
 	"database/sql"
 	"errors"
+	"ez2boot/internal/audit"
+	"ez2boot/internal/ctxutil"
 	"ez2boot/internal/shared"
 	"ez2boot/internal/util"
 	"fmt"
@@ -37,6 +40,14 @@ func (s *Service) login(u UserLogin) (string, error) {
 
 	// Auth fail, or user not exist
 	if !authenticated || err == shared.ErrUserNotFound {
+		s.Audit.Log(audit.Event{
+			ActorUserID: 0,
+			ActorEmail:  u.Email,
+			Action:      "login",
+			Resource:    "user",
+			Success:     false,
+			Reason:      "authentication failed",
+		})
 		return "", shared.ErrAuthenticationFailed
 	}
 
@@ -45,16 +56,32 @@ func (s *Service) login(u UserLogin) (string, error) {
 		return "", err
 	}
 
+	s.Audit.Log(audit.Event{
+		ActorUserID: userID,
+		ActorEmail:  u.Email,
+		Action:      "login",
+		Resource:    "user",
+		Success:     true,
+	})
+
 	return token, nil
 }
 
-func (s *Service) logout(token string) error {
+func (s *Service) logout(token string, ctx context.Context) error {
 	// Hash supplied session token
 	hash := util.HashToken(token)
 
 	if err := s.Repo.deleteUserSession(hash); err != nil {
 		return err
 	}
+
+	s.Audit.Log(audit.Event{
+		ActorUserID: ctxutil.GetUserID(ctx),
+		ActorEmail:  ctxutil.GetEmail(ctx),
+		Action:      "logout",
+		Resource:    "user",
+		Success:     true,
+	})
 
 	return nil
 }
@@ -78,14 +105,41 @@ func (s *Service) GetUserAuthorisation(userID int64) (UserAuthRequest, error) {
 	return user, nil
 }
 
-func (s *Service) updateUserAuthorisation(users []UpdateUserRequest, currentUserID int64) error {
-	for _, u := range users {
-		if u.UserID == currentUserID {
-			return shared.ErrCannotModifyOwnAuth
-		}
+func (s *Service) updateUserAuthorisation(users []UpdateUserRequest, ctx context.Context) error {
+	currentUserID := ctxutil.GetUserID(ctx)
+	currentUserEmail := ctxutil.GetEmail(ctx)
+
+	// Open transaction - create atomicity for expected UI experience
+	tx, err := s.Repo.Base.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
 	}
 
-	if err := s.Repo.updateUserAuthorisation(users); err != nil {
+	for _, u := range users {
+		if u.UserID == currentUserID {
+			tx.Rollback()
+			return shared.ErrCannotModifyOwnAuth
+		}
+
+		if err := s.Repo.updateUserAuthorisation(tx, u); err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		targetEmail, _ := s.GetEmailFromUserID(u.UserID)
+
+		s.Audit.LogTx(tx, audit.Event{
+			ActorUserID:  currentUserID,
+			ActorEmail:   currentUserEmail,
+			TargetUserID: u.UserID,
+			TargetEmail:  targetEmail,
+			Action:       "update authorisation",
+			Resource:     "user",
+			Success:      true,
+		})
+	}
+
+	if err := tx.Commit(); err != nil {
 		return err
 	}
 

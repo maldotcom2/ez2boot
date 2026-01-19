@@ -3,7 +3,6 @@ package user
 import (
 	"encoding/json"
 	"errors"
-	"ez2boot/internal/audit"
 	"ez2boot/internal/ctxutil"
 	"ez2boot/internal/shared"
 	"fmt"
@@ -37,13 +36,6 @@ func (h *Handler) Login() http.HandlerFunc {
 				}
 			case errors.Is(err, shared.ErrAuthenticationFailed):
 				h.Logger.Error("Invalid email or password", "email", u.Email, "error", err)
-				h.Audit.Log(audit.Event{
-					UserID:   0,
-					Email:    u.Email,
-					Action:   "user login",
-					Resource: "user",
-					Result:   "failed - authentication failed",
-				})
 				w.WriteHeader(http.StatusUnauthorized)
 				resp = shared.ApiResponse[any]{
 					Success: false,
@@ -73,13 +65,6 @@ func (h *Handler) Login() http.HandlerFunc {
 		})
 
 		h.Logger.Info("User logged in", "email", u.Email)
-		h.Audit.Log(audit.Event{
-			UserID:   0,
-			Email:    u.Email,
-			Action:   "user login",
-			Resource: "user",
-			Result:   "success",
-		})
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
@@ -87,20 +72,13 @@ func (h *Handler) Login() http.HandlerFunc {
 // Logout session handler
 func (h *Handler) Logout() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID := ctxutil.GetUserID(r.Context())
+		ctx := r.Context()
+		email := ctxutil.GetEmail(ctx)
 
 		// Get session token
 		cookie, _ := r.Cookie("session")
 
-		email, err := h.Service.GetEmailFromUserID(userID)
-		if err != nil {
-			h.Logger.Error("Failed to get email from user id", "user id", userID, "error", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Server error while processing logout"})
-			return
-		}
-
-		if err := h.Service.logout(cookie.Value); err != nil {
+		if err := h.Service.logout(cookie.Value, ctx); err != nil {
 			h.Logger.Error("Error while logging out user", "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Server error while processing logout"})
@@ -155,7 +133,7 @@ func (h *Handler) GetUserAuthorisation() http.HandlerFunc {
 
 func (h *Handler) UpdateUserAuthorisation() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID := ctxutil.GetUserID(r.Context())
+		ctx := r.Context()
 
 		var req []UpdateUserRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -170,7 +148,7 @@ func (h *Handler) UpdateUserAuthorisation() http.HandlerFunc {
 			return // Response written by helper
 		}
 
-		if err := h.Service.updateUserAuthorisation(req, userID); err != nil {
+		if err := h.Service.updateUserAuthorisation(req, ctx); err != nil {
 			var resp shared.ApiResponse[any]
 			switch {
 			case errors.Is(err, shared.ErrCannotModifyOwnAuth):

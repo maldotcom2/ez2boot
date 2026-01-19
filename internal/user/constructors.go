@@ -7,18 +7,18 @@ import (
 	"log/slog"
 )
 
-func NewHandler(userService *Service, audit *audit.Service, logger *slog.Logger) *Handler {
+func NewHandler(userService *Service, logger *slog.Logger) *Handler {
 	return &Handler{
 		Service: userService,
-		Audit:   audit,
 		Logger:  logger,
 	}
 }
 
-func NewService(userRepo *Repository, cfg *config.Config, logger *slog.Logger) *Service {
+func NewService(userRepo *Repository, cfg *config.Config, audit *audit.Service, logger *slog.Logger) *Service {
 	return &Service{
 		Repo:   userRepo,
 		Config: cfg,
+		Audit:  audit,
 		Logger: logger,
 	}
 }

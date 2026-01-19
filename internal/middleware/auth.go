@@ -67,9 +67,10 @@ func (m *Middleware) BasicAuthMiddleware() mux.MiddlewareFunc {
 				return
 			}
 
-			m.Logger.Info("Basic auth passed", "userID", u.UserID, "email", email, "Path", r.URL.Path, "Source IP", r.RemoteAddr)
+			m.Logger.Info("Basic auth passed", "userID", u.UserID, "email", u.Email, "Path", r.URL.Path, "Source IP", r.RemoteAddr)
 			// Pass down request to the next middleware
 			ctx := context.WithValue(r.Context(), ctxutil.UserIDKey, u.UserID)
+			ctx = context.WithValue(ctx, ctxutil.EmailKey, u.Email)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -137,6 +138,7 @@ func (m *Middleware) SessionAuthMiddleware() mux.MiddlewareFunc {
 			// Create a context containing the userID and the account verified status. This controls the authorisation to downstream functions.
 			m.Logger.Info("User request passed middleware", "userID", ua.UserID, "email", ua.Email, "Path", r.URL.Path, "Source IP", r.RemoteAddr)
 			ctx := context.WithValue(r.Context(), ctxutil.UserIDKey, ua.UserID)
+			ctx = context.WithValue(ctx, ctxutil.EmailKey, ua.Email)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
