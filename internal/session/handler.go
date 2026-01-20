@@ -38,7 +38,8 @@ func (h *Handler) GetServerSessionSummary() http.HandlerFunc {
 
 func (h *Handler) NewServerSession() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID := ctxutil.GetUserID(r.Context())
+		ctx := r.Context()
+		userID, _ := ctxutil.GetActor(ctx)
 
 		var session ServerSessionRequest
 		json.NewDecoder(r.Body).Decode(&session)
@@ -65,7 +66,8 @@ func (h *Handler) NewServerSession() http.HandlerFunc {
 
 func (h *Handler) UpdateServerSession() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID := ctxutil.GetUserID(r.Context())
+		ctx := r.Context()
+		userID, _ := ctxutil.GetActor(ctx)
 
 		var session ServerSessionRequest
 		json.NewDecoder(r.Body).Decode(&session)

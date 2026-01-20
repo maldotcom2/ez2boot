@@ -73,7 +73,7 @@ func (h *Handler) Login() http.HandlerFunc {
 func (h *Handler) Logout() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		email := ctxutil.GetEmail(ctx)
+		_, email := ctxutil.GetActor(ctx)
 
 		// Get session token
 		cookie, _ := r.Cookie("session")
@@ -117,7 +117,8 @@ func (h *Handler) GetUsers() http.HandlerFunc {
 // Get user authorisation for logged in user
 func (h *Handler) GetUserAuthorisation() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID := ctxutil.GetUserID(r.Context())
+		ctx := r.Context()
+		userID, _ := ctxutil.GetActor(ctx)
 
 		user, err := h.Service.GetUserAuthorisation(userID)
 		if err != nil {
@@ -194,6 +195,8 @@ func (h *Handler) CheckSession() http.HandlerFunc {
 // Handler to create new user
 func (h *Handler) CreateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
 		var req CreateUserRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			h.Logger.Error("Malformed request", "error", err)
@@ -210,7 +213,7 @@ func (h *Handler) CreateUser() http.HandlerFunc {
 		}
 
 		var resp shared.ApiResponse[any]
-		if err := h.Service.createUser(req); err != nil {
+		if err := h.Service.createUser(req, ctx); err != nil {
 			switch {
 			case errors.Is(err, shared.ErrUserAlreadyExists):
 				h.Logger.Error("Failed to create user, user already exists")
@@ -268,7 +271,7 @@ func (h *Handler) CreateUser() http.HandlerFunc {
 
 func (h *Handler) DeleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID := ctxutil.GetUserID(r.Context())
+		ctx := r.Context()
 
 		var req DeleteUserRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -291,7 +294,7 @@ func (h *Handler) DeleteUser() http.HandlerFunc {
 		}
 
 		var resp shared.ApiResponse[any]
-		if err := h.Service.deleteUser(req.UserID, userID); err != nil {
+		if err := h.Service.deleteUser(req.UserID, ctx); err != nil {
 			if errors.Is(err, shared.ErrCannotDeleteOwnUser) {
 				h.Logger.Error("User attempted to delete own user", "email", email)
 				w.WriteHeader(http.StatusBadRequest)
@@ -317,6 +320,7 @@ func (h *Handler) DeleteUser() http.HandlerFunc {
 // Handler to bootstrap initial user creation - username and password input
 func (h *Handler) CreateFirstTimeUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
 		// Block subsequent requests
 		if !h.Service.Config.SetupMode {
 			h.Logger.Error("First time user creation blocked")
@@ -341,7 +345,7 @@ func (h *Handler) CreateFirstTimeUser() http.HandlerFunc {
 		req.UIEnabled = true
 
 		var resp shared.ApiResponse[any]
-		if err := h.Service.createUser(req); err != nil {
+		if err := h.Service.createUser(req, ctx); err != nil {
 			switch {
 			case errors.Is(err, shared.ErrEmailPattern):
 				h.Logger.Error("Failed to create user, email does not match pattern", "email", req.Email)
@@ -393,7 +397,8 @@ func (h *Handler) CreateFirstTimeUser() http.HandlerFunc {
 
 func (h *Handler) ChangePassword() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID := ctxutil.GetUserID(r.Context())
+		ctx := r.Context()
+		userID, email := ctxutil.GetActor(ctx)
 
 		var req ChangePasswordRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -403,10 +408,8 @@ func (h *Handler) ChangePassword() http.HandlerFunc {
 			return
 		}
 
-		req.UserID = userID
-
 		var resp shared.ApiResponse[any]
-		email, err := h.Service.changePassword(req)
+		err := h.Service.changePassword(req, ctx)
 		if err != nil {
 			switch {
 			case errors.Is(err, shared.ErrOldOrNewPasswordMissing):
@@ -437,9 +440,6 @@ func (h *Handler) ChangePassword() http.HandlerFunc {
 					Success: false,
 					Error:   "Failed to change password",
 				}
-
-				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to change password"})
-				return
 			}
 
 			json.NewEncoder(w).Encode(resp)
@@ -453,7 +453,8 @@ func (h *Handler) ChangePassword() http.HandlerFunc {
 
 // Handler helper to guard admin routes
 func (h *Handler) userIsAdmin(w http.ResponseWriter, r *http.Request) bool {
-	userID := ctxutil.GetUserID(r.Context())
+	ctx := r.Context()
+	userID, _ := ctxutil.GetActor(ctx)
 
 	user, err := h.Service.GetUserAuthorisation(userID)
 	if err != nil {

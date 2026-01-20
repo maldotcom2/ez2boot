@@ -75,9 +75,10 @@ func (s *Service) logout(token string, ctx context.Context) error {
 		return err
 	}
 
+	userID, email := ctxutil.GetActor(ctx)
 	s.Audit.Log(audit.Event{
-		ActorUserID: ctxutil.GetUserID(ctx),
-		ActorEmail:  ctxutil.GetEmail(ctx),
+		ActorUserID: userID,
+		ActorEmail:  email,
 		Action:      "logout",
 		Resource:    "user",
 		Success:     true,
@@ -106,8 +107,9 @@ func (s *Service) GetUserAuthorisation(userID int64) (UserAuthRequest, error) {
 }
 
 func (s *Service) updateUserAuthorisation(users []UpdateUserRequest, ctx context.Context) error {
-	currentUserID := ctxutil.GetUserID(ctx)
-	currentUserEmail := ctxutil.GetEmail(ctx)
+	userID, email := ctxutil.GetActor(ctx)
+	currentUserID := userID
+	currentUserEmail := email
 
 	// Open transaction - create atomicity for expected UI experience
 	tx, err := s.Repo.Base.DB.BeginTx(ctx, nil)
@@ -146,18 +148,15 @@ func (s *Service) updateUserAuthorisation(users []UpdateUserRequest, ctx context
 	return nil
 }
 
-func (s *Service) createUser(req CreateUserRequest) error {
-	// Check email
+func (s *Service) createUser(req CreateUserRequest, ctx context.Context) error {
 	if err := s.validateEmail(req.Email); err != nil {
 		return err
 	}
 
-	// Validate password requirements
 	if err := validatePassword(req.Email, req.Password); err != nil {
 		return err
 	}
 
-	// Hash password here
 	passwordHash, err := util.HashPassword(req.Password)
 	if err != nil {
 		return err
@@ -174,63 +173,90 @@ func (s *Service) createUser(req CreateUserRequest) error {
 		UIEnabled:    req.UIEnabled,
 	}
 
-	if err := s.Repo.createUser(user); err != nil {
+	targetUserID, err := s.Repo.createUser(user)
+	if err != nil {
 		return err
 	}
+
+	actorUserID, actorEmail := ctxutil.GetActor(ctx)
+	s.Audit.Log(audit.Event{
+		ActorUserID:  actorUserID,
+		ActorEmail:   actorEmail,
+		TargetUserID: targetUserID,
+		TargetEmail:  req.Email,
+		Action:       "create",
+		Resource:     "user",
+		Success:      true,
+	})
 
 	return nil
 }
 
-func (s *Service) deleteUser(targetUserID int64, currentUserID int64) error {
-	if targetUserID == currentUserID {
+func (s *Service) deleteUser(targetUserID int64, ctx context.Context) error {
+	actorUserID, actorEmail := ctxutil.GetActor(ctx)
+	if targetUserID == actorUserID {
 		return shared.ErrCannotDeleteOwnUser
 	}
+
+	targetEmail, _ := s.GetEmailFromUserID(targetUserID)
 
 	if err := s.Repo.deleteUser(targetUserID); err != nil {
 		return err
 	}
 
+	s.Audit.Log(audit.Event{
+		ActorUserID:  actorUserID,
+		ActorEmail:   actorEmail,
+		TargetUserID: targetUserID,
+		TargetEmail:  targetEmail,
+		Action:       "delete",
+		Resource:     "user",
+		Success:      true,
+	})
+
 	return nil
 }
 
-// Change a password for authenticated user TODO: fix overuse of email here
-func (s *Service) changePassword(req ChangePasswordRequest) (string, error) {
-	// Get email of authenticated user
-	email, err := s.GetEmailFromUserID(req.UserID)
-	if err != nil {
-		return email, err
-	}
+// Change a password for authenticated user
+func (s *Service) changePassword(req ChangePasswordRequest, ctx context.Context) error {
+	actorUserID, actorEmail := ctxutil.GetActor(ctx)
 
 	if req.OldPassword == "" || req.NewPassword == "" {
-		return email, shared.ErrOldOrNewPasswordMissing
+		return shared.ErrOldOrNewPasswordMissing
 	}
 
 	// Check current password
-	_, isCurrentPassword, err := s.AuthenticateUser(email, req.OldPassword)
+	_, isCurrentPassword, err := s.AuthenticateUser(actorEmail, req.OldPassword)
 	if err != nil {
-		return email, err
+		return err
 	}
 
 	if !isCurrentPassword {
-		return email, shared.ErrAuthenticationFailed
+		return shared.ErrAuthenticationFailed
 	}
 
-	//Validate complexity
-	if err := validatePassword(email, req.NewPassword); err != nil {
-		return email, fmt.Errorf("%w: %v", shared.ErrInvalidPassword, err)
+	if err := validatePassword(actorEmail, req.NewPassword); err != nil {
+		return fmt.Errorf("%w: %v", shared.ErrInvalidPassword, err)
 	}
 
-	// Hash new password and change
 	newHash, err := util.HashPassword(req.NewPassword)
 	if err != nil {
-		return email, err
+		return err
 	}
 
-	if err = s.Repo.changePassword(email, newHash); err != nil {
-		return email, err
+	if err = s.Repo.changePassword(actorEmail, newHash); err != nil {
+		return err
 	}
 
-	return email, nil
+	s.Audit.Log(audit.Event{
+		ActorUserID: actorUserID,
+		ActorEmail:  actorEmail,
+		Action:      "change password",
+		Resource:    "user",
+		Success:     true,
+	})
+
+	return nil
 }
 
 // Authenticate user, return userID for use in context and match bool

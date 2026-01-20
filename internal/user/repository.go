@@ -80,16 +80,17 @@ func (r *Repository) updateLastLogin(userID int64) error {
 }
 
 // Create new user
-func (r *Repository) createUser(u CreateUser) error {
-	if _, err := r.Base.DB.Exec("INSERT INTO users (email, password_hash, is_active, is_admin, api_enabled, ui_enabled, identity_provider) VALUES ($1, $2, $3, $4, $5, $6, $7)", u.Email, u.PasswordHash, u.IsActive, u.IsAdmin, u.APIEnabled, u.UIEnabled, "local"); err != nil {
+func (r *Repository) createUser(u CreateUser) (int64, error) {
+	var userID int64
+	if err := r.Base.DB.QueryRow("INSERT INTO users (email, password_hash, is_active, is_admin, api_enabled, ui_enabled, identity_provider) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id", u.Email, u.PasswordHash, u.IsActive, u.IsAdmin, u.APIEnabled, u.UIEnabled, "local").Scan(&userID); err != nil {
 		if sqliteErr, ok := err.(sqlite3.Error); ok {
 			if sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
-				return shared.ErrUserAlreadyExists
+				return 0, shared.ErrUserAlreadyExists
 			}
 		}
-		return err
+		return 0, err
 	}
-	return nil
+	return userID, nil
 }
 
 func (r *Repository) deleteUser(userID int64) error {

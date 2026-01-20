@@ -18,7 +18,8 @@ func (h *Handler) GetNotificationTypes() http.HandlerFunc {
 
 func (h *Handler) GetUserNotificationSettings() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID := ctxutil.GetUserID(r.Context())
+		ctx := r.Context()
+		userID, _ := ctxutil.GetActor(ctx)
 
 		var n NotificationConfigResponse
 		n, err := h.Service.getUserNotificationSettings(userID)
@@ -35,7 +36,8 @@ func (h *Handler) GetUserNotificationSettings() http.HandlerFunc {
 
 func (h *Handler) SetUserNotificationSettings() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID := ctxutil.GetUserID(r.Context())
+		ctx := r.Context()
+		userID, _ := ctxutil.GetActor(ctx)
 
 		var req NotificationConfigRequest
 		json.NewDecoder(r.Body).Decode(&req)
@@ -87,7 +89,8 @@ func (h *Handler) SetUserNotificationSettings() http.HandlerFunc {
 
 func (h *Handler) DeleteUserNotificationSettings() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID := ctxutil.GetUserID(r.Context())
+		ctx := r.Context()
+		userID, _ := ctxutil.GetActor(ctx)
 
 		if err := h.Service.deleteUserNotificationSettings(userID); err != nil {
 			h.Logger.Error("Failed to delete user notification", "error", err)
