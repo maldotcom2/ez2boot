@@ -106,9 +106,9 @@ func (s *Service) ProcessServerSessions(ctx context.Context) {
 		s.Logger.Error("Error while processing ready server sessions", "error", err)
 	}
 
-	// Aging sessions
-	if err := s.processAgingServerSessions(ctx); err != nil {
-		s.Logger.Error("Error while processing aging server sessions", "error", err)
+	// Expiring sessions
+	if err := s.processExpiringServerSessions(ctx); err != nil {
+		s.Logger.Error("Error while processing expiring server sessions", "error", err)
 	}
 
 	// Expired sessions
@@ -143,8 +143,8 @@ func (s *Service) processReadyServerSessions(ctx context.Context) error {
 		for _, session := range sessionsForUse {
 			n := notification.NewNotification{
 				UserID: session.UserID,
-				Msg:    fmt.Sprintf("Servers are online and ready for use: Server Group: %s", session.ServerGroup),
-				Title:  fmt.Sprintf("Server Group %s online", session.ServerGroup),
+				Msg:    fmt.Sprintf("Servers are online and ready for Server Group: %s", session.ServerGroup),
+				Title:  fmt.Sprintf("Session ready: %s", session.ServerGroup),
 			}
 
 			tx, err := s.Repo.Base.DB.Begin()
@@ -185,41 +185,41 @@ func (s *Service) processReadyServerSessions(ctx context.Context) error {
 }
 
 // Process server sessions which will expire soon and user not yet notified
-func (s *Service) processAgingServerSessions(ctx context.Context) error {
-	agingSessions, err := s.Repo.getAgingServerSessions()
+func (s *Service) processExpiringServerSessions(ctx context.Context) error {
+	expiringSessions, err := s.Repo.getExpiringServerSessions()
 	if err != nil {
 		return err
 	}
 
-	if len(agingSessions) == 0 {
-		s.Logger.Debug("No aging server sessions")
+	if len(expiringSessions) == 0 {
+		s.Logger.Debug("No expiring server sessions")
 		return nil
 	}
 
-	s.Logger.Debug("Found aging sessions", "count", len(agingSessions))
+	s.Logger.Debug("Found expiring sessions", "count", len(expiringSessions))
 
 	// Queue notification for each and set flag
-	for _, session := range agingSessions {
+	for _, session := range expiringSessions {
 		n := notification.NewNotification{
 			UserID: session.UserID,
-			Msg:    fmt.Sprintf("Session is expiring soon for Server Group %s and can be extended", session.ServerGroup),
-			Title:  fmt.Sprintf("Session for Server Group %s expiring", session.ServerGroup),
+			Msg:    fmt.Sprintf("Your session is expiring soon for Server Group %s and can be extended", session.ServerGroup),
+			Title:  fmt.Sprintf("Session expiring: %s", session.ServerGroup),
 		}
 
 		tx, err := s.Repo.Base.DB.Begin()
 		if err != nil {
-			s.Logger.Error("Failed to create transaction for aging sessions", "email", session.Email, "server group", session.ServerGroup, "error", err)
+			s.Logger.Error("Failed to create transaction for expiring sessions", "email", session.Email, "server group", session.ServerGroup, "error", err)
 			continue
 		}
 
 		if err := s.NotificationService.QueueNotification(tx, n); err != nil {
-			s.Logger.Error("Failed to queue aging session notification", "email", session.Email, "server group", session.ServerGroup, "error", err)
+			s.Logger.Error("Failed to queue expiring session notification", "email", session.Email, "server group", session.ServerGroup, "error", err)
 			tx.Rollback()
 			continue
 		}
 
 		if err := s.Repo.setWarningNotifiedFlag(tx, 1, session.ServerGroup); err != nil {
-			s.Logger.Error("Failed to set session as notified", "email", session.Email, "server_group", session.ServerGroup, "error", err)
+			s.Logger.Error("Failed to set expiring session as notified", "email", session.Email, "server_group", session.ServerGroup, "error", err)
 			tx.Rollback()
 			continue
 		}
@@ -228,7 +228,7 @@ func (s *Service) processAgingServerSessions(ctx context.Context) error {
 		s.Audit.LogTx(tx, audit.Event{
 			ActorUserID: actorUserID,
 			ActorEmail:  actorEmail,
-			Action:      "aging",
+			Action:      "expiring",
 			Resource:    "server session",
 			Success:     true,
 			Metadata: map[string]any{
@@ -259,8 +259,8 @@ func (s *Service) processExpiredServerSessions(ctx context.Context) error {
 	for _, session := range expiredSessions {
 		n := notification.NewNotification{
 			UserID: session.UserID,
-			Msg:    fmt.Sprintf("Your server session has expired for Server Group %s. Servers will power off", session.ServerGroup),
-			Title:  fmt.Sprintf("Session expired for server group %s.", session.ServerGroup),
+			Msg:    fmt.Sprintf("Your session has expired for Server Group %s. Servers will power off", session.ServerGroup),
+			Title:  fmt.Sprintf("Session expired: %s", session.ServerGroup),
 		}
 
 		tx, err := s.Repo.Base.DB.Begin()
@@ -285,7 +285,7 @@ func (s *Service) processExpiredServerSessions(ctx context.Context) error {
 		s.Audit.LogTx(tx, audit.Event{
 			ActorUserID: actorUserID,
 			ActorEmail:  actorEmail,
-			Action:      "ended",
+			Action:      "expired",
 			Resource:    "server session",
 			Success:     true,
 			Metadata: map[string]any{
@@ -314,8 +314,8 @@ func (s *Service) processTerminatedServerSessions(ctx context.Context) error {
 	for _, session := range terminatedSessions {
 		notification := notification.NewNotification{
 			UserID: session.UserID,
-			Msg:    fmt.Sprintf("Your session has ended normally for Server Group %s. Servers are now off", session.ServerGroup),
-			Title:  fmt.Sprintf("Session ended for server group %s.", session.ServerGroup),
+			Msg:    fmt.Sprintf("Your session has terminated normally for Server Group %s. Servers are now off", session.ServerGroup),
+			Title:  fmt.Sprintf("Session terminated: %s", session.ServerGroup),
 		}
 
 		tx, err := s.Repo.Base.DB.Begin()
@@ -325,13 +325,13 @@ func (s *Service) processTerminatedServerSessions(ctx context.Context) error {
 		}
 
 		if err := s.NotificationService.QueueNotification(tx, notification); err != nil {
-			s.Logger.Error("Failed to queue aging session notification", "email", session.Email, "server group", session.ServerGroup, "error", err)
+			s.Logger.Error("Failed to queue terminated session notification", "email", session.Email, "server group", session.ServerGroup, "error", err)
 			tx.Rollback()
 			continue
 		}
 
 		if err := s.Repo.setOffNotifiedFlag(tx, 1, session.ServerGroup); err != nil {
-			s.Logger.Error("Failed to set session as notified", "email", session.Email, "server_group", session.ServerGroup, "error", err)
+			s.Logger.Error("Failed to set session as off notified", "email", session.Email, "server_group", session.ServerGroup, "error", err)
 			tx.Rollback()
 			continue
 		}

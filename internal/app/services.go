@@ -25,8 +25,8 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 
 	// Notification
 	notificationRepo := notification.NewRepository(repo)
-	notificationService := notification.NewService(notificationRepo, logger)
-	notificationHandler := notification.NewHandler(notificationService, auditService, logger)
+	notificationService := notification.NewService(notificationRepo, auditService, logger)
+	notificationHandler := notification.NewHandler(notificationService, logger)
 
 	// Server
 	serverRepo := server.NewRepository(repo)

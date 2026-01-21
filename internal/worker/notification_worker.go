@@ -17,7 +17,7 @@ func StartNotificationWorker(w Worker, ctx context.Context) {
 				return
 			case <-ticker.C:
 				// Get pending notifications
-				if err := w.NotificationService.ProcessNotifications(); err != nil {
+				if err := w.NotificationService.ProcessNotifications(ctx); err != nil {
 					w.Logger.Error("Error while processing notifications", "error", err)
 				}
 			}

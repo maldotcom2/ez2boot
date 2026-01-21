@@ -12,12 +12,12 @@ type Repository struct {
 
 type Service struct {
 	Repo   *Repository
+	Audit  *audit.Service
 	Logger *slog.Logger
 }
 
 type Handler struct {
 	Service *Service
-	Audit   *audit.Service
 	Logger  *slog.Logger
 }
 
@@ -55,10 +55,11 @@ type NewNotification struct {
 }
 
 type Notification struct {
-	Id    int64
-	Msg   string
-	Title string
-	Type  string
-	Time  int64
-	Cfg   string
+	UserID int64
+	Id     int64
+	Msg    string
+	Title  string
+	Type   string
+	Time   int64
+	Cfg    string
 }

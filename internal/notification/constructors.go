@@ -6,17 +6,17 @@ import (
 	"log/slog"
 )
 
-func NewHandler(notificationService *Service, audit *audit.Service, logger *slog.Logger) *Handler {
+func NewHandler(notificationService *Service, logger *slog.Logger) *Handler {
 	return &Handler{
 		Service: notificationService,
-		Audit:   audit,
 		Logger:  logger,
 	}
 }
 
-func NewService(notificationRepo *Repository, logger *slog.Logger) *Service {
+func NewService(notificationRepo *Repository, audit *audit.Service, logger *slog.Logger) *Service {
 	return &Service{
 		Repo:   notificationRepo,
+		Audit:  audit,
 		Logger: logger,
 	}
 }

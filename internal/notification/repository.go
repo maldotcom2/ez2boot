@@ -18,7 +18,7 @@ func (r *Repository) queueNotification(tx *sql.Tx, n NewNotification) error {
 
 // Find all pending notifications in queue and match to user config
 func (r *Repository) getPendingNotifications() ([]Notification, error) {
-	query := `SELECT nq.id, nq.message, nq.title, un.type, un.config
+	query := `SELECT nq.user_id, nq.id, nq.message, nq.title, un.type, un.config
 			FROM notification_queue AS nq
 			INNER JOIN user_notifications AS un
     		ON nq.user_id = un.user_id;`
@@ -34,7 +34,7 @@ func (r *Repository) getPendingNotifications() ([]Notification, error) {
 
 	for rows.Next() {
 		var n Notification
-		if err := rows.Scan(&n.Id, &n.Msg, &n.Title, &n.Type, &n.Cfg); err != nil {
+		if err := rows.Scan(&n.UserID, &n.Id, &n.Msg, &n.Title, &n.Type, &n.Cfg); err != nil {
 			return nil, err
 		}
 

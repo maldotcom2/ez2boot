@@ -69,7 +69,7 @@ func (r *Repository) getServerSessionSummary() ([]ServerSessionSummary, error) {
 }
 
 // Get server sessions which will expire soon and user not yet notified
-func (r *Repository) getAgingServerSessions() ([]ServerSession, error) {
+func (r *Repository) getExpiringServerSessions() ([]ServerSession, error) {
 	now := time.Now().UTC()
 	threshold := now.Add(15 * time.Minute)
 

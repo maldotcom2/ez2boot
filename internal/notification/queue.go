@@ -1,11 +1,14 @@
 package notification
 
 import (
+	"context"
 	"database/sql"
+	"ez2boot/internal/audit"
+	"ez2boot/internal/ctxutil"
 	"time"
 )
 
-func (s *Service) ProcessNotifications() error {
+func (s *Service) ProcessNotifications(ctx context.Context) error {
 	// Remove any from queue where user does not have configured notifications
 	rows, err := s.Repo.deleteOrphanedNotifications()
 	if err != nil {
@@ -51,6 +54,21 @@ func (s *Service) ProcessNotifications() error {
 			}
 			// success
 			sent = true
+
+			actorUserID, actorEmail := ctxutil.GetActor(ctx)
+			s.Audit.Log(audit.Event{
+				ActorUserID:  actorUserID,
+				ActorEmail:   actorEmail,
+				TargetUserID: n.UserID,
+				Action:       "sent",
+				Resource:     "notification",
+				Success:      true,
+				Metadata: map[string]any{
+					"type":  n.Type,
+					"title": n.Title,
+				},
+			})
+
 			break
 		}
 
