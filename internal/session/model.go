@@ -17,12 +17,12 @@ type Service struct {
 	Repo                *Repository
 	NotificationService *notification.Service
 	UserService         *user.Service
+	Audit               *audit.Service
 	Logger              *slog.Logger
 }
 
 type Handler struct {
 	Service *Service
-	Audit   *audit.Service
 	Logger  *slog.Logger
 }
 

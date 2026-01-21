@@ -18,7 +18,9 @@ func Connect() (*sql.DB, error) {
 		return nil, err
 	}
 
-	db, err := sql.Open("sqlite3", dbPath)
+	dsn := dbPath + "?_busy_timeout=5000"
+
+	db, err := sql.Open("sqlite3", dsn)
 	if err != nil {
 		return nil, err
 	}

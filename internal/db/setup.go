@@ -7,7 +7,7 @@ import (
 // First time table setup
 func (r *Repository) SetupDB() error {
 	// Create audit table
-	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, actor_user_id INTEGER NOT NULL, actor_email TEXT NOT NULL, target_user_id INTEGER, target_email TEXT, action TEXT NOT NULL, resource TEXT NOT NULL, success BOOLEAN NOT NULL CHECK (success IN (0, 1)), reason TEXT, time_stamp INTEGER NOT NULL)"); err != nil {
+	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, actor_user_id INTEGER NOT NULL, actor_email TEXT NOT NULL, target_user_id INTEGER, target_email TEXT, action TEXT NOT NULL, resource TEXT NOT NULL, success BOOLEAN NOT NULL CHECK (success IN (0, 1)), reason TEXT, metadata TEXT, time_stamp INTEGER NOT NULL)"); err != nil {
 		return err
 	}
 

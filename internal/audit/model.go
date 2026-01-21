@@ -22,5 +22,6 @@ type Event struct {
 	Action       string
 	Resource     string
 	Success      bool
+	Metadata     map[string]any
 	Reason       string
 }

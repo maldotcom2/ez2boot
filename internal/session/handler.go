@@ -46,7 +46,7 @@ func (h *Handler) NewServerSession() http.HandlerFunc {
 		session.UserID = userID
 
 		// Create the session
-		expiry, err := h.Service.newServerSession(session)
+		expiry, err := h.Service.newServerSession(session, ctx)
 		if err != nil {
 			h.Logger.Error("Failed to create new session", "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -73,7 +73,7 @@ func (h *Handler) UpdateServerSession() http.HandlerFunc {
 		json.NewDecoder(r.Body).Decode(&session)
 		session.UserID = userID
 
-		expiry, err := h.Service.updateServerSession(session)
+		expiry, err := h.Service.updateServerSession(session, ctx)
 		if err != nil {
 			if errors.Is(err, shared.ErrNoRowsUpdated) {
 				h.Logger.Error("Requsted session for update was either not found or not owned", "error", err)

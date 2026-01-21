@@ -1,6 +1,9 @@
 package session
 
 import (
+	"context"
+	"ez2boot/internal/audit"
+	"ez2boot/internal/ctxutil"
 	"ez2boot/internal/notification"
 	"ez2boot/internal/util"
 	"fmt"
@@ -25,7 +28,9 @@ func (s *Service) getServerSessionSummary() ([]ServerSessionSummary, error) {
 	return summary, nil
 }
 
-func (s *Service) newServerSession(session ServerSessionRequest) (time.Time, error) {
+func (s *Service) newServerSession(session ServerSessionRequest, ctx context.Context) (time.Time, error) {
+	actorUserID, actorEmail := ctxutil.GetActor(ctx)
+
 	if err := s.validateServerSession(session); err != nil {
 		return time.Time{}, err
 	}
@@ -44,11 +49,22 @@ func (s *Service) newServerSession(session ServerSessionRequest) (time.Time, err
 		return time.Time{}, err
 	}
 
+	s.Audit.Log(audit.Event{
+		ActorUserID: actorUserID,
+		ActorEmail:  actorEmail,
+		Action:      "new",
+		Resource:    "server session",
+		Success:     true,
+		Metadata: map[string]any{
+			"server_group": session.ServerGroup,
+		},
+	})
+
 	// Time in time format
 	return time.Unix(sessionExpiry, 0).UTC(), nil
 }
 
-func (s *Service) updateServerSession(session ServerSessionRequest) (time.Time, error) {
+func (s *Service) updateServerSession(session ServerSessionRequest, ctx context.Context) (time.Time, error) {
 	if err := s.validateServerSession(session); err != nil {
 		return time.Time{}, err
 	}
@@ -67,40 +83,52 @@ func (s *Service) updateServerSession(session ServerSessionRequest) (time.Time, 
 		return time.Time{}, err
 	}
 
+	actorUserID, actorEmail := ctxutil.GetActor(ctx)
+	s.Audit.Log(audit.Event{
+		ActorUserID: actorUserID,
+		ActorEmail:  actorEmail,
+		Action:      "update",
+		Resource:    "server session",
+		Success:     true,
+		Metadata: map[string]any{
+			"server_group": session.ServerGroup,
+		},
+	})
+
 	// Time in time format
 	return time.Unix(newExpiry, 0).UTC(), nil
 }
 
 // High level for processing server sessions in each state - called by go routine worker
-func (s *Service) ProcessServerSessions() {
+func (s *Service) ProcessServerSessions(ctx context.Context) {
 	// Ready-for-use sessions
-	if err := s.processReadyServerSessions(); err != nil {
+	if err := s.processReadyServerSessions(ctx); err != nil {
 		s.Logger.Error("Error while processing ready server sessions", "error", err)
 	}
 
 	// Aging sessions
-	if err := s.processAgingServerSessions(); err != nil {
+	if err := s.processAgingServerSessions(ctx); err != nil {
 		s.Logger.Error("Error while processing aging server sessions", "error", err)
 	}
 
 	// Expired sessions
-	if err := s.processExpiredServerSessions(); err != nil {
+	if err := s.processExpiredServerSessions(ctx); err != nil {
 		s.Logger.Error("Error while processing expired server sessions", "error", err)
 	}
 
 	// Terminated sessions
-	if err := s.processTerminatedServerSessions(); err != nil {
+	if err := s.processTerminatedServerSessions(ctx); err != nil {
 		s.Logger.Error("Error while processing terminated server sessions", "error", err)
 	}
 
 	// Finalised sessions
-	if err := s.processFinalisedServerSessions(); err != nil {
+	if err := s.processFinalisedServerSessions(ctx); err != nil {
 		s.Logger.Error("Error while processing terminated server sessions", "error", err)
 	}
 }
 
 // Server sessions which are ready for use
-func (s *Service) processReadyServerSessions() error {
+func (s *Service) processReadyServerSessions(ctx context.Context) error {
 	sessionsForUse, err := s.Repo.getPendingOnServerSessions()
 	if err != nil {
 		s.Logger.Error("Error while finding sessions ready for use", "error", err)
@@ -125,10 +153,8 @@ func (s *Service) processReadyServerSessions() error {
 				continue
 			}
 
-			defer tx.Rollback()
-
 			if err := s.NotificationService.QueueNotification(tx, n); err != nil {
-				s.Logger.Error("Failed to queue sesion ready notification", "email", session.Email, "server group", session.ServerGroup, "error", err)
+				s.Logger.Error("Failed to queue session ready notification", "email", session.Email, "server group", session.ServerGroup, "error", err)
 				tx.Rollback()
 				continue
 			}
@@ -139,6 +165,18 @@ func (s *Service) processReadyServerSessions() error {
 				continue
 			}
 
+			actorUserID, actorEmail := ctxutil.GetActor(ctx)
+			s.Audit.LogTx(tx, audit.Event{
+				ActorUserID: actorUserID,
+				ActorEmail:  actorEmail,
+				Action:      "ready",
+				Resource:    "server session",
+				Success:     true,
+				Metadata: map[string]any{
+					"server_group": session.ServerGroup,
+				},
+			})
+
 			tx.Commit()
 		}
 	}
@@ -147,7 +185,7 @@ func (s *Service) processReadyServerSessions() error {
 }
 
 // Process server sessions which will expire soon and user not yet notified
-func (s *Service) processAgingServerSessions() error {
+func (s *Service) processAgingServerSessions(ctx context.Context) error {
 	agingSessions, err := s.Repo.getAgingServerSessions()
 	if err != nil {
 		return err
@@ -174,8 +212,6 @@ func (s *Service) processAgingServerSessions() error {
 			continue
 		}
 
-		defer tx.Rollback()
-
 		if err := s.NotificationService.QueueNotification(tx, n); err != nil {
 			s.Logger.Error("Failed to queue aging session notification", "email", session.Email, "server group", session.ServerGroup, "error", err)
 			tx.Rollback()
@@ -188,6 +224,18 @@ func (s *Service) processAgingServerSessions() error {
 			continue
 		}
 
+		actorUserID, actorEmail := ctxutil.GetActor(ctx)
+		s.Audit.LogTx(tx, audit.Event{
+			ActorUserID: actorUserID,
+			ActorEmail:  actorEmail,
+			Action:      "aging",
+			Resource:    "server session",
+			Success:     true,
+			Metadata: map[string]any{
+				"server_group": session.ServerGroup,
+			},
+		})
+
 		tx.Commit()
 	}
 
@@ -195,7 +243,7 @@ func (s *Service) processAgingServerSessions() error {
 }
 
 // Process expired server session which haven't been processed yet
-func (s *Service) processExpiredServerSessions() error {
+func (s *Service) processExpiredServerSessions(ctx context.Context) error {
 	expiredSessions, err := s.Repo.getExpiredServerSessions()
 	if err != nil {
 		return err
@@ -221,8 +269,6 @@ func (s *Service) processExpiredServerSessions() error {
 			continue
 		}
 
-		defer tx.Rollback()
-
 		if err := s.NotificationService.QueueNotification(tx, n); err != nil {
 			s.Logger.Error("Failed to queue expired session notification", "email", session.Email, "server group", session.ServerGroup, "error", err)
 			tx.Rollback()
@@ -235,6 +281,18 @@ func (s *Service) processExpiredServerSessions() error {
 			continue
 		}
 
+		actorUserID, actorEmail := ctxutil.GetActor(ctx)
+		s.Audit.LogTx(tx, audit.Event{
+			ActorUserID: actorUserID,
+			ActorEmail:  actorEmail,
+			Action:      "ended",
+			Resource:    "server session",
+			Success:     true,
+			Metadata: map[string]any{
+				"server_group": session.ServerGroup,
+			},
+		})
+
 		tx.Commit()
 	}
 
@@ -242,7 +300,7 @@ func (s *Service) processExpiredServerSessions() error {
 }
 
 // Process sessions which have been marked for cleanup and users not yet notified
-func (s *Service) processTerminatedServerSessions() error {
+func (s *Service) processTerminatedServerSessions(ctx context.Context) error {
 	terminatedSessions, err := s.Repo.getTerminatedServerSessions()
 	if err != nil {
 		s.Logger.Error("Error while finding terminated server sessions", "error", err)
@@ -266,8 +324,6 @@ func (s *Service) processTerminatedServerSessions() error {
 			continue
 		}
 
-		defer tx.Rollback()
-
 		if err := s.NotificationService.QueueNotification(tx, notification); err != nil {
 			s.Logger.Error("Failed to queue aging session notification", "email", session.Email, "server group", session.ServerGroup, "error", err)
 			tx.Rollback()
@@ -280,6 +336,18 @@ func (s *Service) processTerminatedServerSessions() error {
 			continue
 		}
 
+		actorUserID, actorEmail := ctxutil.GetActor(ctx)
+		s.Audit.LogTx(tx, audit.Event{
+			ActorUserID: actorUserID,
+			ActorEmail:  actorEmail,
+			Action:      "terminated",
+			Resource:    "server session",
+			Success:     true,
+			Metadata: map[string]any{
+				"server_group": session.ServerGroup,
+			},
+		})
+
 		tx.Commit()
 
 	}
@@ -288,7 +356,7 @@ func (s *Service) processTerminatedServerSessions() error {
 }
 
 // Process sessions which are marked for cleanup and users have been notified server off state. Restores server group to state ready for new session.
-func (s *Service) processFinalisedServerSessions() error {
+func (s *Service) processFinalisedServerSessions(ctx context.Context) error {
 	sessionsForFinalise, err := s.Repo.getFinalisedServerSessions()
 	if err != nil {
 		s.Logger.Error("Error while finding sessions for cleanup", "error", err)
@@ -307,13 +375,23 @@ func (s *Service) processFinalisedServerSessions() error {
 			continue
 		}
 
-		defer tx.Rollback()
-
 		if err := s.Repo.cleanupServerSession(tx, session); err != nil {
 			s.Logger.Error("Failed to cleanup server session", "email", session.Email, "server_group", session.ServerGroup, "error", err)
 			tx.Rollback()
 			continue
 		}
+
+		actorUserID, actorEmail := ctxutil.GetActor(ctx)
+		s.Audit.LogTx(tx, audit.Event{
+			ActorUserID: actorUserID,
+			ActorEmail:  actorEmail,
+			Action:      "finalised",
+			Resource:    "server session",
+			Success:     true,
+			Metadata: map[string]any{
+				"server_group": session.ServerGroup,
+			},
+		})
 
 		tx.Commit()
 	}

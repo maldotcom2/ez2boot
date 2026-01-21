@@ -8,19 +8,19 @@ import (
 	"log/slog"
 )
 
-func NewHandler(sessionService *Service, audit *audit.Service, logger *slog.Logger) *Handler {
+func NewHandler(sessionService *Service, logger *slog.Logger) *Handler {
 	return &Handler{
 		Service: sessionService,
-		Audit:   audit,
 		Logger:  logger,
 	}
 }
 
-func NewService(sessionRepo *Repository, notificationService *notification.Service, userService *user.Service, logger *slog.Logger) *Service {
+func NewService(sessionRepo *Repository, notificationService *notification.Service, userService *user.Service, audit *audit.Service, logger *slog.Logger) *Service {
 	return &Service{
 		Repo:                sessionRepo,
 		NotificationService: notificationService,
 		UserService:         userService,
+		Audit:               audit,
 		Logger:              logger,
 	}
 }

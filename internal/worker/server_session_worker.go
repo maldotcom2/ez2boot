@@ -18,7 +18,7 @@ func StartServerSessionWorker(w Worker, ctx context.Context) {
 				return
 			case <-ticker.C:
 				// Process expired or aging sessions
-				w.SessionService.ProcessServerSessions()
+				w.SessionService.ProcessServerSessions(ctx)
 			}
 		}
 	}()
