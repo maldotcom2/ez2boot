@@ -60,7 +60,7 @@ func (s *Service) ProcessNotifications(ctx context.Context) error {
 				ActorUserID:  actorUserID,
 				ActorEmail:   actorEmail,
 				TargetUserID: n.UserID,
-				Action:       "sent",
+				Action:       "send",
 				Resource:     "notification",
 				Success:      true,
 				Metadata: map[string]any{
