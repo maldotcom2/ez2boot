@@ -1,6 +1,7 @@
 package app
 
 import (
+	"ez2boot/internal/audit"
 	"ez2boot/internal/notification"
 	"ez2boot/internal/notification/email"
 	"ez2boot/internal/notification/telegram"
@@ -21,6 +22,7 @@ type Services struct {
 }
 
 type Handlers struct {
+	AuditHandler        *audit.Handler
 	UserHandler         *user.Handler
 	ServerHandler       *server.Handler
 	SessionHandler      *session.Handler

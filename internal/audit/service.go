@@ -2,6 +2,15 @@ package audit
 
 import "database/sql"
 
+func (s *Service) GetAuditEvents(req AuditLogRequest) (AuditLogResponse, error) {
+	events, err := s.Repo.GetAuditEvents(req)
+	if err != nil {
+		return AuditLogResponse{}, err
+	}
+
+	return events, nil
+}
+
 func (s *Service) Log(e Event) {
 	if err := s.Repo.Log(e); err != nil {
 		s.Logger.Error("Failed to write audit log", "error", err)

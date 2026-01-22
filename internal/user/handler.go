@@ -145,7 +145,7 @@ func (h *Handler) UpdateUserAuthorisation() http.HandlerFunc {
 		}
 
 		// Admin check
-		if !h.userIsAdmin(w, r) {
+		if !h.UserIsAdmin(w, r) {
 			return // Response written by helper
 		}
 
@@ -208,7 +208,7 @@ func (h *Handler) CreateUser() http.HandlerFunc {
 		h.Logger.Info("Attempted user creation", "email", req.Email)
 
 		// Admin check
-		if !h.userIsAdmin(w, r) {
+		if !h.UserIsAdmin(w, r) {
 			return // Response written by helper
 		}
 
@@ -282,7 +282,7 @@ func (h *Handler) DeleteUser() http.HandlerFunc {
 		}
 
 		// Admin check
-		if !h.userIsAdmin(w, r) {
+		if !h.UserIsAdmin(w, r) {
 			return // Response written by helper
 		}
 
@@ -452,7 +452,7 @@ func (h *Handler) ChangePassword() http.HandlerFunc {
 }
 
 // Handler helper to guard admin routes
-func (h *Handler) userIsAdmin(w http.ResponseWriter, r *http.Request) bool {
+func (h *Handler) UserIsAdmin(w http.ResponseWriter, r *http.Request) bool {
 	ctx := r.Context()
 	userID, _ := ctxutil.GetActor(ctx)
 

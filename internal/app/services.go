@@ -38,6 +38,8 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 	userService := user.NewService(userRepo, cfg, auditService, logger)
 	userHandler := user.NewHandler(userService, logger)
 
+	auditHandler := audit.NewHandler(auditService, userHandler, logger) //TODO reorganise this
+
 	// Session
 	sessionRepo := session.NewRepository(repo)
 	sessionService := session.NewService(sessionRepo, notificationService, userService, auditService, logger)
@@ -67,6 +69,7 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 	wkr := worker.NewWorker(serverService, sessionService, userService, notificationService, cfg, logger)
 
 	handlers := &Handlers{
+		AuditHandler:        auditHandler,
 		UserHandler:         userHandler,
 		ServerHandler:       serverHandler,
 		SessionHandler:      sessionHandler,

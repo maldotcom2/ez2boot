@@ -74,6 +74,8 @@ func SetupBackendRoutes(
 	uiRouter.HandleFunc("/user/notification", handlers.NotificationHandler.SetUserNotificationSettings()).Methods("POST")
 	uiRouter.HandleFunc("/user/notification", handlers.NotificationHandler.DeleteUserNotificationSettings()).Methods("DELETE")
 	uiRouter.HandleFunc("/notification/types", handlers.NotificationHandler.GetNotificationTypes()).Methods("GET")
+	// Audit
+	uiRouter.HandleFunc("/audit/events", handlers.AuditHandler.GetAuditEvents()).Methods("GET")
 }
 
 func SetupFrontendRoutes(router *mux.Router) {

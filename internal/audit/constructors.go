@@ -5,6 +5,14 @@ import (
 	"log/slog"
 )
 
+func NewHandler(auditService *Service, adminChecker AdminChecker, logger *slog.Logger) *Handler {
+	return &Handler{
+		Service:      auditService,
+		AdminChecker: adminChecker,
+		Logger:       logger,
+	}
+}
+
 func NewService(auditRepo *Repository, logger *slog.Logger) *Service {
 	return &Service{
 		Repo:   auditRepo,

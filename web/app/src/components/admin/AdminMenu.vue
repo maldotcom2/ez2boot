@@ -1,6 +1,7 @@
 <template>
   <aside class="menu">
     <button @click="showUserManagement">User Management</button>
+    <button @click="showAuditLog">Audit Log</button>
   </aside>
 </template>
 
@@ -15,10 +16,15 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 import UserManagement from './AdminUserMgmt.vue'
+import AuditLog from './AdminAuditLog.vue'
 
 // Update parent when button clicked
 function showUserManagement() {
   emit('update:modelValue', UserManagement)
+}
+
+function showAuditLog() {
+  emit('update:modelValue', AuditLog)
 }
 
 </script>
