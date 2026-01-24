@@ -59,7 +59,7 @@ func (r *Repository) GetAuditEvents(req AuditLogRequest) (AuditLogResponse, erro
 		where = "WHERE " + strings.Join(conditions, " AND ")
 	}
 
-	query := fmt.Sprintf(`SELECT actor_user_id, actor_email, target_user_id, target_email, action, resource, success, reason, time_stamp
+	query := fmt.Sprintf(`SELECT actor_user_id, actor_email, target_user_id, target_email, action, resource, success, reason, metadata, time_stamp
 						FROM audit_log %s
 						ORDER BY time_stamp DESC
 						LIMIT $%d`, where, len(args)+1)
@@ -82,11 +82,20 @@ func (r *Repository) GetAuditEvents(req AuditLogRequest) (AuditLogResponse, erro
 	var lastCursor int64
 
 	for rows.Next() {
+		var metadata sql.NullString
 		var a AuditLogEvent
-		err = rows.Scan(&a.ActorUserID, &a.ActorEmail, &a.TargetUserID, &a.TargetEmail, &a.Action, &a.Resource, &a.Success, &a.Reason, &a.TimeStamp)
+		err = rows.Scan(&a.ActorUserID, &a.ActorEmail, &a.TargetUserID, &a.TargetEmail, &a.Action, &a.Resource, &a.Success, &a.Reason, &metadata, &a.TimeStamp)
 		if err != nil {
 			return AuditLogResponse{}, err
 		}
+
+		a.Metadata = make(map[string]any)
+		if metadata.Valid {
+			if err := json.Unmarshal([]byte(metadata.String), &a.Metadata); err != nil {
+				return AuditLogResponse{}, err
+			}
+		}
+
 		events = append(events, a)
 		lastCursor = a.TimeStamp
 	}

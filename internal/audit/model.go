@@ -46,8 +46,8 @@ type AuditLogEvent struct {
 	Resource     string
 	Success      bool
 	Reason       string
-	//Metadata     map[string]any
-	TimeStamp int64
+	Metadata     map[string]any
+	TimeStamp    int64
 }
 
 type AuditLogRequest struct {
