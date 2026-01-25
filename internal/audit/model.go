@@ -62,7 +62,7 @@ type AuditLogRequest struct {
 	Resource    string `schema:"resource"`
 	Success     *bool  `schema:"success"`
 	Reason      string `schema:"reason"`
-	//Metadata    string `schema:"metadata"`
+	Metadata    string `schema:"metadata"`
 
 	// Time range
 	From int64 `schema:"from"`

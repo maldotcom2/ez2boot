@@ -52,7 +52,7 @@ async function getUsers() {
         users.value = response.data.data
     }
 
-    } catch (err) {
+  } catch (err) {
     console.error('Error loading users:', err)
   }
 }
