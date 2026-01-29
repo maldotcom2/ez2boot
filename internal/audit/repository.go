@@ -13,6 +13,17 @@ func (r *Repository) GetAuditEvents(req AuditLogRequest) (AuditLogResponse, erro
 	var args []any
 	var conditions []string
 
+	// Components of 'where' clause
+	if req.From != 0 {
+		args = append(args, req.From)
+		conditions = append(conditions, fmt.Sprintf("time_stamp >= $%d", len(args)))
+	}
+
+	if req.To != 0 {
+		args = append(args, req.To)
+		conditions = append(conditions, fmt.Sprintf("time_stamp <= $%d", len(args)))
+	}
+
 	if req.ActorEmail != "" {
 		args = append(args, req.ActorEmail)
 		conditions = append(conditions, fmt.Sprintf("actor_email = $%d", len(args)))
@@ -43,10 +54,10 @@ func (r *Repository) GetAuditEvents(req AuditLogRequest) (AuditLogResponse, erro
 		conditions = append(conditions, fmt.Sprintf("reason = $%d", len(args)))
 	}
 
-	/* 	if req.Metadata != "" {
+	if req.Metadata != "" {
 		args = append(args, req.Metadata)
 		conditions = append(conditions, fmt.Sprintf("metadata = $%d", len(args)))
-	} */
+	}
 
 	if req.Before != 0 {
 		args = append(args, req.Before)

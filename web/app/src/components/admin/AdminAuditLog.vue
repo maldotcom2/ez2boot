@@ -102,9 +102,14 @@
           </td>
           <td>{{ event.Reason }}</td>
           <td>
-            <pre v-if="Object.keys(event.Metadata || {}).length">
-              {{ event.Metadata }}
-            </pre>
+            <div v-if="hasMetadata(event.Metadata)" class="metadata-lines">
+              <div
+                v-for="(value, key) in event.Metadata"
+                :key="key"
+              >
+                {{ key }}: {{ value }}
+              </div>
+            </div>
             <span v-else>-</span>
           </td>
         </tr>
@@ -113,10 +118,9 @@
 
     <div v-else class="empty">No audit events found</div>
 
-    <!-- Pagination -->
     <div class="pagination-btn-container">
-      <button @click="prevPage" :disabled="!canGoBack">← Back</button>
-      <button @click="nextPage" :disabled="!nextCursor">Next →</button>
+      <button @click="prevPage" :disabled="!canGoBack">Back</button>
+      <button @click="nextPage" :disabled="!nextCursor">Next</button>
     </div>
   </div>
 </template>
@@ -130,11 +134,12 @@ const nextCursor = ref(null)
 const cursorStack = ref([])
 const loading = ref(false)
 const error = ref('')
+const fromDate = ref('')
+const toDate = ref('')
 const canGoBack = computed(() => cursorStack.value.length > 0)
 const filters = reactive({
   // Pagination
   limit: 20,
-  before: null,
 
   // Filters
   actor_email: '',
@@ -168,6 +173,8 @@ async function fetchAuditEvents(cursor = null) {
       to: filters.to || undefined,
     }
 
+    console.log('REQUEST PARAMS:', params)
+
     if (cursor) {
       params.before = cursor
     }
@@ -191,6 +198,46 @@ async function fetchAuditEvents(cursor = null) {
   }
 }
 
+async function applyFilters() {
+  // Reset state
+  cursorStack.value = []
+  nextCursor.value = null
+  events.value = []
+
+  // Explicitly remove cursor
+  filters.before = null
+
+  // Fetch fresh
+  await fetchAuditEvents()
+}
+
+async function resetFilters() {
+  // Reset filters to defaults
+  filters.actor_email = ''
+  filters.target_email = ''
+  filters.action = ''
+  filters.resource = ''
+  filters.reason = ''
+  filters.success = null
+  filters.from = null
+  filters.to = null
+
+  // Reset date inputs
+  fromDate.value = ''
+  toDate.value = ''
+
+  // Reset state
+  cursorStack.value = []
+  nextCursor.value = null
+  events.value = []
+
+  // Explicitly remove cursor
+  filters.before = null
+
+  // Fetch fresh
+  await fetchAuditEvents()
+}
+
 async function nextPage() {
   if (!nextCursor.value) return
   await fetchAuditEvents(nextCursor.value)
@@ -202,16 +249,37 @@ async function prevPage() {
   await fetchAuditEvents(prev)
 }
 
-function setFromDate(date) {
-  filters.from = Math.floor(new Date(date).getTime() / 1000)
+function setFromDate(dateStr) {
+  if (!dateStr) {
+    filters.from = null
+    return
+  }
+  const date = new Date(dateStr)
+  date.setHours(0, 0, 0, 0) // start of day local time
+  filters.from = Math.floor(date.getTime() / 1000)
 }
 
-function setToDate(date) {
-  filters.to = Math.floor(new Date(date).getTime() / 1000)
+function setToDate(dateStr) {
+  if (!dateStr) {
+    filters.to = null
+    return
+  }
+  const date = new Date(dateStr)
+  date.setHours(23, 59, 59, 999) // end of day local time
+  filters.to = Math.floor(date.getTime() / 1000)
 }
+
 
 function formatTime(ts) {
   return new Date(ts * 1000).toLocaleString()
+}
+
+function hasMetadata(metadata) {
+  return (
+    metadata &&
+    typeof metadata === 'object' &&
+    Object.keys(metadata).length > 0
+  )
 }
 
 onMounted(() => {
@@ -223,6 +291,8 @@ onMounted(() => {
 <style scoped>
 .audit-log-container {
   background-color: var(--container-modal);
+  max-width: 100%;
+  overflow-x: auto;
   font-size: small;
   padding: 12px;
   border-radius: var(--small-radius);
@@ -254,6 +324,7 @@ onMounted(() => {
   color: var(--low-glare);
   border-collapse: collapse;
   width: 100%;
+  table-layout: auto;
 }
 
 .audit-table th,
@@ -265,5 +336,18 @@ onMounted(() => {
 .audit-table th {
   text-align: left;
 }
+
+.time-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.metadata-lines {
+  white-space: normal;
+  word-break: break-word;
+  max-width: 100%;
+}
+
 
 </style>
