@@ -23,7 +23,7 @@
           <td>{{ server.current_user || '-' }}</td>
           <td>
             <div class="controls-container">
-              <input v-model="duration[server.server_group]" placeholder="eg 3h" :disabled="server.current_user && server.current_user !== user.email" />
+              <input v-model.number="duration[server.server_group]" type="number" min="1" max="24" step="1" placeholder="hours" :disabled="server.current_user && server.current_user !== user.email" />
                 <!-- Start Session enabled if nobody is using it -->
               <button @click="startServerSession(server.server_group)"
               :disabled="!!server.current_user || !duration[server.server_group]">Start Session</button>
@@ -69,13 +69,14 @@ async function loadServerSessions() {
 // Start a new server session
 async function startServerSession(serverGroup) {
   if (!validateDuration(duration.value[serverGroup])) {
+    console.error("duration input invalid");
     return
   }
 
   try {
     const response = await axios.post('/ui/session/new', {
       server_group: serverGroup,
-      duration: duration.value[serverGroup]
+      duration: `${duration.value[serverGroup]}h`
     })
 
     if (response.data.success) {
@@ -96,7 +97,7 @@ async function updateServerSession(serverGroup) {
   try {
     const response = await axios.put('/ui/session/update', {
       server_group: serverGroup,
-      duration: duration.value[serverGroup]
+      duration: `${duration.value[serverGroup]}h`
     })
 
     if (response.data.success) {
@@ -111,7 +112,7 @@ async function endServerSession(serverGroup) {
   try {
     const response = await axios.put('/ui/session/update', {
       server_group: serverGroup,
-      duration: '0m'
+      duration: '0h'
     })
 
     if (response.data.success) {
@@ -134,9 +135,8 @@ function formatTimeRemaining(minutesRemaining) {
   else return `${minutesRemaining} minutes`
 }
 
-function validateDuration(duration) {
-  const regex = /^\d+(m|h)$/
-  return regex.test(duration) // true
+function validateDuration(value) {
+  return Number.isInteger(value) // true
 }
 
 // Load table on page load
