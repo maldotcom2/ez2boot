@@ -167,8 +167,9 @@ async function fetchAuditEvents(cursor = null) {
       target_email: filters.target_email || undefined,
       action: filters.action || undefined,
       resource: filters.resource || undefined,
-      reason: filters.reason || undefined,
       success: filters.success,
+      reason: filters.reason || undefined,
+      metadata: filters.metadata,
       from: filters.from || undefined,
       to: filters.to || undefined,
     }
@@ -217,8 +218,9 @@ async function resetFilters() {
   filters.target_email = ''
   filters.action = ''
   filters.resource = ''
-  filters.reason = ''
   filters.success = null
+  filters.reason = ''
+  filters.metadata = ''
   filters.from = null
   filters.to = null
 

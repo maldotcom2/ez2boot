@@ -55,8 +55,8 @@ func (r *Repository) GetAuditEvents(req AuditLogRequest) (AuditLogResponse, erro
 	}
 
 	if req.Metadata != "" {
-		args = append(args, req.Metadata)
-		conditions = append(conditions, fmt.Sprintf("metadata = $%d", len(args)))
+		args = append(args, "%"+req.Metadata+"%")
+		conditions = append(conditions, fmt.Sprintf("metadata LIKE $%d", len(args)))
 	}
 
 	if req.Before != 0 {
