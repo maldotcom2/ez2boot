@@ -38,6 +38,36 @@ func (s *Service) login(u UserLogin) (string, error) {
 		return "", err
 	}
 
+	// Check UI access is allowed
+	user, err := s.GetUserAuthorisation(userID)
+	if err != nil {
+		return "", err
+	}
+
+	if !user.IsActive {
+		s.Audit.Log(audit.Event{
+			ActorUserID: 0,
+			ActorEmail:  u.Email,
+			Action:      "login",
+			Resource:    "user",
+			Success:     false,
+			Reason:      "user inactive",
+		})
+		return "", shared.ErrUserInactive
+	}
+
+	if !user.UIEnabled {
+		s.Audit.Log(audit.Event{
+			ActorUserID: 0,
+			ActorEmail:  u.Email,
+			Action:      "login",
+			Resource:    "user",
+			Success:     false,
+			Reason:      "UI unauthorised",
+		})
+		return "", shared.ErrUserNotAuthorised
+	}
+
 	// Auth fail, or user not exist
 	if !authenticated || err == shared.ErrUserNotFound {
 		s.Audit.Log(audit.Event{
@@ -138,6 +168,12 @@ func (s *Service) updateUserAuthorisation(users []UpdateUserRequest, ctx context
 			Action:       "update authorisation",
 			Resource:     "user",
 			Success:      true,
+			Metadata: map[string]any{
+				"isActive":   u.IsActive,
+				"isAdmin":    u.IsAdmin,
+				"apiEnabled": u.APIEnabled,
+				"uiEnabled":  u.UIEnabled,
+			},
 		})
 	}
 

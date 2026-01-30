@@ -28,18 +28,32 @@ func (h *Handler) Login() http.HandlerFunc {
 		if err != nil {
 			switch {
 			case errors.Is(err, shared.ErrEmailOrPasswordMissing):
-				h.Logger.Error("Missing email or password for login")
+				h.Logger.Error("Login failed", "reason", shared.ErrEmailOrPasswordMissing)
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   shared.ErrEmailOrPasswordMissing.Error(),
+					Error:   "Missing email or password for login",
 				}
 			case errors.Is(err, shared.ErrAuthenticationFailed):
-				h.Logger.Error("Invalid email or password", "email", u.Email, "error", err)
+				h.Logger.Error("Login failed", "email", u.Email, "reason", shared.ErrAuthenticationFailed, "error", err)
 				w.WriteHeader(http.StatusUnauthorized)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   shared.ErrAuthenticationFailed.Error(),
+					Error:   "Invalid email or password",
+				}
+			case errors.Is(err, shared.ErrUserInactive):
+				h.Logger.Error("Login failed", "email", u.Email, "reason", shared.ErrUserInactive, "error", err)
+				w.WriteHeader(http.StatusForbidden)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "User inactive",
+				}
+			case errors.Is(err, shared.ErrUserNotAuthorised):
+				h.Logger.Error("User inactive", "email", u.Email, "reason", shared.ErrUserNotAuthorised, "error", err)
+				w.WriteHeader(http.StatusForbidden)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "User not authorised",
 				}
 			default:
 				h.Logger.Error("Failed to login", "email", u.Email, "error", err)

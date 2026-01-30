@@ -115,21 +115,21 @@ func (m *Middleware) SessionAuthMiddleware() mux.MiddlewareFunc {
 			// Get user permissions
 			ua, err := m.UserService.GetUserAuthorisation(us.UserID)
 			if err != nil {
-				m.Logger.Error("Error while fetching user authorisation", "email", ua.Email, "error", err)
+				m.Logger.Error("Error while fetching user authorisation", "email", us.Email, "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Error while fetching user authorisation"})
 				return
 			}
 
 			if !ua.IsActive {
-				m.Logger.Info("Inactive user attempted login", "email", ua.Email)
+				m.Logger.Warn("Inactive user attempted login", "email", ua.Email)
 				w.WriteHeader(http.StatusForbidden)
 				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User is not active"})
 				return
 			}
 
 			if !ua.UIEnabled {
-				m.Logger.Info("Non-UI user attempted to login via UI", "email", ua.Email)
+				m.Logger.Warn("Non-UI user attempted to login via UI", "email", ua.Email)
 				w.WriteHeader(http.StatusForbidden)
 				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User not authorised for UI access"})
 				return
