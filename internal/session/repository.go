@@ -2,6 +2,7 @@ package session
 
 import (
 	"database/sql"
+	"ez2boot/internal/server"
 	"ez2boot/internal/shared"
 	"fmt"
 	"time"
@@ -37,32 +38,69 @@ func (r *Repository) getServerSessions() ([]ServerSession, error) {
 
 // Specialised query specifically for main UI table population
 func (r *Repository) getServerSessionSummary() ([]ServerSessionSummary, error) {
-	query := `SELECT s.server_group, COUNT(s.server_group) AS server_count, GROUP_CONCAT(s.name, ', ') AS server_names, MIN(u.email) AS current_user, MIN(ss.expiry) AS session_expiry
-			FROM servers AS s
-			LEFT JOIN server_sessions AS ss
-			ON s.server_group = ss.server_group
-			LEFT JOIN users AS u
-			ON ss.user_id = u.id
-			GROUP BY s.server_group
-			ORDER BY s.server_group`
-
-	rows, err := r.Base.DB.Query(query)
+	tx, err := r.Base.DB.Begin()
 	if err != nil {
 		return nil, err
 	}
+	defer tx.Rollback()
 
-	defer rows.Close()
+	// Get all servers with their group and state
+	serverQuery := `SELECT server_group, name, state FROM servers`
+	serverRows, err := tx.Query(serverQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer serverRows.Close()
+
+	// Map used for lookup only
+	serverMap := make(map[string][]ServerInfo)
+	for serverRows.Next() {
+		var group, name, state string
+		if err := serverRows.Scan(&group, &name, &state); err != nil {
+			return nil, err
+		}
+		serverMap[group] = append(serverMap[group], ServerInfo{
+			Name:  name,
+			State: server.ServerState(state),
+		})
+	}
+
+	// Query session info per server group
+	sessionQuery := `SELECT s.server_group, MIN(u.email) AS current_user, MIN(ss.expiry) AS session_expiry
+					FROM servers AS s
+					LEFT JOIN server_sessions AS ss ON s.server_group = ss.server_group
+					LEFT JOIN users AS u ON ss.user_id = u.id
+					GROUP BY s.server_group
+					ORDER BY s.server_group`
+	sessionRows, err := tx.Query(sessionQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer sessionRows.Close()
 
 	summary := []ServerSessionSummary{}
+	for sessionRows.Next() {
+		var group string
+		var currentUser *string // can be null
+		var expiry *int64       // can be null
 
-	for rows.Next() {
-		var s ServerSessionSummary
-		err = rows.Scan(&s.ServerGroup, &s.ServerCount, &s.ServerNames, &s.CurrentUser, &s.Expiry)
-		if err != nil {
+		if err := sessionRows.Scan(&group, &currentUser, &expiry); err != nil {
 			return nil, err
 		}
 
-		summary = append(summary, s)
+		servers := serverMap[group]
+		summary = append(summary, ServerSessionSummary{
+			ServerGroup: group,
+			ServerCount: int64(len(servers)),
+			Servers:     servers,
+			CurrentUser: currentUser,
+			Expiry:      expiry,
+		})
+	}
+
+	// No write, just releases trn
+	if err := tx.Commit(); err != nil {
+		return nil, err
 	}
 
 	return summary, nil

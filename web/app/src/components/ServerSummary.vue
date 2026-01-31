@@ -7,7 +7,7 @@
       <thead>
         <tr>
           <th>Group Name</th>
-          <th>Server Count</th>
+          <th>State</th>
           <th>Time Remaining</th>
           <th>Expiry</th>
           <th>Current User</th>
@@ -17,7 +17,12 @@
       <tbody>
         <tr v-for="server in servers" :key="server.server_group">
           <td>{{ server.server_group }}</td>
-          <td><span :title="server.server_names">{{ server.server_count }}</span></td>
+          <td>
+            <div class="status-container">
+            <span :class="'status-dot ' + getGroupState(server.servers)"></span>
+            <button @click="openServerModal($event, server.servers, server.server_group)">Details</button>
+          </div>
+          </td>
           <td>{{ server.expiry ? formatTimeRemaining(Math.floor((server.expiry - Math.floor(Date.now() / 1000)) / 60)): '-' }}</td>
           <td>{{ server.expiry ? new Date(server.expiry * 1000).toLocaleString() : '-' }}</td>
           <td>{{ server.current_user || '-' }}</td>
@@ -41,6 +46,20 @@
       </tbody>
     </table>
   </div>
+
+  <!-- Server details modal -->
+<div v-if="showModal" class="modal-backdrop" @click.self="closeModal">
+  <div class="detail-modal" :style="{ top: modalPosition.top, left: modalPosition.left }">
+    <span>Servers in {{ modalGroup }}</span>
+    <ul>
+      <li v-for="s in modalServers" :key="s.name" class="detail-modal-item">
+        <span :class="['status-dot', s.state]"></span>
+        {{ s.name }}
+      </li>
+    </ul>
+    <button @click="closeModal">Close</button>
+  </div>
+</div>
 </template>
 
 <script setup>
@@ -51,6 +70,10 @@ import { useUserStore } from '@/stores/user'
 const user = useUserStore()
 const servers = ref([])
 const duration = ref({})
+const showModal = ref(false)
+const modalPosition = ref({ top: '0px', left: '0px' });
+const modalServers = ref([])
+const modalGroup = ref('')
 
 // Load table data from specialised endpoint
 async function loadServerSessions() {
@@ -58,6 +81,7 @@ async function loadServerSessions() {
     const response = await axios.get('/ui/session/summary')
     if (response.data.success) {
         servers.value = response.data.data
+        console.log(response.data);
     }
     duration.value = {} // empty the input
 
@@ -139,6 +163,32 @@ function validateDuration(value) {
   return Number.isInteger(value) // true
 }
 
+function openServerModal(event, servers, groupName) {
+  modalServers.value = servers || []
+  modalGroup.value = groupName || (servers.length > 0 ? servers[0].server_group : '')
+  showModal.value = true
+
+  // Calculate position
+  const rect = event.target.getBoundingClientRect();
+  modalPosition.value.top = `${rect.top}px`; // top relative to viewport
+  modalPosition.value.left = `${rect.right + 10}px`; // 10px to the right
+}
+
+function closeModal() {
+  showModal.value = false
+  modalServers.value = []
+  modalGroup.value = ''
+}
+
+function getGroupState(serversList) {
+  if (serversList.every(s => s.state === 'on')) 
+    return 'on';
+  else if (serversList.every(s => s.state === 'off')) 
+    return 'off';
+  else
+    return 'transitioning';
+}
+
 // Load table on page load
 onMounted(async () => {
   try {
@@ -188,6 +238,79 @@ onMounted(async () => {
 
 .controls-container input {
   width: 50px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 999; /* below modal */
+}
+
+.detail-modal {
+  position: fixed;
+  color: var(--low-glare);
+  background: var(--container-modal);
+  border: 1px var(--low-glare);
+  padding: 1rem;
+  border-radius: var(--small-radius);
+  z-index: 1000;
+  min-width: 100px;
+}
+
+.detail-modal button {
+  display: block;
+  margin: 1rem auto 0;
+  padding: 0px 10px;
+  height: 18px;
+}
+
+.detail-modal ul {
+  padding: 0;
+  margin: 0;
+  margin-top: 10px;
+  list-style: none; 
+  text-align: left;
+}
+
+.detail-modal-item {
+  display: flex;
+  align-items: center;
+  justify-content: start;
+  margin-bottom: 4px;
+}
+
+.status-container {
+  display: inline-flex;
+  align-items: center;
+}
+
+.status-container button {
+  padding: 0px 10px;
+  height: 18px;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid #666;
+  margin-right: 16px;
+}
+
+.status-dot.on {
+  background-color: #4caf50;
+}
+
+.status-dot.off {
+  background-color: #f44336;
+}
+
+.status-dot.transitioning {
+  background-color: #ffc107;
 }
 
 </style>

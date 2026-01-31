@@ -39,11 +39,11 @@ function admin() {
 }
 
 async function logout() {
-    try {
-        const response = await axios.post('ui/user/logout',{withCredentials: true})
-        user.$reset() // purge Pinia store
-        console.log('logout successful', response.data)
-        router.push('/login')
+  try {
+    const response = await axios.post('ui/user/logout',{withCredentials: true})
+    user.$reset() // purge Pinia store
+    console.log('logout successful', response.data)
+    router.push('/login')
 
   } catch (err) {
     if (err.response) {
@@ -71,11 +71,11 @@ onMounted(async () => {
 
 <style scoped>
 .user-nav {
-    display: flex;
-    position: relative;
-    align-items: center;
-    gap: 10px;
-    color: var(--low-glare);
+  display: flex;
+  position: relative;
+  align-items: center;
+  gap: 10px;
+  color: var(--low-glare);
 }
 
 .dropdown {

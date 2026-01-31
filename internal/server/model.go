@@ -19,10 +19,18 @@ type Handler struct {
 	Logger  *slog.Logger
 }
 
+type ServerState string
+
+const (
+	ServerOn            ServerState = "on"
+	ServerOff           ServerState = "off"
+	ServerTransitioning ServerState = "transitioning"
+)
+
 type Server struct {
-	UniqueID    string `json:"unique_id"`
-	Name        string `json:"name"`
-	State       string `json:"state"`
-	ServerGroup string `json:"server_group"`
-	TimeAdded   int64  `json:"time_added"`
+	UniqueID    string      `json:"unique_id"`
+	Name        string      `json:"name"`
+	State       ServerState `json:"state"`
+	ServerGroup string      `json:"server_group"`
+	TimeAdded   int64       `json:"time_added"`
 }

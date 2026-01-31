@@ -4,6 +4,7 @@ import (
 	"ez2boot/internal/audit"
 	"ez2boot/internal/db"
 	"ez2boot/internal/notification"
+	"ez2boot/internal/server"
 	"ez2boot/internal/user"
 	"log/slog"
 	"time"
@@ -48,10 +49,15 @@ type ServerSessionResponse struct {
 	Expiry      time.Time `json:"expiry"`
 }
 
+type ServerInfo struct {
+	Name  string             `json:"name"`
+	State server.ServerState `json:"state"`
+}
+
 type ServerSessionSummary struct {
-	ServerGroup string  `json:"server_group"`
-	ServerCount int64   `json:"server_count"`
-	ServerNames string  `json:"server_names"`
-	CurrentUser *string `json:"current_user"` // Can be null
-	Expiry      *int64  `json:"expiry"`       // Can be null
+	ServerGroup string       `json:"server_group"`
+	ServerCount int64        `json:"server_count"`
+	Servers     []ServerInfo `json:"servers"`
+	CurrentUser *string      `json:"current_user"` // Can be null
+	Expiry      *int64       `json:"expiry"`       // Can be null
 }
