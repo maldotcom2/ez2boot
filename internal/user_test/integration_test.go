@@ -63,6 +63,76 @@ func TestLogin_WrongPassword_ReturnsUnauth(t *testing.T) {
 	}
 }
 
+func TestLogin_Inactive_ReturnsForbidden(t *testing.T) {
+	// Create a test env
+	env := testutil.NewTestEnv(t)
+
+	// Create user
+	email := "example@example.com"
+
+	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
+	testutil.InsertUser(t, env.DB, email, hash, false, false, true, true)
+
+	// Attempt login
+	loginPayload := user.UserLogin{
+		Email:    email,
+		Password: "testpassword123",
+	}
+
+	loginBody, _ := json.Marshal(loginPayload)
+	req := httptest.NewRequest("POST", "/ui/user/login", bytes.NewReader(loginBody))
+
+	// Record the response
+	w := httptest.NewRecorder()
+	env.Router.ServeHTTP(w, req)
+
+	// Expect 403 Forbidden
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("want 403, got %d, body=%s", w.Code, w.Body.String())
+	}
+
+	// Expect no session cookies to be set
+	cookies := w.Result().Cookies()
+	if len(cookies) != 0 {
+		t.Fatalf("want no cookies, got %d cookies", len(cookies))
+	}
+}
+
+func TestLogin_UIblocked_ReturnsForbidden(t *testing.T) {
+	// Create a test env
+	env := testutil.NewTestEnv(t)
+
+	// Create user
+	email := "example@example.com"
+
+	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
+	testutil.InsertUser(t, env.DB, email, hash, true, false, true, false)
+
+	// Attempt login
+	loginPayload := user.UserLogin{
+		Email:    email,
+		Password: "testpassword123",
+	}
+
+	loginBody, _ := json.Marshal(loginPayload)
+	req := httptest.NewRequest("POST", "/ui/user/login", bytes.NewReader(loginBody))
+
+	// Record the response
+	w := httptest.NewRecorder()
+	env.Router.ServeHTTP(w, req)
+
+	// Expect 403 Forbidden
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("want 403, got %d, body=%s", w.Code, w.Body.String())
+	}
+
+	// Expect no session cookies to be set
+	cookies := w.Result().Cookies()
+	if len(cookies) != 0 {
+		t.Fatalf("want no cookies, got %d cookies", len(cookies))
+	}
+}
+
 func TestLogout_Success(t *testing.T) {
 	// Create a test env
 	env := testutil.NewTestEnv(t)
