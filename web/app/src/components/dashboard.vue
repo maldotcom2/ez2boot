@@ -105,4 +105,8 @@ onMounted(async () => {
   padding: 1rem;
 }
 
+.legal-block a {
+  color: var(--low-glare);
+}
+
 </style>

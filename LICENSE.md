@@ -11,7 +11,7 @@ Key points:
   of your service, under AGPLv3.
 - **Configuration changes do not count as modifications.**
   For example, editing environment variables, YAML/JSON config files, or toggling options
-  does NOT trigger the obligation to release source code.
+  does NOT trigger the obligation to release the source code.
 - **OS or base image updates do not count as modifications.**
   Patching the operating system or libraries (e.g., `apt-get update` inside the container)
   does NOT trigger the obligation to release the source code.
