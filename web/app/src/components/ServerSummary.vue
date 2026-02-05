@@ -1,8 +1,8 @@
 <template>
   <div class="summary-container">
-    <!-- Refresh button -->
-    <button @click="loadServerSessions" style="margin-bottom: 1rem;">Refresh</button>
-
+    <div class="user-btn-container">
+      <button @click="loadServerSessions">Refresh</button>
+    </div>
     <table class="server-table">
       <thead>
         <tr>
@@ -208,6 +208,7 @@ onMounted(async () => {
 
 <style>
 .summary-container {
+  margin: 5px;
   background-color: var(--container-modal)
 }
 
@@ -225,6 +226,16 @@ onMounted(async () => {
 
 .server-table th {
   text-align: left;
+}
+
+.user-btn-container {
+  display: flex;
+  justify-content: right;
+  margin: 8px 0px 8px 0px;
+}
+
+.user-btn-container button {
+  width: 130px;
 }
 
 .controls-container {
