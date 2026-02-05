@@ -1,3 +1,5 @@
+This file is for license and notice compliance of incorporated dependencies.
+
 ## argon2id
 
 MIT License
@@ -47,7 +49,7 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-## Mux/Schema
+## mux/schema
 
 Copyright (c) 2023 The Gorilla Authors. All rights reserved.
 
