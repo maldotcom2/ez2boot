@@ -2,10 +2,23 @@
 <header class="navbar">
     <UserNav />
 </header>
-<div>
-    <ServerSummary />
-    <p class="version-info">Version: {{ versionInfo.version }} ({{ versionInfo.build_date }})</p>
-</div>
+  <div>
+    <ServerSummary v-if="!showLegal" />
+    
+    <div v-else class="legal-block"> 
+      Copyright © 2026 maldotcom2<br></br> 
+      <a href="/license" target="_blank">AGPLv3</a><br></br> 
+      <a href="https://github.com/maldotcom2/ez2boot/" target="_blank">Source</a><br></br> 
+      No warranty 
+    </div>
+
+    <p class="version-info">
+      Version: {{ versionInfo.version }} ({{ versionInfo.build_date }}) - 
+      <a href="#" class="legal-link" @click.prevent="toggleLegal">
+        {{ showLegal ? 'Back' : 'Legal' }}
+      </a>
+    </p>
+  </div>
 </template>
 
 <script setup>
@@ -17,7 +30,12 @@ import { useUserStore } from '@/stores/user'
 
 const user = useUserStore()
 const error = ref('')
+const showLegal = ref(false)
 const versionInfo = ref({ version: '', buildDate: '' })
+
+function toggleLegal() {
+  showLegal.value = !showLegal.value
+}
 
 async function getVersion() {
   try {
@@ -76,6 +94,15 @@ onMounted(async () => {
   text-align: center;
   color: var(--low-glare);
   font-size: 0.8rem;
+}
+
+.legal-link {
+  color: var(--low-glare);
+}
+
+.legal-block {
+  color: var(--low-glare);
+  padding: 1rem;
 }
 
 </style>
