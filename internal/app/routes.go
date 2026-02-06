@@ -92,10 +92,6 @@ func SetupFrontendRoutes(router *mux.Router) {
 	router.PathPrefix("/css/").Handler(http.StripPrefix("/", fileServer))
 	router.PathPrefix("/js/").Handler(http.StripPrefix("/", fileServer))
 
-	router.HandleFunc("/license", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./LICENSE.md")
-	})
-
 	// Catch-all route for SPA
 	router.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Attempt to serve a static file

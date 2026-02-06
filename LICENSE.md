@@ -1,25 +1,3 @@
-Copyright (c) 2026 maldotcom2
-
-This program, ez2boot is licensed under the GNU Affero General Public License v3.0 (AGPLv3).
-
-Key points:
-
-- You may use, modify, and distribute this software.
-- If you modify this program code or incorporate any part of the program's code and run it
-  as a network service (e.g., in a cloud or Docker container, whether internal or publicly 
-  accessible), you must make the modified source code of this program available to the users 
-  of your service, under AGPLv3.
-- **Configuration changes do not count as modifications.**
-  For example, editing environment variables, YAML/JSON config files, or toggling options
-  does NOT trigger the obligation to release the source code.
-- **OS or base image updates do not count as modifications.**
-  Patching the operating system or libraries (e.g., `apt-get update` inside the container)
-  does NOT trigger the obligation to release the source code.
-- This ensures improvements are shared with the community, while routine usage, configuration
-  and maintenance are exempt.
-
------------------------------------------------------------------------------------------------
-
                     GNU AFFERO GENERAL PUBLIC LICENSE
                        Version 3, 19 November 2007
 

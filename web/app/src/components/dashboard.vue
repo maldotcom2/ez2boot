@@ -7,7 +7,7 @@
     
     <div v-else class="legal-block"> 
       Copyright © 2026 maldotcom2<br></br> 
-      <a href="/license" target="_blank">AGPLv3</a><br></br> 
+      <a href="/LICENSE.txt" target="_blank">AGPLv3</a><br></br> 
       <a href="https://github.com/maldotcom2/ez2boot/" target="_blank">Source</a><br></br> 
       No warranty 
     </div>
