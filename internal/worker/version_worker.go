@@ -1,9 +1,19 @@
 package worker
 
-/* func StartVersionWorker(w Worker, ctx context.Context) {
+import (
+	"context"
+	"time"
+)
+
+func StartVersionWorker(w Worker, ctx context.Context) {
 	go func() {
-		ticker := time.NewTicker(w.Config.InternalClock)
+		ticker := time.NewTicker(12 * time.Hour)
 		defer ticker.Stop()
+
+		// Initial check at startup
+		if err := w.UtilService.UpdateVersion(); err != nil {
+			w.Logger.Error("Error while checking new version", "error", err)
+		}
 
 		for {
 			select {
@@ -11,11 +21,11 @@ package worker
 				// Break out of Go Routine
 				return
 			case <-ticker.C:
-				// Get pending notifications
-				if err := w.NotificationService.ProcessNotifications(ctx); err != nil {
-					w.Logger.Error("Error while processing notifications", "error", err)
+				// Get new versions
+				if err := w.UtilService.UpdateVersion(); err != nil {
+					w.Logger.Error("Error while getting checking new version", "error", err)
 				}
 			}
 		}
 	}()
-} */
+}

@@ -8,8 +8,7 @@ import (
 func NewHandler(utilService *Service, logger *slog.Logger) *Handler {
 	return &Handler{
 		Service: utilService,
-
-		Logger: logger,
+		Logger:  logger,
 	}
 }
 

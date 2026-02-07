@@ -9,20 +9,20 @@ export const useVersionStore = defineStore('version', {
     latestVersion: null,
     checkedAt: null,
     releaseURL: null,
-    loaded: false, // Stops re-fetch v
+    loaded: false, // Stops re-fetch
     error: null,
   }),
 
   actions: {
     async getVersion() {
-      if (this.loaded) return // Stops re-fetch ^
+      if (this.loaded) return // Stops re-fetch
 
       try {
         const response = await axios.get('ui/version', { withCredentials: true })
         this.version = response.data.data.version
         this.buildDate = response.data.data.build_date
         this.updateAvailable = response.data.data.update_available
-        this.latestVersion = response.data.data.latestVersion
+        this.latestVersion = response.data.data.latest_version
         this.checkedAt = response.data.data.checked_at
         this.releaseURL = response.data.data.release_url
         this.loaded = true

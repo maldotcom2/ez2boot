@@ -72,7 +72,7 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 	mw := middleware.NewMiddleware(userService, cfg, auditService, logger)
 
 	// Worker
-	wkr := worker.NewWorker(serverService, sessionService, userService, notificationService, cfg, logger)
+	wkr := worker.NewWorker(serverService, sessionService, userService, notificationService, utilService, cfg, logger)
 
 	handlers := &Handlers{
 		AuditHandler:        auditHandler,

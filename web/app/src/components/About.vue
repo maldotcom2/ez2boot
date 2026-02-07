@@ -8,7 +8,9 @@
         Copyright © 2026 maldotcom2<br />
         <span>
           Version: {{ version.version }} ({{ version.buildDate }})
-           <span class="update-nag" v-if="version.updateAvailable"><a :href="version.releaseURL" target="_blank">Update Available!</a></span>
+           <span class="update-nag" v-if="version.updateAvailable"><a :href="version.releaseURL" target="_blank">Update Available! - {{ version.latestVersion }}</a></span>
+           <span v-else>Up to date</span>
+           <span> - Last checked {{ version.checkedAt ? new Date(version.checkedAt * 1000).toLocaleString() : '-' }}</span>
         </span>
         <a href="/LICENSE.txt" target="_blank">AGPLv3</a>
         <a href="https://github.com/maldotcom2/ez2boot/" target="_blank">Source</a>

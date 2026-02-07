@@ -26,6 +26,19 @@ type BuildInfo struct {
 	BuildDate string
 }
 
+// Used by Github polling job
+type RepoVersionRequest struct {
+	LatestVersion string `json:"latest_version"`
+	CheckedAt     int64  `json:"checked_at"`
+	ReleaseURL    string `json:"release_url"`
+}
+
+type GitHubRelease struct {
+	TagName string `json:"tag_name"`
+	HTMLURL string `json:"html_url"`
+}
+
+// Used by UI
 type VersionResponse struct {
 	Version         string `json:"version"`
 	BuildDate       string `json:"build_date"`

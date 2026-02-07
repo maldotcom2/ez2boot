@@ -29,12 +29,15 @@ func startWorkers(ctx context.Context, cfg *config.Config, wkr *worker.Worker, s
 	// Start manager
 	worker.StartManageRoutine(*wkr, ctx, manager)
 
+	// Start notification worker
+	worker.StartNotificationWorker(*wkr, ctx)
+
 	// Start session worker
 	worker.StartServerSessionWorker(*wkr, ctx)
 
-	// Start user session cleanup
+	// Start user session cleanup worker
 	worker.StartExpiredUserSessionCleanup(*wkr, ctx)
 
-	// Start notification worker
-	worker.StartNotificationWorker(*wkr, ctx)
+	// Start version check worker
+	worker.StartVersionWorker(*wkr, ctx)
 }
