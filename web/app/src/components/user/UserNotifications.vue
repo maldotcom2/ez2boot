@@ -1,7 +1,7 @@
 <template>
   <div class="user-notifications">
     <aside class="sidebar">
-      <select v-model="selectedType">
+      <select class="notification-selector" v-model="selectedType">
         <option v-for="t in supportedTypes" :key="t.type" :value="t.type">
           {{ t.label }}
         </option>
@@ -152,18 +152,22 @@ onMounted(async () => {
 
 <style scoped>
 .user-notifications {
+  flex: 1;
   display: grid;
   grid-template-columns: 250px 1fr;
   gap: 1rem;
   width: 100%;
-  min-height: 400px;
   background-color: var(--container-modal);
   border-radius: var(--small-radius);
+  height: 100%;
+}
+
+.notification-selector {
+  background-color: var(--low-glare);
 }
 
 .sidebar {
   display: flex;
-  height: 100vh;
   flex-direction: column;
   border-radius: var(--small-radius);
   padding: 1rem;
@@ -173,10 +177,14 @@ onMounted(async () => {
 
 .config-panel {
   display: flex;
+  flex-direction: column;
+  padding: 1rem; /* instead of 40px */
+  box-sizing: border-box;
   color: var(--low-glare);
-  border-radius: var(--small-radius);
-  padding: 40px;
   background: var(--container-modal);
+  border-radius: var(--small-radius);
+  overflow: auto;
+  height: 100%;
 }
 
 .actions button {

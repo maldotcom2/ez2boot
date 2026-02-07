@@ -8,6 +8,13 @@ import (
 
 func (h *Handler) GetVersion() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: h})
+		version, err := h.Service.getVersion()
+		if err != nil {
+			h.Logger.Warn("Error while getting latest version", "error", err)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Data: version, Error: "Error while getting latest version"})
+			return
+		}
+
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: version})
 	}
 }

@@ -1,18 +1,20 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Setup from '@/components/Setup.vue'
 import Login from '@/components/Login.vue'
+import AdminPanel from '@/components/admin/AdminPanel.vue'
 import Dashboard from '@/components/Dashboard.vue'
 import UserSettings from '@/components/user/UserSettings.vue'
-import AdminPanel from '@/components/admin/AdminPanel.vue'
+import About from '@/components/About.vue'
 import axios from 'axios'
 
 const routes = [
   { path: '/', redirect: '/dashboard'}, // default route
   { path: '/setup', component: Setup}, // only for setup bootstrap
   { path: '/login', component: Login},
+  { path: '/adminpanel', component: AdminPanel, meta: {requiresAdmin: true, requiresAuth: true }}, // Protected and Admin only
   { path: '/dashboard', component: Dashboard, meta: { requiresAuth: true }}, // Protected route
   { path: '/settings', component: UserSettings, meta: { requiresAuth: true }}, // Protected route
-  { path: '/adminpanel', component: AdminPanel, meta: {requiresAdmin: true, requiresAuth: true }} // Protected and Admin only
+  { path: '/about', component: About, meta: { requiresAuth: true }}, // Protected route
 ]
 
 // Create router

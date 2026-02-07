@@ -77,7 +77,6 @@ async function login() {
 
 .message-container {
   width: 100%;
-  outline: auto;
 }
 
 .prompt {

@@ -18,6 +18,10 @@ import (
 )
 
 func InitServices(version string, buildDate string, cfg *config.Config, repo *db.Repository, logger *slog.Logger) (*middleware.Middleware, *worker.Worker, *Handlers, *Services) {
+	buildInfo := util.BuildInfo{
+		Version:   version,
+		BuildDate: buildDate,
+	}
 
 	// Audit
 	auditRepo := audit.NewRepository(repo)
@@ -46,7 +50,9 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 	sessionHandler := session.NewHandler(sessionService, logger)
 
 	// Util
-	utilHandler := util.NewHandler(version, buildDate)
+	utilRepo := util.NewRepository(repo)
+	utilService := util.NewService(utilRepo, buildInfo, logger)
+	utilHandler := util.NewHandler(utilService, logger)
 
 	// Email
 	emailRepo := email.NewRepository(repo)
@@ -84,6 +90,7 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 		ServerService:       serverService,
 		SessionService:      sessionService,
 		NotificationService: notificationService,
+		UtilService:         utilService,
 		EmailService:        emailService,
 		AWSService:          awsService,
 	}

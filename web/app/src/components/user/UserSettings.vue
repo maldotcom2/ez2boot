@@ -1,12 +1,14 @@
 <template>
-  <header class="navbar">
-    <UserNav />
-  </header>
-  <div class="user-settings">
-    <UserMenu v-model="currentComponent" />
-    <main class="content">
-      <component :is="currentComponent" @switch-pane="currentComponent = $event" />
-    </main>
+  <div class="page">
+    <header class="navbar">
+      <UserNav />
+    </header>
+    <div class="user-settings">
+      <UserMenu v-model="currentComponent" />
+      <main class="content">
+        <component :is="currentComponent" @switch-pane="currentComponent = $event" />
+      </main>
+    </div>
   </div>
 </template>
 
@@ -20,6 +22,12 @@ const currentComponent = shallowRef(UserNotifications) // default view on load
 </script>
 
 <style scoped>
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
 .navbar {
   display: flex;
   justify-content: flex-end;
@@ -32,12 +40,15 @@ const currentComponent = shallowRef(UserNotifications) // default view on load
 }
 
 .user-settings {
+  flex: 1;
   display: flex;
-  height: 100vh;
+  align-items: stretch;
+  overflow: hidden;
 }
 
 .content {
   flex: 1;
+  display: flex;
   padding: 1rem;
   overflow-y: auto;
 }

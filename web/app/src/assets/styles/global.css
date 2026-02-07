@@ -11,6 +11,7 @@ html, body, #app {
   --container-modal:rgb(36, 44, 57);
   --low-glare:rgb(228, 228, 228);
   --btn-blue:rgb(53, 127, 255);
+  --warn-amber:rgb(222, 145, 29);
   --btn-disabled:rgb(145,145,145);
   --error-msg: rgb(160, 34, 34);
   --success-msg: rgb(228, 228, 228);

@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	var version = "dev"
+	var version = "0.0.0-dev"
 	var buildDate = "unknown"
 
 	// Load env vars

@@ -32,7 +32,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import axios from 'axios'
 import { useUserStore } from '@/stores/user'
 import AdminCreateUser from './AdminCreateUser.vue'
@@ -41,7 +41,7 @@ const emit = defineEmits(['switch-pane'])
 
 const user = useUserStore()
 const users = ref([])
-const currentUserId = ref(user.userID)
+const currentUserId = computed(() => user.userID)
 const changedUsers = ref(new Set())
 
 // Load table data from specialised endpoint
@@ -58,6 +58,10 @@ async function getUsers() {
 }
 
 async function deleteUser(userID) {
+  if (!confirm("Are you sure you want to delete this notification?")) {
+    return
+  }
+  
   try {
     await axios.delete('/ui/user/delete',
       {

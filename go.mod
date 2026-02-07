@@ -30,3 +30,5 @@ require (
 	golang.org/x/crypto v0.14.0 // indirect; // BSD 3-clause
 	golang.org/x/sys v0.13.0 // indirect; // BSD 3-clause
 )
+
+require github.com/Masterminds/semver v1.5.0 // indirect

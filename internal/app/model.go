@@ -17,6 +17,7 @@ type Services struct {
 	ServerService       *server.Service
 	SessionService      *session.Service
 	NotificationService *notification.Service
+	UtilService         *util.Service
 	EmailService        *email.Service
 	AWSService          *aws.Service
 }
