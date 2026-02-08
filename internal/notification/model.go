@@ -6,14 +6,20 @@ import (
 	"log/slog"
 )
 
+type Encryptor interface {
+	Encrypt([]byte) ([]byte, error)
+	Decrypt([]byte) ([]byte, error)
+}
+
 type Repository struct {
 	Base *db.Repository
 }
 
 type Service struct {
-	Repo   *Repository
-	Audit  *audit.Service
-	Logger *slog.Logger
+	Repo      *Repository
+	Audit     *audit.Service
+	Encryptor Encryptor
+	Logger    *slog.Logger
 }
 
 type Handler struct {
@@ -35,6 +41,12 @@ type NotificationTypeRequest struct {
 	Label string `json:"label"`
 }
 
+// Used by repo, internal transport
+type NotificationSettings struct {
+	Type      string
+	EncConfig []byte
+}
+
 // Used to save user notification config
 type NotificationConfigRequest struct {
 	Type          string         `json:"type"`
@@ -54,12 +66,13 @@ type NewNotification struct {
 	Time   int64
 }
 
+// Transport for notification processing
 type Notification struct {
-	UserID int64
-	Id     int64
-	Msg    string
-	Title  string
-	Type   string
-	Time   int64
-	Cfg    string
+	UserID    int64
+	Id        int64
+	Msg       string
+	Title     string
+	Type      string
+	Time      int64
+	EncConfig []byte
 }

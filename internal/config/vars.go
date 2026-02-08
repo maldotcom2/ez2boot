@@ -80,7 +80,7 @@ func GetEnvVars() (*Config, error) {
 
 	logLevel := ParseLogLevel(logLevelStr)
 
-	encryptionKey := os.Getenv("ENCRYPTION_KEY") // optional
+	encryptionPhrase := os.Getenv("ENCRYPTION_PHRASE") // optional
 
 	rateLimitStr := os.Getenv("RATE_LIMIT")
 	if rateLimitStr == "" {
@@ -102,7 +102,7 @@ func GetEnvVars() (*Config, error) {
 		AWSRegion:           awsRegion,
 		UserSessionDuration: userSessionDuration,
 		LogLevel:            logLevel,
-		EncryptionKey:       encryptionKey,
+		EncryptionPhrase:    encryptionPhrase,
 		RateLimit:           rateLimit,
 	}
 

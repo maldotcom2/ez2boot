@@ -37,7 +37,7 @@ func (r *Repository) SetupDB() error {
 	}
 
 	// create table for user notification
-	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS user_notifications (user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, type TEXT NOT NULL, config TEXT NOT NULL)"); err != nil {
+	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS user_notifications (user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, type TEXT NOT NULL, config BLOB NOT NULL)"); err != nil {
 		return err
 	}
 

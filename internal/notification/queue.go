@@ -45,10 +45,17 @@ func (s *Service) ProcessNotifications(ctx context.Context) error {
 			continue
 		}
 
+		// Decrypt config
+		cfgBytes, err := s.Encryptor.Decrypt(n.EncConfig)
+		if err != nil {
+			s.Logger.Error("Failed to decrypt notification config", "id", n.Id, "type", n.Type, "error", err)
+			continue // skip sending if decryption fails
+		}
+
 		// Send
 		sent := false
 		for i := 0; i < 3; i++ {
-			if err := sender.Send(n.Msg, n.Title, n.Cfg); err != nil {
+			if err := sender.Send(n.Msg, n.Title, string(cfgBytes)); err != nil {
 				s.Logger.Error("Failed to send notification", "attempt", i+1, "id", n.Id, "type", n.Type, "title", n.Title, "error", err)
 				continue
 			}
@@ -73,7 +80,7 @@ func (s *Service) ProcessNotifications(ctx context.Context) error {
 		}
 
 		// Delete notification whether it was sent successfully or not
-		_, err := s.Repo.deleteNotificationFromQueue(n.Id)
+		_, err = s.Repo.deleteNotificationFromQueue(n.Id)
 		if err != nil {
 			s.Logger.Error("Could not delete notification from queue", "id", n.Id, "error", err)
 			continue

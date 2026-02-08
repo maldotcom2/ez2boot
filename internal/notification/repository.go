@@ -2,7 +2,6 @@ package notification
 
 import (
 	"database/sql"
-	"encoding/json"
 )
 
 // Create new notification - usually run in conjunction with flag setting so runs as a transaction
@@ -34,7 +33,7 @@ func (r *Repository) getPendingNotifications() ([]Notification, error) {
 
 	for rows.Next() {
 		var n Notification
-		if err := rows.Scan(&n.UserID, &n.Id, &n.Msg, &n.Title, &n.Type, &n.Cfg); err != nil {
+		if err := rows.Scan(&n.UserID, &n.Id, &n.Msg, &n.Title, &n.Type, &n.EncConfig); err != nil {
 			return nil, err
 		}
 
@@ -45,27 +44,21 @@ func (r *Repository) getPendingNotifications() ([]Notification, error) {
 }
 
 // Get current user notification settings
-func (r *Repository) getUserNotificationSettings(userID int64) (NotificationConfigResponse, error) {
-	var n NotificationConfigResponse
-	var cfgStr string
+func (r *Repository) getUserNotificationSettings(userID int64) (NotificationSettings, error) {
+	var n NotificationSettings
 
-	if err := r.Base.DB.QueryRow("SELECT type, config FROM user_notifications WHERE user_id = $1", userID).Scan(&n.Type, &cfgStr); err != nil {
-		return NotificationConfigResponse{}, err
-	}
-
-	// Unmarshal and populate struct
-	if err := json.Unmarshal([]byte(cfgStr), &n.ChannelConfig); err != nil {
-		return NotificationConfigResponse{}, err
+	if err := r.Base.DB.QueryRow("SELECT type, config FROM user_notifications WHERE user_id = $1", userID).Scan(&n.Type, &n.EncConfig); err != nil {
+		return NotificationSettings{}, err
 	}
 
 	return n, nil
 }
 
 // Add or update user notification settings
-func (r *Repository) setUserNotificationSettings(userID int64, notifType string, channelConfig string) error {
+func (r *Repository) setUserNotificationSettings(userID int64, n NotificationSettings) error {
 	query := `INSERT INTO user_notifications (user_id, type, config) VALUES ($1, $2, $3)
 			ON CONFLICT (user_id) DO UPDATE SET type = EXCLUDED.type, config = EXCLUDED.config`
-	if _, err := r.Base.DB.Exec(query, userID, notifType, channelConfig); err != nil {
+	if _, err := r.Base.DB.Exec(query, userID, n.Type, n.EncConfig); err != nil {
 		return err
 	}
 

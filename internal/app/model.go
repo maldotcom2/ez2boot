@@ -4,6 +4,7 @@ import (
 	"ez2boot/internal/audit"
 	"ez2boot/internal/notification"
 	"ez2boot/internal/notification/email"
+	"ez2boot/internal/notification/teams"
 	"ez2boot/internal/notification/telegram"
 	"ez2boot/internal/provider/aws"
 	"ez2boot/internal/server"
@@ -30,5 +31,6 @@ type Handlers struct {
 	NotificationHandler *notification.Handler
 	UtilHandler         *util.Handler
 	EmailHandler        *email.Handler
+	TeamsHandler        *teams.Handler
 	TelegramHandler     *telegram.Handler
 }

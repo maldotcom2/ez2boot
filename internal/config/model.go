@@ -16,7 +16,7 @@ type Config struct {
 	AWSRegion           string        // AWS Region, AWS scrape specific
 	UserSessionDuration time.Duration // Duration for user UI authenticated session, not related to server session duration
 	LogLevel            slog.Level    // Logging level, use info unless debugging
-	EncryptionKey       string        // Implementation specific encryption key used to encrypt sensitive credentials within the app (TBC)
+	EncryptionPhrase    string        // Implementation specific encryption phrase used to derive an encryption key to encrypt sensitive credentials within the app
 	RateLimit           int           // Max number of requests per second allowed by each user of this application
 	// Add more fields as needed
 }

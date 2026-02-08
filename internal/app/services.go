@@ -4,9 +4,11 @@ import (
 	"ez2boot/internal/audit"
 	"ez2boot/internal/config"
 	"ez2boot/internal/db"
+	"ez2boot/internal/encryption"
 	"ez2boot/internal/middleware"
 	"ez2boot/internal/notification"
 	"ez2boot/internal/notification/email"
+	"ez2boot/internal/notification/teams"
 	"ez2boot/internal/notification/telegram"
 	"ez2boot/internal/provider/aws"
 	"ez2boot/internal/server"
@@ -23,13 +25,19 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 		BuildDate: buildDate,
 	}
 
+	encryptor, err := encryption.NewAESGCMEncryptor(cfg.EncryptionPhrase)
+	if err != nil {
+		logger.Error("failed to init encryptor", "error", err)
+		panic(err)
+	}
+
 	// Audit
 	auditRepo := audit.NewRepository(repo)
 	auditService := audit.NewService(auditRepo, logger)
 
 	// Notification
 	notificationRepo := notification.NewRepository(repo)
-	notificationService := notification.NewService(notificationRepo, auditService, logger)
+	notificationService := notification.NewService(notificationRepo, auditService, encryptor, logger)
 	notificationHandler := notification.NewHandler(notificationService, logger)
 
 	// Server
@@ -59,6 +67,11 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 	emailService := email.NewService(emailRepo, logger)
 	emailHandler := email.NewHandler(emailService, logger)
 
+	// Teams
+	teamsRepo := teams.NewRepository(repo)
+	teamsService := teams.NewService(teamsRepo, logger)
+	teamsHandler := teams.NewHandler(teamsService, logger)
+
 	// Telegram
 	telegramRepo := telegram.NewRepository(repo)
 	telegramService := telegram.NewService(telegramRepo, logger)
@@ -81,6 +94,7 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 		SessionHandler:      sessionHandler,
 		NotificationHandler: notificationHandler,
 		UtilHandler:         utilHandler,
+		TeamsHandler:        teamsHandler,
 		EmailHandler:        emailHandler,
 		TelegramHandler:     telegramHandler,
 	}

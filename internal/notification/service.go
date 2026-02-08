@@ -2,6 +2,7 @@ package notification
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"ez2boot/internal/shared"
 )
@@ -45,18 +46,27 @@ func (s *Service) getUserNotificationSettings(userID int64) (NotificationConfigR
 		return NotificationConfigResponse{}, err
 	}
 
-	cc := raw.ChannelConfig
+	var resp NotificationConfigResponse
+	resp.Type = raw.Type
 
-	// Check for sensitive value
-	pw, ok := cc["password"].(string)
-	if ok && pw != "" {
-		delete(cc, "password")
+	// Decrypt notification config
+	cfgBytes, err := s.Encryptor.Decrypt([]byte(raw.EncConfig))
+	if err != nil {
+		return NotificationConfigResponse{}, err
 	}
 
-	return NotificationConfigResponse{
-		Type:          raw.Type,
-		ChannelConfig: cc,
-	}, nil
+	// Unmarshal plaintext json config
+	if err := json.Unmarshal(cfgBytes, &resp.ChannelConfig); err != nil {
+		return NotificationConfigResponse{}, err
+	}
+
+	// Check for sensitive value
+	pw, ok := resp.ChannelConfig["password"].(string)
+	if ok && pw != "" {
+		delete(resp.ChannelConfig, "password")
+	}
+
+	return resp, nil
 }
 
 // Add or update personal notification options
@@ -78,8 +88,19 @@ func (s *Service) setUserNotificationSettings(userID int64, req NotificationConf
 		return err
 	}
 
+	// Encrypt notification config
+	encryptedBytes, err := s.Encryptor.Encrypt([]byte(cfgStr))
+	if err != nil {
+		return err
+	}
+
+	settings := NotificationSettings{
+		Type:      req.Type,
+		EncConfig: encryptedBytes,
+	}
+
 	// Store it
-	if err := s.Repo.setUserNotificationSettings(userID, req.Type, cfgStr); err != nil {
+	if err := s.Repo.setUserNotificationSettings(userID, settings); err != nil {
 		return err
 	}
 

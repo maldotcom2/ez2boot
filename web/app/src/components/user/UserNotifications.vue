@@ -22,6 +22,7 @@
 import { ref, reactive, onMounted, watch } from 'vue'
 import axios from 'axios'
 import EmailForm from './notifications/Email.vue'
+import TeamsForm from './notifications/Teams.vue'
 import TelegramForm from './notifications/Telegram.vue'
 
 const selectedType = ref('')
@@ -38,6 +39,7 @@ watch(selectedType, (newType) => {
 
 const formComponents = {
   email: EmailForm,
+  teams: TeamsForm,
   telegram: TelegramForm
 }
 
