@@ -36,13 +36,20 @@ func main() {
 	}
 
 	router, services, wkr, err := app.NewApp(version, buildDate, cfg, repo, logger)
+	if err != nil {
+		logger.Error("Startup error", "error", err)
+		os.Exit(1)
+	}
 
 	// Set Go routine context
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	// Start background workers
-	startWorkers(ctx, cfg, wkr, services, logger)
+	if err := startWorkers(ctx, cfg, wkr, services, logger); err != nil {
+		logger.Error("Startup error", "error", err)
+		os.Exit(1)
+	}
 
 	//Start server
 	logger.Info("Server is ready and listening", "port", cfg.Port)
