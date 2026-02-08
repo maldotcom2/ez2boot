@@ -49,6 +49,11 @@ func (s *Service) ProcessNotifications(ctx context.Context) error {
 		cfgBytes, err := s.Encryptor.Decrypt(n.EncConfig)
 		if err != nil {
 			s.Logger.Error("Failed to decrypt notification config", "id", n.Id, "type", n.Type, "error", err)
+
+			_, err = s.Repo.deleteNotificationFromQueue(n.Id)
+			if err != nil {
+				s.Logger.Error("Could not delete notification from queue", "id", n.Id, "error", err)
+			}
 			continue // skip sending if decryption fails
 		}
 
