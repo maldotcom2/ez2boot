@@ -28,10 +28,10 @@ func (s *TeamsChannel) Send(msg string, title string, cfgStr string) error {
 		return err
 	}
 
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"type":    "AdaptiveCard",
 		"version": "1.4",
-		"body": []map[string]interface{}{
+		"body": []map[string]any{
 			{
 				"type": "TextBlock",
 				"text": msg,

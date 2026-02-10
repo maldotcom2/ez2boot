@@ -1,6 +1,6 @@
 <template>
   <div class="page" >
-    <header class="navbar">
+    <header>
       <UserNav />
     </header>
     <div class="centre-container" >
@@ -10,7 +10,7 @@
           Version: {{ version.version }} ({{ version.buildDate }})
            <span class="update-nag" v-if="version.updateAvailable"><a :href="version.releaseURL" target="_blank">Update Available! - {{ version.latestVersion }}</a></span>
            <span v-else>Up to date</span>
-           <span> - Last checked {{ version.checkedAt ? new Date(version.checkedAt * 1000).toLocaleString() : '-' }}</span>
+           <span> - last checked: {{ version.checkedAt ? new Date(version.checkedAt * 1000).toLocaleString() : 'never' }}</span>
         </span>
         <a href="/LICENSE.txt" target="_blank">AGPLv3</a>
         <a href="https://github.com/maldotcom2/ez2boot/" target="_blank">Source</a>
@@ -36,22 +36,19 @@ const version = useVersionStore()
   min-height: 100vh;
 }
 
-.navbar {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center; /* vertically */
-  padding: 10px 20px;
-  background-color: var(--container-header);
-  position: relative; /*for dropdown positioning */
-  height: 60px;
-  outline: auto;
+header {
+  box-shadow: 0 1px 0 0 var(--low-glare);
+  z-index: 10;
 }
 
 .centre-container {
   flex: 1;
   display: flex;
+  background-color: var(--container-modal);
   justify-content: center;
   align-items: flex-start;
+  margin: 1rem 0.5rem;
+  border-radius: var(--small-radius);
 }
 
 .legal-link {

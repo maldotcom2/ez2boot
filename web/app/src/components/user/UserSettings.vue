@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <header class="navbar">
+    <header>
       <UserNav />
     </header>
     <div class="user-settings">
@@ -28,15 +28,9 @@ const currentComponent = shallowRef(UserNotifications) // default view on load
   min-height: 100vh;
 }
 
-.navbar {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center; /* vertically */
-  padding: 10px 20px;
-  background-color: var(--container-header);
-  position: relative; /*for dropdown positioning */
-  height: 60px;
-  outline: auto;
+header {
+  box-shadow: 0 1px 0 0 var(--low-glare);
+  z-index: 10;
 }
 
 .user-settings {

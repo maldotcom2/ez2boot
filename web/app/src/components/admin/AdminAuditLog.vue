@@ -296,15 +296,15 @@ onMounted(() => {
   max-width: 100%;
   overflow-x: auto;
   font-size: small;
-  padding: 12px;
+  padding: 1rem;
   border-radius: var(--small-radius);
 }
 
 .user-btn-container {
   display: flex;
-  margin-bottom: 5px;
+  margin-bottom: 1rem;
   justify-content: right;
-  gap: 5px;
+  gap: 1rem;
 }
 
 .user-btn-container button {
@@ -313,9 +313,9 @@ onMounted(() => {
 
 .pagination-btn-container {
   display: flex;
-  margin-top: 5px;
+  margin-top: 1rem;
   justify-content: right;
-  gap: 5px;
+  gap: 1rem;
 }
 
 .pagination-btn-container button {
@@ -332,7 +332,7 @@ onMounted(() => {
 .audit-table th,
 .audit-table td {
   border: 1px solid var(--low-glare);
-  padding: 8px;
+  padding: 0.5rem;
 }
 
 .audit-table th {
@@ -342,7 +342,7 @@ onMounted(() => {
 .time-filter {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 0.5rem;
 }
 
 .metadata-lines {

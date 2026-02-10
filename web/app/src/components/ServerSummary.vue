@@ -19,9 +19,9 @@
           <td>{{ server.server_group }}</td>
           <td>
             <div class="status-container">
-            <span :class="'status-dot ' + getGroupState(server.servers)"></span>
-            <button @click="openServerModal($event, server.servers, server.server_group)">Details</button>
-          </div>
+              <span :class="'status-dot ' + getGroupState(server.servers)"></span>
+              <button @click="openServerModal($event, server.servers, server.server_group)">Details</button>
+            </div>
           </td>
           <td>{{ server.expiry ? formatTimeRemaining(Math.floor((server.expiry - Math.floor(Date.now() / 1000)) / 60)): '-' }}</td>
           <td>{{ server.expiry ? new Date(server.expiry * 1000).toLocaleString() : '-' }}</td>
@@ -208,8 +208,10 @@ onMounted(async () => {
 
 <style>
 .summary-container {
-  margin: 5px;
-  background-color: var(--container-modal)
+  margin: 1rem;
+  padding: 1rem;
+  background-color: var(--container-modal);
+  border-radius: var(--small-radius);
 }
 
 .server-table {
@@ -221,7 +223,7 @@ onMounted(async () => {
 .server-table th,
 .server-table td {
   border: 1px solid var(--low-glare);
-  padding: 8px;
+  padding: 0.5rem;
 }
 
 .server-table th {
@@ -231,7 +233,7 @@ onMounted(async () => {
 .user-btn-container {
   display: flex;
   justify-content: right;
-  margin: 8px 0px 8px 0px;
+  margin-bottom: 1rem;
 }
 
 .user-btn-container button {
@@ -240,7 +242,7 @@ onMounted(async () => {
 
 .controls-container {
   display: flex;
-  gap: 10px;
+  gap: 1rem;
 }
 
 .controls-container button {
@@ -274,7 +276,7 @@ onMounted(async () => {
 .detail-modal button {
   display: block;
   margin: 1rem auto 0;
-  padding: 0px 10px;
+  padding: 0rem 1rem;
   height: 18px;
 }
 
@@ -298,17 +300,12 @@ onMounted(async () => {
   align-items: center;
 }
 
-.status-container button {
-  padding: 0px 10px;
-  height: 18px;
-}
-
 .status-dot {
   display: inline-block;
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  border: 1px solid #666;
+  border: 2px solid #666;
   margin-right: 16px;
 }
 

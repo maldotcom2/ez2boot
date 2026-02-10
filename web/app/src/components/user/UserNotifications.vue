@@ -166,6 +166,7 @@ onMounted(async () => {
 
 .notification-selector {
   background-color: var(--low-glare);
+  outline: none;
 }
 
 .sidebar {
@@ -189,10 +190,15 @@ onMounted(async () => {
   height: 100%;
 }
 
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
 .actions button {
   display: block;
   width: 100%;
-  margin-bottom: 0.5rem;
 }
 
 select {

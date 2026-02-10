@@ -71,11 +71,11 @@ async function createFirstUser() {
   background-color: var(--container-modal);
   justify-content: center;
   align-items: center;
-  padding: 40px;
-  width: 25%;
-  gap: 15px;
-  border-radius:15px;
-  outline: none;
+  padding: 3rem;
+  width: 300px;
+  gap: 1rem;
+  border-radius: var(--big-radius);
+  outline: auto;
 }
 
 .message-container {
@@ -88,11 +88,10 @@ async function createFirstUser() {
 }
 
 input {
-  height: 30px;
-  width: 50%;
+  width: 100%;
 }
 
 button {
-  width: 50%;
+  width: 100%;
 }
 </style>

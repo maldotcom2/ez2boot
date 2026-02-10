@@ -1,14 +1,19 @@
 <template>
   <div class="user-nav">
-    <span class="update-nag" v-if="version.updateAvailable"><a :href="version.releaseURL" target="_blank">Update Available!</a></span>
-    <p>{{ user.email }}</p>
-    <button @click="toggleUserDropdown">Menu</button>
-    <div v-if="isOpen" class="dropdown">
-      <button v-if="user.isAdmin" @click="admin">Admin Panel</button>
-      <button @click="dashboard">Dashboard</button>
-      <button @click="settings">Settings</button>
-      <button @click="about">About</button>
-      <button @click="logout">Logout</button>
+    <div class="nav-left">
+      <img :src="banner" class="nav-banner" alt="ez2boot" @click="dashboard" />
+    </div>
+    <div class="nav-right">
+      <span class="update-nag" v-if="version.updateAvailable"><a :href="version.releaseURL" target="_blank">Update Available!</a></span>
+      <p>{{ user.email }}</p>
+      <button @click="toggleUserDropdown">Menu</button>
+      <div v-if="isOpen" class="dropdown">
+        <button v-if="user.isAdmin" @click="admin">Admin Panel</button>
+        <button @click="dashboard">Dashboard</button>
+        <button @click="settings">Settings</button>
+        <button @click="about">About</button>
+        <button @click="logout">Logout</button>
+      </div>
     </div>
   </div>
 </template>
@@ -19,6 +24,7 @@ import axios from 'axios'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useVersionStore } from '@/stores/version'
+import banner from '@/assets/branding/ez2boot_banner.svg'
 
 const user = useUserStore()
 const version = useVersionStore()
@@ -87,10 +93,34 @@ onMounted(async () => {
 <style scoped>
 .user-nav {
   display: flex;
-  position: relative;
+  justify-content: space-between;
   align-items: center;
-  gap: 10px;
+  width: 100%;
+}
+
+.nav-banner {
+  height: 80px;
+  width: auto;  
+  display: block;
+  cursor: pointer;
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+}
+
+.nav-right {
+  margin-right: 2rem;
+  display: flex;
+  align-items: center;
   color: var(--low-glare);
+  position: relative;
+  gap: 1rem;
+}
+
+.nav-right button {
+  width: 130px;
 }
 
 .update-nag {
@@ -105,11 +135,11 @@ onMounted(async () => {
   position: absolute;
   top: 100%; /* below the button */
   right: 0;
-  margin-top: 5px;
+  margin-top: 0.5rem;
   background: var(--container-modal);
   display: flex;
   flex-direction: column;
-  min-width: 150px;
+  min-width: 130px;
   border-radius: var(--small-radius);
 }
 

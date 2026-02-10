@@ -68,9 +68,9 @@ async function login() {
   background-color: var(--container-modal);
   justify-content: center;
   align-items: center;
-  padding: 40px;
+  padding: 3rem;
   width: 300px;
-  gap: 15px;
+  gap: 1rem;
   border-radius: var(--big-radius);
   outline: auto;
 }
@@ -84,12 +84,10 @@ async function login() {
 }
 
 input {
-  height: 30px;
   width: 100%;
-  padding: 5px;
 }
 
 button {
-  width: 50%;
+  width: 100%;
 }
 </style>

@@ -118,15 +118,15 @@ p {
 
 .user-mgmt-container {
   background-color: var(--container-modal);
-  padding: 12px;
+  padding: 1rem;
   border-radius: var(--small-radius);
 }
 
 .user-btn-container {
   display: flex;
-  margin-bottom: 5px;
+  margin-bottom: 1rem;
   justify-content: right;
-  gap: 5px;
+  gap: 1rem;
 }
 
 .user-btn-container button {
@@ -142,7 +142,7 @@ p {
 .user-mgmt-table th,
 .user-mgmt-table td {
   border: 1px solid var(--low-glare);
-  padding: 8px;
+  padding: 0.5rem;
 }
 
 .user-mgmt-table th {

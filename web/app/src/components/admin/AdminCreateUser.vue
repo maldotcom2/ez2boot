@@ -71,15 +71,15 @@ async function createUser() {
   background-color: var(--container-modal);
   justify-content: center;
   align-items: center;
-  padding: 40px;
+  padding: 3rem;
   width: 300px;
-  gap: 15px;
+  gap: 1rem;
   border-radius: var(--big-radius);
   outline: auto;
 }
 
 .create-user-form button{
-  width: 150px;
+  width: 100%;
 }
 
 .prompt {
@@ -88,15 +88,11 @@ async function createUser() {
 }
 
 input {
-  height: 30px;
   width: 100%;
-  padding: 5px;
 }
 
 button {
   width: 100%;
-  padding: 8px 0;
-  margin-top: 5px;
 }
 
 .error {
