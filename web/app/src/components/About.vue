@@ -47,7 +47,7 @@ header {
   background-color: var(--container-modal);
   justify-content: center;
   align-items: flex-start;
-  margin: 1rem 0.5rem;
+  margin: 1rem;
   border-radius: var(--small-radius);
 }
 
