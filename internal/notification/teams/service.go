@@ -29,8 +29,15 @@ func (s *TeamsChannel) Send(msg string, title string, cfgStr string) error {
 	}
 
 	payload := map[string]interface{}{
-		"type": "message",
-		"text": msg,
+		"type":    "AdaptiveCard",
+		"version": "1.4",
+		"body": []map[string]interface{}{
+			{
+				"type": "TextBlock",
+				"text": msg,
+				"wrap": true,
+			},
+		},
 	}
 
 	body, _ := json.Marshal(payload)
