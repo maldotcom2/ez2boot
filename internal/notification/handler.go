@@ -58,15 +58,15 @@ func (h *Handler) SetUserNotificationSettings() http.HandlerFunc {
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   err.Error(), // TODO is this ok?
+					Error:   "Required field missing",
 				}
 
 			case errors.Is(err, shared.ErrMissingAuthValues):
-				h.Logger.Error("Required field missing", "error", err.Error())
+				h.Logger.Error("Missing username or password", "error", err.Error())
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   err.Error(), // TODO is this ok?
+					Error:   "Missing username or password",
 				}
 
 			default:
@@ -99,6 +99,34 @@ func (h *Handler) DeleteUserNotificationSettings() http.HandlerFunc {
 		}
 
 		h.Logger.Info("User notification deleted")
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
+	}
+}
+
+func (h *Handler) RotateEncryptionPhrase() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req RotateEncryptionPhraseRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		// Admin check
+		if !h.AdminChecker.UserIsAdmin(w, r) {
+			return // response written by helper
+		}
+
+		if err := h.Service.rotateEncryptionPhrase(req); err != nil {
+			if errors.Is(err, shared.ErrFieldMissing) {
+				h.Logger.Error("Required field missing", "error", err.Error())
+				w.WriteHeader(http.StatusBadRequest)
+				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Required field missing"})
+				return
+			}
+			h.Logger.Error("Failed to rotate encryption phrase", "error", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to rotate encryption phrase"})
+			return
+		}
+
+		h.Logger.Info("Rotated encryption phrase")
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }

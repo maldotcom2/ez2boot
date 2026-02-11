@@ -35,11 +35,6 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 	auditRepo := audit.NewRepository(repo)
 	auditService := audit.NewService(auditRepo, logger)
 
-	// Notification
-	notificationRepo := notification.NewRepository(repo)
-	notificationService := notification.NewService(notificationRepo, auditService, encryptor, logger)
-	notificationHandler := notification.NewHandler(notificationService, logger)
-
 	// Server
 	serverRepo := server.NewRepository(repo)
 	serverService := server.NewService(serverRepo, logger)
@@ -49,6 +44,11 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 	userRepo := user.NewRepository(repo, logger)
 	userService := user.NewService(userRepo, cfg, auditService, logger)
 	userHandler := user.NewHandler(userService, logger)
+
+	// Notification
+	notificationRepo := notification.NewRepository(repo)
+	notificationService := notification.NewService(notificationRepo, auditService, encryptor, logger)
+	notificationHandler := notification.NewHandler(notificationService, userHandler, logger)
 
 	auditHandler := audit.NewHandler(auditService, userHandler, logger) //TODO reorganise this
 

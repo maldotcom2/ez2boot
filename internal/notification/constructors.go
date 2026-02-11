@@ -7,10 +7,11 @@ import (
 	"log/slog"
 )
 
-func NewHandler(notificationService *Service, logger *slog.Logger) *Handler {
+func NewHandler(notificationService *Service, adminChecker AdminChecker, logger *slog.Logger) *Handler {
 	return &Handler{
-		Service: notificationService,
-		Logger:  logger,
+		Service:      notificationService,
+		AdminChecker: adminChecker,
+		Logger:       logger,
 	}
 }
 

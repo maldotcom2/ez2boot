@@ -4,7 +4,12 @@ import (
 	"ez2boot/internal/audit"
 	"ez2boot/internal/db"
 	"log/slog"
+	"net/http"
 )
+
+type AdminChecker interface {
+	UserIsAdmin(w http.ResponseWriter, r *http.Request) bool
+}
 
 type Encryptor interface {
 	Encrypt([]byte) ([]byte, error)
@@ -23,8 +28,9 @@ type Service struct {
 }
 
 type Handler struct {
-	Service *Service
-	Logger  *slog.Logger
+	Service      *Service
+	AdminChecker AdminChecker
+	Logger       *slog.Logger
 }
 
 type NotificationChannel interface {
@@ -41,8 +47,9 @@ type NotificationTypeRequest struct {
 	Label string `json:"label"`
 }
 
-// Used by repo, internal transport
-type NotificationSettings struct {
+// Internal transport only
+type NotificationSetting struct {
+	UserID    int64
 	Type      string
 	EncConfig []byte
 }
@@ -75,4 +82,8 @@ type Notification struct {
 	Type      string
 	Time      int64
 	EncConfig []byte
+}
+
+type RotateEncryptionPhraseRequest struct {
+	Phrase string `json:"phrase"`
 }

@@ -44,21 +44,54 @@ func (r *Repository) getPendingNotifications() ([]Notification, error) {
 }
 
 // Get current user notification settings
-func (r *Repository) getUserNotificationSettings(userID int64) (NotificationSettings, error) {
-	var n NotificationSettings
+func (r *Repository) getUserNotificationSettings(userID int64) (NotificationSetting, error) {
+	var n NotificationSetting
 
 	if err := r.Base.DB.QueryRow("SELECT type, config FROM user_notifications WHERE user_id = $1", userID).Scan(&n.Type, &n.EncConfig); err != nil {
-		return NotificationSettings{}, err
+		return NotificationSetting{}, err
 	}
 
 	return n, nil
 }
 
+func (r *Repository) getAllUserNotificationSettings() ([]NotificationSetting, error) {
+	rows, err := r.Base.DB.Query("SELECT user_id, type, config FROM user_notifications")
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	settings := []NotificationSetting{}
+
+	for rows.Next() {
+		var n NotificationSetting
+		if err := rows.Scan(&n.UserID, &n.Type, &n.EncConfig); err != nil {
+			return nil, err
+		}
+
+		settings = append(settings, n)
+	}
+
+	return settings, nil
+}
+
 // Add or update user notification settings
-func (r *Repository) setUserNotificationSettings(userID int64, n NotificationSettings) error {
+func (r *Repository) setUserNotificationSettings(n NotificationSetting) error {
 	query := `INSERT INTO user_notifications (user_id, type, config) VALUES ($1, $2, $3)
 			ON CONFLICT (user_id) DO UPDATE SET type = EXCLUDED.type, config = EXCLUDED.config`
-	if _, err := r.Base.DB.Exec(query, userID, n.Type, n.EncConfig); err != nil {
+	if _, err := r.Base.DB.Exec(query, n.UserID, n.Type, n.EncConfig); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Update notification settings as part of a trn
+func (r *Repository) setUserNotificationSettingsTx(tx *sql.Tx, n NotificationSetting) error {
+	query := `INSERT INTO user_notifications (user_id, type, config) VALUES ($1, $2, $3)
+			ON CONFLICT (user_id) DO UPDATE SET type = EXCLUDED.type, config = EXCLUDED.config`
+	if _, err := tx.Exec(query, n.UserID, n.Type, n.EncConfig); err != nil {
 		return err
 	}
 
