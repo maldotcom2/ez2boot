@@ -14,7 +14,7 @@ html, body, #app {
   --warn-amber:rgb(222, 145, 29);
   --btn-disabled:rgb(145,145,145);
   --error-msg: rgb(160, 34, 34);
-  --success-msg: rgb(228, 228, 228);
+  --success-msg: rgb(228,228,228);
   --small-radius: 7px;
   --big-radius: 15px;
   --input-height: 30px;

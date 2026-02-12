@@ -2,6 +2,7 @@
   <aside class="menu">
     <button @click="showUserManagement">User Management</button>
     <button @click="showAuditLog">Audit Log</button>
+    <button @click="showPhraseRotate">Phrase Rotation</button>
   </aside>
 </template>
 
@@ -17,6 +18,7 @@ const emit = defineEmits(['update:modelValue'])
 
 import UserManagement from './AdminUserMgmt.vue'
 import AuditLog from './AdminAuditLog.vue'
+import PhraseRotate from './AdminPhraseRotate.vue'
 
 // Update parent when button clicked
 function showUserManagement() {
@@ -25,6 +27,10 @@ function showUserManagement() {
 
 function showAuditLog() {
   emit('update:modelValue', AuditLog)
+}
+
+function showPhraseRotate() {
+  emit('update:modelValue', PhraseRotate)
 }
 
 </script>

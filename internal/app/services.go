@@ -19,6 +19,7 @@ import (
 	"log/slog"
 )
 
+// TODO this is a mess
 func InitServices(version string, buildDate string, cfg *config.Config, repo *db.Repository, logger *slog.Logger) (*middleware.Middleware, *worker.Worker, *Handlers, *Services) {
 	buildInfo := util.BuildInfo{
 		Version:   version,

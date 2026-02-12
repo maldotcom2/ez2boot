@@ -5,9 +5,7 @@
       <input v-model="email" placeholder="Email" />
       <input v-model="password" type="password" placeholder="Password" />
       <button type="submit" :disabled="!email || !password">Login</button>
-      <div class="message-container" >
-        <p class="message" :class="{error: error}" v-if="error">{{ error }}</p>
-      </div>
+      <p class="result" :class="messageType">{{ message || '\u00A0' }}</p>
     </form>
   </div>
 </template>
@@ -20,11 +18,14 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const email = ref('')
 const password = ref('')
-const error = ref('')
+const message = ref('')
+const messageType = ref('')
 
 // async login function
 async function login() {
-  error.value = ''  // Reset error
+  message.value = ''
+  messageType.value = ''
+
   try {
     const response = await axios.post('ui/user/login', // Login endpoint
       {
@@ -36,19 +37,22 @@ async function login() {
       }
     )
 
+    message.value = 'Login successful'
+    messageType.value = 'success'
     console.log('Login successful:', response.data)
     router.push('/dashboard')
 
   } catch (err) {
+    messageType.value = 'error'
     if (err.response) {
       // Get server response
-      error.value = `Login failed: ${err.response.data.error || err.response.statusText}`
+      message.value = `Login failed: ${err.response.data.error || err.response.statusText}`
     } else if (err.request) {
       // No response
-      error.value = 'No response from server'
+      message.value = 'No response from server'
     } else {
       // other errors
-      error.value = err.message
+      message.value = err.message
     }
   }
 }
@@ -75,10 +79,6 @@ async function login() {
   outline: auto;
 }
 
-.message-container {
-  width: 100%;
-}
-
 .prompt {
   color: var(--low-glare);
 }
@@ -89,5 +89,19 @@ input {
 
 button {
   width: 100%;
+}
+
+.result {
+  min-height: 1.2rem;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.result.error {
+  color: var(--error-msg);
+}
+
+.result.success {
+  color: var(--success-msg);
 }
 </style>

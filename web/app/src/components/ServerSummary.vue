@@ -218,17 +218,29 @@ onMounted(async () => {
   color: var(--low-glare);
   border-collapse: collapse;
   width: 100%;
+  table-layout: fixed;
 }
 
 .server-table th,
 .server-table td {
   border: 1px solid var(--low-glare);
   padding: 0.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .server-table th {
   text-align: left;
 }
+
+.server-table th:nth-child(1) { width: 10%; } /* Group Name */
+.server-table th:nth-child(2) { width: 10%; } /* State */
+.server-table th:nth-child(3) { width: 10%; } /* Time Remaining */
+.server-table th:nth-child(4) { width: 15%; } /* Expiry */
+.server-table th:nth-child(5) { width: 15%; } /* Current User */
+.server-table th:nth-child(6) { width: 50%; } /* Actions */
+
 
 .user-btn-container {
   display: flex;
