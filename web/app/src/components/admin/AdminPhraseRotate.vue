@@ -23,7 +23,7 @@ import { ref } from 'vue'
 import axios from 'axios'
 
 const phrase = ref('')
-const acknowledge = ref('')
+const acknowledge = ref(false)
 const message = ref('')
 const messageType = ref('')
 
@@ -41,7 +41,7 @@ async function rotatePhrase() {
       }
     )
     
-    message.value = 'Encryption phrase rotated'
+    message.value = 'Encryption phrase rotated - set environment variable now!'
     messageType.value = 'success'
     console.log('Encryption phrase rotated:', response.data)
 

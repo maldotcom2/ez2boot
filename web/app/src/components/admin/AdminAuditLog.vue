@@ -4,7 +4,7 @@
       <button @click="applyFilters">Apply</button>
       <button @click="resetFilters">Reset</button>
     </div>
-
+    <p class="result" :class="messageType">{{ message || '\u00A0' }}</p>
     <table class="audit-table" v-if="events.length">
       <thead>
         <tr>
@@ -116,8 +116,6 @@
       </tbody>
     </table>
 
-    <div v-else class="empty">No audit events found</div>
-
     <div class="pagination-btn-container">
       <button @click="prevPage" :disabled="!canGoBack">Back</button>
       <button @click="nextPage" :disabled="!nextCursor">Next</button>
@@ -132,11 +130,12 @@ import axios from 'axios'
 const events = ref([])
 const nextCursor = ref(null)
 const cursorStack = ref([])
-const loading = ref(false)
-const error = ref('')
 const fromDate = ref('')
 const toDate = ref('')
 const canGoBack = computed(() => cursorStack.value.length > 0)
+const message = ref('')
+const messageType = ref('')
+
 const filters = reactive({
   // Pagination
   limit: 20,
@@ -154,11 +153,9 @@ const filters = reactive({
   to: null,
 })
 
-const emit = defineEmits(['switch-pane'])
-
 async function fetchAuditEvents(cursor = null) {
-  error.value = ''
-  loading.value = true
+  message.value = ''
+  messageType.value = ''
 
   try {
     const params = {
@@ -174,8 +171,6 @@ async function fetchAuditEvents(cursor = null) {
       to: filters.to || undefined,
     }
 
-    console.log('REQUEST PARAMS:', params)
-
     if (cursor) {
       params.before = cursor
     }
@@ -188,14 +183,29 @@ async function fetchAuditEvents(cursor = null) {
     if (response.data.success) {
         events.value = response.data.data?.events || []
         nextCursor.value = response.data.data?.next_cursor || null
-    }    
+    }
+
+    if (events.value.length === 0) {
+      message.value = 'No audit events found'
+      messageType.value = 'info'
+    }
 
     if (cursor) {
       cursorStack.value.push(cursor)
     }
 
   } catch (err) {
-    console.error('Error fetching audit events:', err)
+    messageType.value = 'error'
+    if (err.response) {
+      // Get server response
+      message.value = `Failed to get audit events: ${err.response.data.error || err.response.statusText}`
+    } else if (err.request) {
+      // No response
+      message.value = 'No response from server'
+    } else {
+      // other errors
+      message.value = err.message
+    }
   }
 }
 
@@ -326,18 +336,34 @@ onMounted(() => {
   color: var(--low-glare);
   border-collapse: collapse;
   width: 100%;
-  table-layout: auto;
+  table-layout: fixed;
 }
 
 .audit-table th,
 .audit-table td {
   border: 1px solid var(--low-glare);
   padding: 0.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .audit-table th {
   text-align: left;
 }
+
+.filter-row input {
+  max-width: 90%;
+}
+
+.audit-table th:nth-child(1) { width: 15%; } /* Time */
+.audit-table th:nth-child(2) { width: 15%; } /* Author */
+.audit-table th:nth-child(3) { width: 15%; } /* Target */
+.audit-table th:nth-child(4) { width: 10%; } /* Action */
+.audit-table th:nth-child(5) { width: 10%; } /* Resource */
+.audit-table th:nth-child(6) { width: 5%; } /* Success */
+.audit-table th:nth-child(7) { width: 15%; } /* Reason */
+.audit-table th:nth-child(8) { width: 15%; } /* Metadata */
 
 .time-filter {
   display: flex;
@@ -349,6 +375,24 @@ onMounted(() => {
   white-space: normal;
   word-break: break-word;
   max-width: 100%;
+}
+
+.result {
+  min-height: 1.2rem;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.result.info {
+  color: var(--low-glare);
+}
+
+.result.error {
+  color: var(--error-msg);
+}
+
+.result.success {
+  color: var(--success-msg);
 }
 
 

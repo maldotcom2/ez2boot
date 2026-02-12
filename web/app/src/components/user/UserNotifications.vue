@@ -10,13 +10,13 @@
         <button type="button" @click="saveUserNotification">Save</button>
         <button type="button" @click="deleteUserNotification">Delete</button>
       </div>
+      <p class="result" :class="messageType">{{ message || '\u00A0' }}</p>
     </aside>
     <main class="config-panel">
       <component v-if="selectedType" :is="formComponents[selectedType]" v-model="notificationData[selectedType]"/>
     </main>
   </div>
 </template>
-
 
 <script setup>
 import { ref, reactive, onMounted, watch } from 'vue'
@@ -28,7 +28,8 @@ import TelegramForm from './notifications/Telegram.vue'
 const selectedType = ref('')
 const supportedTypes = ref([])
 const notificationData = reactive({})
-const error = ref('')
+const message = ref('')
+const messageType = ref('')
 
 // Gracefully handle case of no user notification settings from load, pass valid object to child
 watch(selectedType, (newType) => {
@@ -45,7 +46,8 @@ const formComponents = {
 
 // Get supported channels
 async function getNotificationTypes() {
-  error.value = ''  // Reset error
+  message.value = ''
+  messageType.value = ''
   try {
     const response = await axios.get('ui/notification/types')
     if (response.data.success) {
@@ -53,26 +55,28 @@ async function getNotificationTypes() {
       if (supportedTypes.value.length > 0) {
         selectedType.value = supportedTypes.value[0].type // default
       } else {
-        error.value = 'Failed to get notification types'
+        message.value = 'Failed to get notification types'
       }
     }
   } catch (err) {
+    messageType.value = 'error'
     if (err.response) {
       // Get server response
-      error.value = `Failed to get notification types: ${err.response.data.error || err.response.statusText}`
+      message.value = `Failed to get notification types: ${err.response.data.error || err.response.statusText}`
     } else if (err.request) {
       // No response
-      error.value = 'No response from server'
+      message.value = 'No response from server'
     } else {
       // other errors
-      error.value = err.message
+      message.value = err.message
     }
   }
 }
 
 // Populate UI with currently stored user settings
 async function loadUserNotification() {
-  error.value = ''  // Reset error
+  message.value = ''
+  messageType.value = ''
   try {
     const response = await axios.get('/ui/user/notification')
     if (response.data.success && response.data.data) {
@@ -82,22 +86,24 @@ async function loadUserNotification() {
       notificationData[userNotif.type] = userNotif.channel_config || {}
     }
   } catch (err) {
+    messageType.value = 'error'
     if (err.response) {
       // Get server response
-      error.value = `Failed to load user notification settings: ${err.response.data.error || err.response.statusText}`
+      message.value = `Failed to load settings: ${err.response.data.error || err.response.statusText}`
     } else if (err.request) {
       // No response
-      error.value = 'No response from server'
+      message.value = 'No response from server'
     } else {
       // other errors
-      error.value = err.message
+      message.value = err.message
     }
   }
 }
 
 // Save new settings
 async function saveUserNotification() {
-  error.value = ''
+  message.value = ''
+  messageType.value = ''
   try {
     // Build the payload
     const payload = {
@@ -108,40 +114,48 @@ async function saveUserNotification() {
     const response = await axios.post('/ui/user/notification', payload)
     if (response.data.success) {
     console.log("Notification settings saved")
+    message.value = 'Notification settings saved'
+    messageType.value = 'success'
     }
+
   } catch (err) {
+    messageType.value = 'error'
     if (err.response) {
-      error.value = `Failed to save: ${err.response.data.error || err.response.statusText}`
+      message.value = `Failed to save settings: ${err.response.data.error || err.response.statusText}`
     } else if (err.request) {
-      error.value = 'No response from server'
+      message.value = 'No response from server'
     } else {
-      error.value = err.message
+      message.value = err.message
     }
   }
 }
 
 // Delete settings - user will have no notifications
 async function deleteUserNotification() {
-  if (!confirm("Are you sure you want to delete this notification?")) {
+  message.value = ''
+  messageType.value = ''
+  if (!confirm("Are you sure you want to delete notification settings?")) {
     return
   }
 
-  error.value = ''  // Reset error
   try {
     const response = await axios.delete('/ui/user/notification')
     if (response.data.success) {
       notificationData[selectedType.value] = {}
+      message.value = 'Notification settings deleted'
+      messageType.value = 'success'
     }
   } catch (err) {
+    messageType.value = 'error'
     if (err.response) {
       // Get server response
-      error.value = `Failed to delete user notification: ${err.response.data.error || err.response.statusText}`
+      message.value = `Failed to delete settings: ${err.response.data.error || err.response.statusText}`
     } else if (err.request) {
       // No response
-      error.value = 'No response from server'
+      message.value = 'No response from server'
     } else {
       // other errors
-      error.value = err.message
+      message.value = err.message
     }
   }
 }
@@ -204,5 +218,20 @@ onMounted(async () => {
 select {
   border-radius: var(--small-radius);
 }
+
+.result {
+  min-height: 1.2rem;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.result.error {
+  color: var(--error-msg);
+}
+
+.result.success {
+  color: var(--success-msg);
+}
+
 
 </style>

@@ -5,9 +5,8 @@
         <input v-model="email" placeholder="Email" />
         <input v-model="password" type="password" placeholder="Password" />
         <input v-model="confirmPassword" type="password" placeholder="Confirm Password" />
-        <p v-if="!passwordsMatch && confirmPassword.length > 0" class="error">Passwords do not match</p>
         <button type="submit" :disabled="!passwordsMatch || !email || !password || !confirmPassword">Create</button>
-        <p v-if="error" class="error">{{ error }}</p>
+        <p class="result" :class="messageType">{{ validationMessage || message || '\u00A0' }}</p>
       </form>
   </div>
 </template>
@@ -20,13 +19,23 @@ import AdminUserMgmt from './AdminUserMgmt.vue'
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
-const error = ref('')
+const message = ref('')
+const messageType = ref('')
 const passwordsMatch = computed(() => password.value === confirmPassword.value)
+const validationMessage = computed(() => {
+  if (confirmPassword.value.length > 0 && !passwordsMatch.value) {
+    messageType.value = 'error'
+    return 'Passwords do not match'
+  }
+  return ''
+})
 
 const emit = defineEmits(['switch-pane'])
 
 async function createUser() {
-  error.value = ''  // Reset error
+  message.value = ''
+  messageType.value = ''
+
   try {
     const response = await axios.post('ui/user/new',
       {
@@ -38,19 +47,22 @@ async function createUser() {
       }
     )
 
+    message.value = 'User created'
+    messageType.value = 'success'
     console.log('User created:', response.data)
     emit('switch-pane', AdminUserMgmt)
 
   } catch (err) {
+    messageType.value = 'error'
     if (err.response) {
       // Get server response
-      error.value = `Create user failed: ${err.response.data.error || err.response.statusText}`
+      message.value = `Create user failed: ${err.response.data.error || err.response.statusText}`
     } else if (err.request) {
       // No response
-      error.value = 'No response from server'
+      message.value = 'No response from server'
     } else {
       // other errors
-      error.value = err.message
+      message.value = err.message
     }
   }
 }
@@ -95,9 +107,18 @@ button {
   width: 100%;
 }
 
-.error {
-  color: red;
-  font-size: 0.9rem;
+.result {
+  min-height: 1.2rem;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.result.error {
+  color: var(--error-msg);
+}
+
+.result.success {
+  color: var(--success-msg);
 }
 
 </style>

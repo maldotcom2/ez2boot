@@ -19,10 +19,10 @@
       <tbody>
         <tr v-for="user in users" :key="user.email">
           <td>{{ user.email }}</td>
-          <td><input type="checkbox" v-model="user.is_active" @change="markChanged(user.user_id)" :disabled="user.user_id === currentUserId"/></td>
-          <td><input type="checkbox" v-model="user.is_admin" @change="markChanged(user.user_id)" :disabled="user.user_id === currentUserId"/></td>
-          <td><input type="checkbox" v-model="user.api_enabled" @change="markChanged(user.user_id)" :disabled="user.user_id === currentUserId"/></td>
-          <td><input type="checkbox" v-model="user.ui_enabled" @change="markChanged(user.user_id)" :disabled="user.user_id === currentUserId"/></td>
+          <td><input class="checkbox" type="checkbox" v-model="user.is_active" @change="markChanged(user.user_id)" :disabled="user.user_id === currentUserId"/></td>
+          <td><input class="checkbox" type="checkbox" v-model="user.is_admin" @change="markChanged(user.user_id)" :disabled="user.user_id === currentUserId"/></td>
+          <td><input class="checkbox" type="checkbox" v-model="user.api_enabled" @change="markChanged(user.user_id)" :disabled="user.user_id === currentUserId"/></td>
+          <td><input class="checkbox" type="checkbox" v-model="user.ui_enabled" @change="markChanged(user.user_id)" :disabled="user.user_id === currentUserId"/></td>
           <td>{{ user.last_login ? new Date(user.last_login * 1000).toLocaleString() : '-' }}</td>
           <td><button @click="deleteUser(user.user_id)" :disabled="user.user_id === currentUserId">Delete User</button></td>
         </tr>
@@ -137,16 +137,28 @@ p {
   color: var(--low-glare);
   border-collapse: collapse;
   width: 100%;
+  table-layout: fixed;
 }
 
 .user-mgmt-table th,
 .user-mgmt-table td {
   border: 1px solid var(--low-glare);
   padding: 0.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .user-mgmt-table th {
   text-align: left;
 }
+
+.user-mgmt-table th:nth-child(1) { width: 30%; } /* Email */
+.user-mgmt-table th:nth-child(2) { width: 10%; } /* Active */
+.user-mgmt-table th:nth-child(3) { width: 10%; } /* Admin */
+.user-mgmt-table th:nth-child(4) { width: 10%; } /* API */
+.user-mgmt-table th:nth-child(5) { width: 10%; } /* UI */
+.user-mgmt-table th:nth-child(6) { width: 15%; } /* Last Login */
+.user-mgmt-table th:nth-child(7) { width: 15%; } /* Actions */
 
 </style>
