@@ -257,12 +257,12 @@ func (s *Service) deleteUser(targetUserID int64, ctx context.Context) error {
 func (s *Service) changePassword(req ChangePasswordRequest, ctx context.Context) error {
 	actorUserID, actorEmail := ctxutil.GetActor(ctx)
 
-	if req.OldPassword == "" || req.NewPassword == "" {
-		return shared.ErrOldOrNewPasswordMissing
+	if req.CurrentPassword == "" || req.NewPassword == "" {
+		return shared.ErrCurrentOrNewPasswordMissing
 	}
 
 	// Check current password
-	_, isCurrentPassword, err := s.AuthenticateUser(actorEmail, req.OldPassword)
+	_, isCurrentPassword, err := s.AuthenticateUser(actorEmail, req.CurrentPassword)
 	if err != nil {
 		return err
 	}
@@ -280,7 +280,7 @@ func (s *Service) changePassword(req ChangePasswordRequest, ctx context.Context)
 		return err
 	}
 
-	if err = s.Repo.changePassword(actorEmail, newHash); err != nil {
+	if err = s.Repo.changePassword(actorUserID, newHash); err != nil {
 		return err
 	}
 

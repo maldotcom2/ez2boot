@@ -3,7 +3,6 @@ package user
 import (
 	"database/sql"
 	"ez2boot/internal/shared"
-	"fmt"
 	"time"
 
 	"github.com/mattn/go-sqlite3"
@@ -122,19 +121,34 @@ func (r *Repository) getEmailFromUserID(userID int64) (string, error) {
 }
 
 // Change password for user
-func (r *Repository) changePassword(email string, newHash string) error {
-	result, err := r.Base.DB.Exec("UPDATE users SET password_hash = $1 WHERE email = $2", newHash, email)
+func (r *Repository) changePassword(userID int64, newHash string) error {
+	resReset, err := r.Base.DB.Exec("UPDATE users SET password_hash = $1 WHERE id = $2", newHash, userID)
 	if err != nil {
 		return err
 	}
 
-	rows, err := result.RowsAffected()
+	rowsReset, err := resReset.RowsAffected()
 	if err != nil {
 		return err
 	}
 
-	if rows == 0 {
-		return fmt.Errorf("password was not updated for user: %s", email)
+	if rowsReset == 0 {
+		return shared.ErrNoRowsUpdated
+	}
+
+	// Clear existing sessions
+	resPurge, err := r.Base.DB.Exec("DELETE FROM user_sessions WHERE user_id = $1", userID)
+	if err != nil {
+
+	}
+
+	rowsPurge, err := resPurge.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsPurge == 0 {
+		return shared.ErrNoRowsDeleted
 	}
 
 	return nil

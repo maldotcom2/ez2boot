@@ -1,6 +1,7 @@
 <template>
   <aside class="menu">
     <button @click="showUserNotifications">Notifications</button>
+    <button @click="showChangePassword">Change Password</button>
   </aside>
 </template>
 
@@ -15,10 +16,15 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 import UserNotifications from './UserNotifications.vue'
+import UserChangePassword from './UserChangePassword.vue'
 
 // Update parent when button clicked
 function showUserNotifications() {
   emit('update:modelValue', UserNotifications)
+}
+
+function showChangePassword() {
+  emit('update:modelValue', UserChangePassword)
 }
 </script>
 

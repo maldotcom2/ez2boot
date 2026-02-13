@@ -171,6 +171,7 @@ onMounted(async () => {
   flex: 1;
   display: grid;
   grid-template-columns: 250px 1fr;
+  padding: 1rem;
   gap: 1rem;
   width: 100%;
   background-color: var(--container-modal);
@@ -195,7 +196,7 @@ onMounted(async () => {
 .config-panel {
   display: flex;
   flex-direction: column;
-  padding: 1rem; /* instead of 40px */
+  padding: 1rem;
   box-sizing: border-box;
   color: var(--low-glare);
   background: var(--container-modal);

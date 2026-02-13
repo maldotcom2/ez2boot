@@ -13,13 +13,19 @@
 <script setup>
 import { ref } from 'vue'
 import axios from 'axios'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 const email = ref('')
 const password = ref('')
 const message = ref('')
 const messageType = ref('')
+
+if (route.query.message === 'password-changed') {
+  messageType.value = 'success'
+  message.value = 'Your password was changed. Please log in again.'
+}
 
 // async login function
 async function login() {
@@ -27,7 +33,7 @@ async function login() {
   messageType.value = ''
 
   try {
-    const response = await axios.post('ui/user/login', // Login endpoint
+    const response = await axios.post('ui/user/login',
       {
         email: email.value,
         password: password.value
@@ -40,7 +46,11 @@ async function login() {
     message.value = 'Login successful'
     messageType.value = 'success'
     console.log('Login successful:', response.data)
-    router.push('/dashboard')
+    setTimeout(() => {
+      router.push({
+      path: '/dashboard',
+    })
+    }, 1000)
 
   } catch (err) {
     messageType.value = 'error'

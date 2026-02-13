@@ -608,8 +608,8 @@ func TestChangePassword_Success(t *testing.T) {
 
 	// Prepare HTTP request to the real route
 	reqPayload := user.ChangePasswordRequest{
-		OldPassword: adminPassword,
-		NewPassword: adminNewPassword,
+		CurrentPassword: adminPassword,
+		NewPassword:     adminNewPassword,
 	}
 
 	body, _ := json.Marshal(reqPayload)

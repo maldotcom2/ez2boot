@@ -426,26 +426,39 @@ func (h *Handler) ChangePassword() http.HandlerFunc {
 		err := h.Service.changePassword(req, ctx)
 		if err != nil {
 			switch {
-			case errors.Is(err, shared.ErrOldOrNewPasswordMissing):
-				h.Logger.Error("Failed to change password for user, old or new password missing", "email", email)
+			case errors.Is(err, shared.ErrCurrentOrNewPasswordMissing):
+				h.Logger.Error("Failed to change password for user, current or new password missing", "email", email)
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   shared.ErrOldOrNewPasswordMissing.Error(),
+					Error:   "current or new password missing",
 				}
 			case errors.Is(err, shared.ErrAuthenticationFailed):
 				h.Logger.Error("Failed to change password for user, authentication failed", "email", email)
 				w.WriteHeader(http.StatusUnauthorized)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   shared.ErrAuthenticationFailed.Error(),
+					Error:   "authentication failed",
 				}
 			case errors.Is(err, shared.ErrInvalidPassword):
 				h.Logger.Error("Failed to change password for user, password did not match complexity requirements", "email", email)
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   shared.ErrInvalidPassword.Error(),
+					Error:   "password did not match complexity requirements",
+				}
+			case errors.Is(err, shared.ErrNoRowsUpdated):
+				h.Logger.Error("Failed to change password for user, no rows were updated", "email", email)
+				w.WriteHeader(http.StatusInternalServerError)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "no rows updated",
+				}
+			case errors.Is(err, shared.ErrNoRowsDeleted):
+				h.Logger.Warn("Failed to clear sessions after password change, no rows were deleted", "email", email)
+				// Not an actual error
+				resp = shared.ApiResponse[any]{
+					Success: true,
 				}
 			default:
 				h.Logger.Error("Failed to change password for user", "email", email, "error", err)

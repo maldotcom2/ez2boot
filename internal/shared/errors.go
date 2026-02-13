@@ -21,7 +21,7 @@ var (
 	ErrEmailPattern                 = errors.New("email does not match required pattern")
 	ErrEmailOrPasswordMissing       = errors.New("email and password field required")
 	ErrEmailMissing                 = errors.New("email field missing")
-	ErrOldOrNewPasswordMissing      = errors.New("old_password and new_password field required")
+	ErrCurrentOrNewPasswordMissing  = errors.New("current_password and new_password field required")
 	ErrCannotModifyOwnAuth          = errors.New("cannot modify own authorisation")
 	ErrCannotDeleteOwnUser          = errors.New("cannot delete own user")
 	ErrNotificationTypeNotSupported = errors.New("notification type not supported")
