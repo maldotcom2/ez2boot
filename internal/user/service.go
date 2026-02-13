@@ -15,84 +15,68 @@ import (
 )
 
 // Attempt user login using even-time
-func (s *Service) login(u UserLogin) (string, error) {
+func (s *Service) login(u UserLogin) (token string, err error) {
+	var userID int64
+
+	defer func() {
+		var reason string
+		if err != nil {
+			reason = err.Error()
+		}
+
+		s.Audit.Log(audit.Event{
+			ActorUserID: userID,
+			ActorEmail:  u.Email,
+			Action:      "login",
+			Resource:    "user",
+			Success:     err == nil,
+			Reason:      reason,
+		})
+	}()
+
+	// Input validation
 	if u.Email == "" || u.Password == "" {
 		return "", shared.ErrEmailOrPasswordMissing
 	}
 
-	// Create session token
-	token, err := util.GenerateRandomString(32)
+	// Generate session token
+	token, err = util.GenerateRandomString(32)
 	if err != nil {
 		return "", err
 	}
 
-	// Hash it
 	hash := util.HashToken(token)
-
-	// Set expiry
 	sessionExpiry := time.Now().Add(s.Config.UserSessionDuration).Unix()
 
-	// Authenticate
-	userID, authenticated, err := s.AuthenticateUser(u.Email, u.Password)
-	if err != nil && err != shared.ErrUserNotFound {
-		return "", err
+	// Authenticate user
+	userID, authenticated, authErr := s.AuthenticateUser(u.Email, u.Password)
+	if authErr != nil && authErr != shared.ErrUserNotFound {
+		return "", authErr
 	}
 
-	// Check UI access is allowed
+	if !authenticated || authErr == shared.ErrUserNotFound {
+		return "", shared.ErrAuthenticationFailed
+	}
+
+	// User exists and is authenticated
+
 	user, err := s.GetUserAuthorisation(userID)
 	if err != nil {
 		return "", err
 	}
 
 	if !user.IsActive {
-		s.Audit.Log(audit.Event{
-			ActorUserID: 0,
-			ActorEmail:  u.Email,
-			Action:      "login",
-			Resource:    "user",
-			Success:     false,
-			Reason:      "user inactive",
-		})
 		return "", shared.ErrUserInactive
 	}
 
 	if !user.UIEnabled {
-		s.Audit.Log(audit.Event{
-			ActorUserID: 0,
-			ActorEmail:  u.Email,
-			Action:      "login",
-			Resource:    "user",
-			Success:     false,
-			Reason:      "UI unauthorised",
-		})
 		return "", shared.ErrUserNotAuthorised
 	}
 
-	// Auth fail, or user not exist
-	if !authenticated || err == shared.ErrUserNotFound {
-		s.Audit.Log(audit.Event{
-			ActorUserID: 0,
-			ActorEmail:  u.Email,
-			Action:      "login",
-			Resource:    "user",
-			Success:     false,
-			Reason:      "authentication failed",
-		})
-		return "", shared.ErrAuthenticationFailed
-	}
-
-	// Store hash
+	// Store session hash
 	if err = s.Repo.createUserSession(hash, sessionExpiry, userID); err != nil {
 		return "", err
 	}
-
-	s.Audit.Log(audit.Event{
-		ActorUserID: userID,
-		ActorEmail:  u.Email,
-		Action:      "login",
-		Resource:    "user",
-		Success:     true,
-	})
 
 	return token, nil
 }
@@ -254,8 +238,24 @@ func (s *Service) deleteUser(targetUserID int64, ctx context.Context) error {
 }
 
 // Change a password for authenticated user
-func (s *Service) changePassword(req ChangePasswordRequest, ctx context.Context) error {
+func (s *Service) changePassword(req ChangePasswordRequest, ctx context.Context) (err error) {
 	actorUserID, actorEmail := ctxutil.GetActor(ctx)
+
+	defer func() {
+		var reason string
+		if err != nil {
+			reason = err.Error()
+		}
+
+		s.Audit.Log(audit.Event{
+			ActorUserID: actorUserID,
+			ActorEmail:  actorEmail,
+			Action:      "change password",
+			Resource:    "user",
+			Success:     err == nil,
+			Reason:      reason,
+		})
+	}()
 
 	if req.CurrentPassword == "" || req.NewPassword == "" {
 		return shared.ErrCurrentOrNewPasswordMissing
@@ -283,14 +283,6 @@ func (s *Service) changePassword(req ChangePasswordRequest, ctx context.Context)
 	if err = s.Repo.changePassword(actorUserID, newHash); err != nil {
 		return err
 	}
-
-	s.Audit.Log(audit.Event{
-		ActorUserID: actorUserID,
-		ActorEmail:  actorEmail,
-		Action:      "change password",
-		Resource:    "user",
-		Success:     true,
-	})
 
 	return nil
 }
