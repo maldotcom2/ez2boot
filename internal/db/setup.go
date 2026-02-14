@@ -42,7 +42,7 @@ func (r *Repository) SetupDB() error {
 	}
 
 	// create table for version
-	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS version (id INTEGER PRIMARY KEY, latest_version TEXT, checked_at INTEGER, release_url TEXT)"); err != nil {
+	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS release (id INTEGER PRIMARY KEY, latest_release TEXT, latest_prerelease TEXT, checked_at INTEGER, release_url TEXT, prerelease_url TEXT)"); err != nil {
 		return err
 	}
 

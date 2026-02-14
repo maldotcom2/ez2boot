@@ -26,7 +26,7 @@ func (s *Service) getVersion() (VersionResponse, error) {
 		return defaultResp, err
 	}
 
-	latest, err := semver.NewVersion(version.LatestVersion)
+	latest, err := semver.NewVersion(version.LatestRelease)
 	if err != nil {
 		return defaultResp, err
 	}
@@ -40,7 +40,7 @@ func (s *Service) getVersion() (VersionResponse, error) {
 		Version:         s.BuildInfo.Version,
 		BuildDate:       s.BuildInfo.BuildDate,
 		UpdateAvailable: updateAvailable,
-		LatestVersion:   version.LatestVersion,
+		LatestRelease:   version.LatestRelease,
 		CheckedAt:       version.CheckedAt,
 		ReleaseURL:      version.ReleaseURL,
 	}
@@ -50,7 +50,7 @@ func (s *Service) getVersion() (VersionResponse, error) {
 
 // Check repo for latest version and update DB
 func (s *Service) UpdateVersion() error {
-	url := "https://api.github.com/repos/maldotcom2/ez2boot/releases/latest"
+	url := "https://api.github.com/repos/maldotcom2/ez2boot/releases"
 
 	ghReq, _ := http.NewRequest("GET", url, nil)
 	ghReq.Header.Set("User-Agent", "ez2boot")
@@ -67,19 +67,48 @@ func (s *Service) UpdateVersion() error {
 	}
 
 	// Decode relevant fields from response
-	var ghRelease GitHubRelease
-	if err := json.NewDecoder(resp.Body).Decode(&ghRelease); err != nil {
+	var ghReleases []GitHubRelease
+	if err := json.NewDecoder(resp.Body).Decode(&ghReleases); err != nil {
 		return err
 	}
 
-	// Create targetted struct
-	req := RepoVersionRequest{
-		LatestVersion: ghRelease.TagName,
-		CheckedAt:     time.Now().Unix(),
-		ReleaseURL:    ghRelease.HTMLURL,
+	var latestRelease, latestPreRelease GitHubRelease
+	var foundRelease, foundPreRelease bool
+
+	// Assumes releases retrieved chronologically
+	for _, r := range ghReleases {
+		if r.PreRelease {
+			if !foundPreRelease {
+				latestPreRelease = r
+				foundPreRelease = true
+			}
+		} else {
+			if !foundRelease {
+				latestRelease = r
+				foundRelease = true
+			}
+		}
+
+		if foundRelease && foundPreRelease {
+			break //found
+		}
 	}
 
-	// Write it
+	req := RepoReleaseRequest{
+		CheckedAt: time.Now().Unix(),
+	}
+
+	if foundRelease {
+		req.LatestRelease = latestRelease.TagName
+		req.ReleaseURL = latestRelease.HTMLURL
+	}
+
+	if foundPreRelease {
+		req.LatestPreRelease = latestPreRelease.TagName
+		req.PreReleaseURL = latestPreRelease.HTMLURL
+	}
+
+	// Write to DB
 	if err := s.Repo.updateVersion(req); err != nil {
 		return err
 	}

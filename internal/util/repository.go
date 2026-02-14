@@ -2,21 +2,23 @@ package util
 
 func (r *Repository) getVersion() (VersionResponse, error) {
 	var v VersionResponse
-	if err := r.Base.DB.QueryRow("SELECT latest_version, checked_at, release_url FROM version LIMIT 1").Scan(&v.LatestVersion, &v.CheckedAt, &v.ReleaseURL); err != nil {
+	if err := r.Base.DB.QueryRow("SELECT latest_release, latest_prerelease, checked_at, release_url FROM release LIMIT 1").Scan(&v.LatestRelease, &v.LatestPreRelease, &v.CheckedAt, &v.ReleaseURL); err != nil {
 		return VersionResponse{}, err
 	}
 
 	return v, nil
 }
 
-func (r *Repository) updateVersion(req RepoVersionRequest) error {
-	query := `INSERT INTO version (id, latest_version, checked_at, release_url) VALUES ($1, $2, $3, $4)
+func (r *Repository) updateVersion(req RepoReleaseRequest) error {
+	query := `INSERT INTO release (id, latest_release, latest_prerelease, checked_at, release_url, prerelease_url) VALUES ($1, $2, $3, $4, $5, $6)
 			ON CONFLICT (id) DO UPDATE SET
-			latest_version = EXCLUDED.latest_version,
+			latest_release = EXCLUDED.latest_release,
+			latest_prerelease = EXCLUDED.latest_prerelease,
 			checked_at = EXCLUDED.checked_at,
-			release_url = EXCLUDED.release_url`
+			release_url = EXCLUDED.release_url,
+			prerelease_url = EXCLUDED.prerelease_url`
 
-	if _, err := r.Base.DB.Exec(query, 1, req.LatestVersion, req.CheckedAt, req.ReleaseURL); err != nil {
+	if _, err := r.Base.DB.Exec(query, 1, req.LatestRelease, req.LatestPreRelease, req.CheckedAt, req.ReleaseURL, req.PreReleaseURL); err != nil {
 		return err
 	}
 

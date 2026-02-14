@@ -27,23 +27,27 @@ type BuildInfo struct {
 }
 
 // Used by Github polling job
-type RepoVersionRequest struct {
-	LatestVersion string `json:"latest_version"`
-	CheckedAt     int64  `json:"checked_at"`
-	ReleaseURL    string `json:"release_url"`
+type RepoReleaseRequest struct {
+	LatestRelease    string `json:"latest_release"`
+	LatestPreRelease string `json:"latest_prerelease"`
+	CheckedAt        int64  `json:"checked_at"`
+	ReleaseURL       string `json:"release_url"`
+	PreReleaseURL    string `json:"prerelease_url"`
 }
 
 type GitHubRelease struct {
-	TagName string `json:"tag_name"`
-	HTMLURL string `json:"html_url"`
+	TagName    string `json:"tag_name"`
+	HTMLURL    string `json:"html_url"`
+	PreRelease bool   `json:"prerelease"`
 }
 
 // Used by UI
 type VersionResponse struct {
-	Version         string `json:"version"`
-	BuildDate       string `json:"build_date"`
-	UpdateAvailable bool   `json:"update_available"`
-	LatestVersion   string `json:"latest_version"`
-	CheckedAt       int64  `json:"checked_at"`
-	ReleaseURL      string `json:"release_url"`
+	Version          string `json:"version"`
+	BuildDate        string `json:"build_date"`
+	UpdateAvailable  bool   `json:"update_available"`
+	LatestRelease    string `json:"latest_release"`
+	LatestPreRelease string `json:"latest_prerelease"`
+	CheckedAt        int64  `json:"checked_at"`
+	ReleaseURL       string `json:"release_url"`
 }
