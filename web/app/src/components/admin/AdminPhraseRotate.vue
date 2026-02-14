@@ -32,7 +32,7 @@ async function rotatePhrase() {
   messageType.value = ''
 
   try {
-    const response = await axios.post('ui/notification/rotate',
+    const response = await axios.put('ui/notifications/passphrase',
       {
         phrase: phrase.value,
       },
