@@ -63,7 +63,7 @@ async function deleteUser(userID) {
   }
   
   try {
-    await axios.delete('/ui/user/delete',
+    await axios.delete('/ui/user',
       {
         data: { user_id: userID },
         withCredentials: true
@@ -97,7 +97,7 @@ async function saveChanges() {
       ui_enabled: u.ui_enabled
     }))
   try {
-    await axios.post('/ui/user/auth/update', payload)
+    await axios.put('/ui/user/auth', payload)
     changedUsers.value.clear()
   } catch (err) {
     console.error('Error saving users:', err)

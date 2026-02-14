@@ -18,7 +18,8 @@ func SetupBackendRoutes(
 	handlers *Handlers,
 ) {
 
-	// Public routes, no auth
+	/////////////////////////// Public routes, no auth ///////////////////////////////////
+
 	publicRouter := router.PathPrefix("/ui").Subrouter()
 	publicRouter.Use(middleware.CORSMiddleware)
 	publicRouter.Use(mw.LimitMiddleware)
@@ -30,7 +31,8 @@ func SetupBackendRoutes(
 		publicRouter.HandleFunc("/setup", handlers.UserHandler.CreateFirstTimeUser()).Methods("POST")
 	}
 
-	// API subrouter and routes
+	/////////////////////////// API subrouter and routes /////////////////////////////////
+
 	apiRouter := router.PathPrefix("/api").Subrouter()
 	apiRouter.Use(middleware.CORSMiddleware)
 	apiRouter.Use(mw.LimitMiddleware)
@@ -44,7 +46,8 @@ func SetupBackendRoutes(
 	apiRouter.HandleFunc("/user/new", handlers.UserHandler.CreateUser()).Methods("POST")
 	apiRouter.HandleFunc("/user/changepassword", handlers.UserHandler.ChangePassword()).Methods("PUT")
 
-	// UI subrouter and routes
+	/////////////////////////// UI subrouter and routes //////////////////////////////////
+
 	uiRouter := router.PathPrefix("/ui").Subrouter()
 	uiRouter.Use(middleware.CORSMiddleware)
 	uiRouter.Use(mw.LimitMiddleware)
@@ -52,17 +55,17 @@ func SetupBackendRoutes(
 	uiRouter.Use(mw.SessionAuthMiddleware())
 
 	//// Server Sessions
-	uiRouter.HandleFunc("/session/summary", handlers.SessionHandler.GetServerSessionSummary()).Methods("GET")
-	uiRouter.HandleFunc("/session/new", handlers.SessionHandler.NewServerSession()).Methods("POST")
-	uiRouter.HandleFunc("/session/update", handlers.SessionHandler.UpdateServerSession()).Methods("PUT")
+	uiRouter.HandleFunc("/sessions/summary", handlers.SessionHandler.GetServerSessionSummary()).Methods("GET")
+	uiRouter.HandleFunc("/session", handlers.SessionHandler.NewServerSession()).Methods("POST")
+	uiRouter.HandleFunc("/session", handlers.SessionHandler.UpdateServerSession()).Methods("PUT")
 	//// Users
 	uiRouter.HandleFunc("/users", handlers.UserHandler.GetUsers()).Methods("GET")
+	uiRouter.HandleFunc("/user", handlers.UserHandler.CreateUser()).Methods("POST")
+	uiRouter.HandleFunc("/user", handlers.UserHandler.DeleteUser()).Methods("DELETE")
 	uiRouter.HandleFunc("/user/session", handlers.UserHandler.CheckSession()).Methods("GET")
 	uiRouter.HandleFunc("/user/auth", handlers.UserHandler.GetUserAuthorisation()).Methods("GET")
-	uiRouter.HandleFunc("/user/auth/update", handlers.UserHandler.UpdateUserAuthorisation()).Methods("POST")
-	uiRouter.HandleFunc("/user/new", handlers.UserHandler.CreateUser()).Methods("POST")
-	uiRouter.HandleFunc("/user/delete", handlers.UserHandler.DeleteUser()).Methods("DELETE")
-	uiRouter.HandleFunc("/user/changepassword", handlers.UserHandler.ChangePassword()).Methods("PUT")
+	uiRouter.HandleFunc("/user/auth", handlers.UserHandler.UpdateUserAuthorisation()).Methods("PUT")
+	uiRouter.HandleFunc("/user/password", handlers.UserHandler.ChangePassword()).Methods("PUT")
 	uiRouter.HandleFunc("/user/logout", handlers.UserHandler.Logout()).Methods("POST")
 	/// Notification channels
 	uiRouter.HandleFunc("/user/notification", handlers.NotificationHandler.GetUserNotificationSettings()).Methods("GET")

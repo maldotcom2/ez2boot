@@ -37,7 +37,7 @@ async function createUser() {
   messageType.value = ''
 
   try {
-    const response = await axios.post('ui/user/new',
+    const response = await axios.post('ui/users',
       {
         email: email.value,
         password: password.value

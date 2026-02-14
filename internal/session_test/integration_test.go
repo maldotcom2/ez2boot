@@ -38,7 +38,7 @@ func TestNewServerSession_Success(t *testing.T) {
 	}
 
 	body, _ := json.Marshal(reqPayload)
-	req := httptest.NewRequest("POST", "/ui/session/new", bytes.NewReader(body))
+	req := httptest.NewRequest("POST", "/ui/session", bytes.NewReader(body))
 	for _, c := range cookies {
 		req.AddCookie(c)
 	}

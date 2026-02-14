@@ -333,7 +333,7 @@ func TestUpdateUserAuthorisation_Success(t *testing.T) {
 	}
 
 	body, _ := json.Marshal(reqPayload)
-	req := httptest.NewRequest("POST", "/ui/user/auth/update", bytes.NewReader(body))
+	req := httptest.NewRequest("PUT", "/ui/user/auth", bytes.NewReader(body))
 	for _, c := range cookies {
 		req.AddCookie(c)
 	}
@@ -381,7 +381,7 @@ func TestCreateUser_Success(t *testing.T) {
 	}
 
 	body, _ := json.Marshal(reqPayload)
-	req := httptest.NewRequest("POST", "/ui/user/new", bytes.NewReader(body))
+	req := httptest.NewRequest("POST", "/ui/user", bytes.NewReader(body))
 	for _, c := range cookies {
 		req.AddCookie(c)
 	}
@@ -428,7 +428,7 @@ func TestCreateUser_NotAdmin_ReturnsForbidden(t *testing.T) {
 	}
 
 	body, _ := json.Marshal(reqPayload)
-	req := httptest.NewRequest("POST", "/ui/user/new", bytes.NewReader(body))
+	req := httptest.NewRequest("POST", "/ui/user", bytes.NewReader(body))
 	for _, c := range cookies {
 		req.AddCookie(c)
 	}
@@ -473,7 +473,7 @@ func TestDeleteUser_Success(t *testing.T) {
 	}
 
 	body, _ := json.Marshal(reqPayload)
-	req := httptest.NewRequest("DELETE", "/ui/user/delete", bytes.NewReader(body))
+	req := httptest.NewRequest("DELETE", "/ui/user", bytes.NewReader(body))
 	for _, c := range cookies {
 		req.AddCookie(c)
 	}
@@ -613,7 +613,7 @@ func TestChangePassword_Success(t *testing.T) {
 	}
 
 	body, _ := json.Marshal(reqPayload)
-	req := httptest.NewRequest("PUT", "/ui/user/changepassword", bytes.NewReader(body))
+	req := httptest.NewRequest("PUT", "/ui/user/password", bytes.NewReader(body))
 	for _, c := range cookies {
 		req.AddCookie(c)
 	}

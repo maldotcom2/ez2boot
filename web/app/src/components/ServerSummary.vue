@@ -78,7 +78,7 @@ const modalGroup = ref('')
 // Load table data from specialised endpoint
 async function loadServerSessions() {
   try {
-    const response = await axios.get('/ui/session/summary')
+    const response = await axios.get('/ui/sessions/summary')
     if (response.data.success) {
         servers.value = response.data.data
         console.log(response.data);
@@ -98,7 +98,7 @@ async function startServerSession(serverGroup) {
   }
 
   try {
-    const response = await axios.post('/ui/session/new', {
+    const response = await axios.post('/ui/session', {
       server_group: serverGroup,
       duration: `${duration.value[serverGroup]}h`
     })
@@ -119,7 +119,7 @@ async function updateServerSession(serverGroup) {
   }
 
   try {
-    const response = await axios.put('/ui/session/update', {
+    const response = await axios.put('/ui/session', {
       server_group: serverGroup,
       duration: `${duration.value[serverGroup]}h`
     })
@@ -134,7 +134,7 @@ async function updateServerSession(serverGroup) {
 
 async function endServerSession(serverGroup) {
   try {
-    const response = await axios.put('/ui/session/update', {
+    const response = await axios.put('/ui/session', {
       server_group: serverGroup,
       duration: '0h'
     })

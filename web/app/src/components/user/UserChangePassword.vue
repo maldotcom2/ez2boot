@@ -32,7 +32,7 @@ async function changePassword() {
   messageType.value = ''
 
   try {
-    const response = await axios.put('ui/user/changepassword',
+    const response = await axios.put('ui/user/password',
       {
         current_password: currentPassword.value,
         new_password: newPassword.value
