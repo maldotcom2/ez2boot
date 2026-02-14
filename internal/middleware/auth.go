@@ -54,14 +54,14 @@ func (m *Middleware) BasicAuthMiddleware() mux.MiddlewareFunc {
 			}
 
 			if !u.IsActive {
-				m.Logger.Info("Inactive user attempted login", "email", u.Email)
+				m.Logger.Warn("Inactive user attempted login", "email", u.Email)
 				w.WriteHeader(http.StatusForbidden)
 				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User is not active"})
 				return
 			}
 
 			if !u.APIEnabled {
-				m.Logger.Info("Non-API user attempted to reach API endpoint", "email", u.Email)
+				m.Logger.Warn("Non-API user attempted to reach API endpoint", "email", u.Email)
 				w.WriteHeader(http.StatusForbidden)
 				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User not authorised for API access"})
 				return
