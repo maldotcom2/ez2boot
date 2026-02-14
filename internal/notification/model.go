@@ -42,7 +42,7 @@ type NotificationChannel interface {
 }
 
 // Used by UI to populate options
-type NotificationTypeRequest struct {
+type NotificationTypeResponse struct {
 	Type  string `json:"type"`
 	Label string `json:"label"`
 }

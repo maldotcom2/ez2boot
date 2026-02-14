@@ -37,12 +37,9 @@ func SetupBackendRoutes(
 	apiRouter.Use(middleware.JsonContentTypeMiddleware)
 	apiRouter.Use(mw.BasicAuthMiddleware())
 
-	//// Servers
-	apiRouter.HandleFunc("/servers", handlers.ServerHandler.GetServers()).Methods("GET")
 	//// Server sessions
-	apiRouter.HandleFunc("/sessions", handlers.SessionHandler.GetServerSessions()).Methods("GET")
-	apiRouter.HandleFunc("/sessions", handlers.SessionHandler.NewServerSession()).Methods("POST")
-	apiRouter.HandleFunc("/sessions", handlers.SessionHandler.UpdateServerSession()).Methods("PUT")
+	apiRouter.HandleFunc("/session/new", handlers.SessionHandler.NewServerSession()).Methods("POST")
+	apiRouter.HandleFunc("/session/update", handlers.SessionHandler.UpdateServerSession()).Methods("PUT")
 	//// Users
 	apiRouter.HandleFunc("/user/new", handlers.UserHandler.CreateUser()).Methods("POST")
 	apiRouter.HandleFunc("/user/changepassword", handlers.UserHandler.ChangePassword()).Methods("PUT")
@@ -54,10 +51,7 @@ func SetupBackendRoutes(
 	uiRouter.Use(middleware.JsonContentTypeMiddleware)
 	uiRouter.Use(mw.SessionAuthMiddleware())
 
-	//// Servers
-	uiRouter.HandleFunc("/servers", handlers.ServerHandler.GetServers()).Methods("GET")
 	//// Server Sessions
-	uiRouter.HandleFunc("/sessions", handlers.SessionHandler.GetServerSessions()).Methods("GET")
 	uiRouter.HandleFunc("/session/summary", handlers.SessionHandler.GetServerSessionSummary()).Methods("GET")
 	uiRouter.HandleFunc("/session/new", handlers.SessionHandler.NewServerSession()).Methods("POST")
 	uiRouter.HandleFunc("/session/update", handlers.SessionHandler.UpdateServerSession()).Methods("PUT")

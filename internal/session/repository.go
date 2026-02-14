@@ -8,36 +8,8 @@ import (
 	"time"
 )
 
-// Return currently active sessions
-func (r *Repository) getServerSessions() ([]ServerSession, error) {
-	rows, err := r.Base.DB.Query("SELECT user_id, server_group, expiry FROM server_sessions")
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	sessions := []ServerSession{}
-
-	for rows.Next() {
-		var s ServerSession
-		var expiryInt int64
-		err = rows.Scan(&s.UserID, &s.ServerGroup, &expiryInt)
-		if err != nil {
-			return nil, err
-		}
-
-		// Convert epoch to time
-		s.Expiry = time.Unix(expiryInt, 0).UTC()
-
-		sessions = append(sessions, s)
-	}
-
-	return sessions, nil
-}
-
 // Specialised query specifically for main UI table population
-func (r *Repository) getServerSessionSummary() ([]ServerSessionSummary, error) {
+func (r *Repository) getServerSessionSummary() ([]ServerSessionSummaryResponse, error) {
 	tx, err := r.Base.DB.Begin()
 	if err != nil {
 		return nil, err
@@ -78,7 +50,7 @@ func (r *Repository) getServerSessionSummary() ([]ServerSessionSummary, error) {
 	}
 	defer sessionRows.Close()
 
-	summary := []ServerSessionSummary{}
+	summary := []ServerSessionSummaryResponse{}
 	for sessionRows.Next() {
 		var group string
 		var currentUser *string // can be null
@@ -89,7 +61,7 @@ func (r *Repository) getServerSessionSummary() ([]ServerSessionSummary, error) {
 		}
 
 		servers := serverMap[group]
-		summary = append(summary, ServerSessionSummary{
+		summary = append(summary, ServerSessionSummaryResponse{
 			ServerGroup: group,
 			ServerCount: int64(len(servers)),
 			Servers:     servers,

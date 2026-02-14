@@ -111,10 +111,10 @@ func (s *Service) getUsers() ([]User, error) {
 }
 
 // Get a user's authorisation, eg admin, API access, etc
-func (s *Service) GetUserAuthorisation(userID int64) (UserAuthRequest, error) {
+func (s *Service) GetUserAuthorisation(userID int64) (UserAuthResponse, error) {
 	user, err := s.Repo.getUserAuthorisation(userID)
 	if err != nil {
-		return UserAuthRequest{}, nil
+		return UserAuthResponse{}, nil
 	}
 
 	return user, nil
@@ -317,20 +317,20 @@ func (s *Service) AuthenticateUser(email string, password string) (int64, bool, 
 	return id, match, nil
 }
 
-func (s *Service) GetSessionStatus(token string) (UserSession, error) {
+func (s *Service) GetSessionStatus(token string) (UserSessionResponse, error) {
 	// Hash token from cookie
 	hash := util.HashToken(token)
 
 	userSession, err := s.Repo.getSessionStatus(hash)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return UserSession{}, shared.ErrSessionNotFound
+			return UserSessionResponse{}, shared.ErrSessionNotFound
 		}
-		return UserSession{}, err
+		return UserSessionResponse{}, err
 	}
 
 	if userSession.SessionExpiry < time.Now().Unix() {
-		return UserSession{}, shared.ErrSessionExpired
+		return UserSessionResponse{}, shared.ErrSessionExpired
 	}
 
 	return userSession, nil

@@ -1,15 +1,5 @@
 package server
 
-// Returns map of servers for each server group
-func (s *Service) GetServers() (map[string][]Server, error) {
-	servers, err := s.Repo.getServers()
-	if err != nil {
-		return nil, err
-	}
-
-	return servers, nil
-}
-
 // Update servers from cloud provider
 func (s *Service) UpdateServers(servers []Server) {
 	// Extract UniqueIDs into a slice of interface{}

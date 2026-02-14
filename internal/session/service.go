@@ -10,19 +10,10 @@ import (
 	"time"
 )
 
-func (s *Service) getServerSessions() ([]ServerSession, error) {
-	sessions, err := s.Repo.getServerSessions()
-	if err != nil {
-		return []ServerSession{}, err
-	}
-
-	return sessions, nil
-}
-
-func (s *Service) getServerSessionSummary() ([]ServerSessionSummary, error) {
+func (s *Service) getServerSessionSummary() ([]ServerSessionSummaryResponse, error) {
 	summary, err := s.Repo.getServerSessionSummary()
 	if err != nil {
-		return []ServerSessionSummary{}, err
+		return []ServerSessionSummaryResponse{}, err
 	}
 
 	return summary, nil

@@ -41,6 +41,12 @@ type UserSession struct {
 	Token         string
 }
 
+type UserSessionResponse struct {
+	UserID        int64
+	SessionExpiry int64
+	Email         string
+}
+
 // For get request only
 type User struct {
 	UserID     int64  `json:"user_id"`
@@ -86,7 +92,7 @@ type CreateUser struct {
 	UIEnabled    bool
 }
 
-type UserAuthRequest struct {
+type UserAuthResponse struct {
 	UserID     int64  `json:"user_id"`
 	Email      string `json:"email"`
 	IsActive   bool   `json:"is_active"`

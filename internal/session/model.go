@@ -54,7 +54,7 @@ type ServerInfo struct {
 	State server.ServerState `json:"state"`
 }
 
-type ServerSessionSummary struct {
+type ServerSessionSummaryResponse struct {
 	ServerGroup string       `json:"server_group"`
 	ServerCount int64        `json:"server_count"`
 	Servers     []ServerInfo `json:"servers"`

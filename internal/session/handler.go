@@ -8,20 +8,6 @@ import (
 	"net/http"
 )
 
-func (h *Handler) GetServerSessions() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		sessions, err := h.Service.getServerSessions()
-		if err != nil {
-			h.Logger.Error("Failed to get server sessions", "error", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to get server sessions"})
-			return
-		}
-
-		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: sessions})
-	}
-}
-
 func (h *Handler) GetServerSessionSummary() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		summary, err := h.Service.getServerSessionSummary()

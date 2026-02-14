@@ -5,28 +5,6 @@ import (
 	"strings"
 )
 
-// Return all servers from catalogue - names and groups
-func (r *Repository) getServers() (map[string][]Server, error) {
-	rows, err := r.Base.DB.Query("SELECT unique_id, name, state, server_group FROM servers")
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	servers := make(map[string][]Server)
-	for rows.Next() {
-		var s Server
-		err = rows.Scan(&s.UniqueID, &s.Name, &s.State, &s.ServerGroup)
-		if err != nil {
-			return nil, err
-		}
-		servers[s.ServerGroup] = append(servers[s.ServerGroup], s)
-	}
-
-	return servers, nil
-}
-
 func (r *Repository) deleteObsolete(ids []any) error {
 	if len(ids) == 0 {
 		_, err := r.Base.DB.Exec("DELETE FROM servers")

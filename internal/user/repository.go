@@ -50,12 +50,12 @@ func (r *Repository) getUsers() ([]User, error) {
 	return users, nil
 }
 
-func (r *Repository) getUserAuthorisation(userID int64) (UserAuthRequest, error) {
+func (r *Repository) getUserAuthorisation(userID int64) (UserAuthResponse, error) {
 	query := `SELECT id, email, is_active, is_admin, api_enabled, ui_enabled FROM users WHERE id = $1`
 
-	var u UserAuthRequest
+	var u UserAuthResponse
 	if err := r.Base.DB.QueryRow(query, userID).Scan(&u.UserID, &u.Email, &u.IsActive, &u.IsAdmin, &u.APIEnabled, &u.UIEnabled); err != nil {
-		return UserAuthRequest{}, err
+		return UserAuthResponse{}, err
 	}
 
 	return u, nil
@@ -155,16 +155,16 @@ func (r *Repository) changePassword(userID int64, newHash string) error {
 }
 
 // Get user session info by session token hash
-func (r *Repository) getSessionStatus(hash string) (UserSession, error) {
+func (r *Repository) getSessionStatus(hash string) (UserSessionResponse, error) {
 	query := `SELECT us.session_expiry, u.id, u.email
         	FROM user_sessions AS us
         	JOIN users u ON us.user_id = u.id
         	WHERE us.token_hash = $1`
 
-	var u UserSession
+	var u UserSessionResponse
 	err := r.Base.DB.QueryRow(query, hash).Scan(&u.SessionExpiry, &u.UserID, &u.Email)
 	if err != nil {
-		return UserSession{}, err
+		return UserSessionResponse{}, err
 	}
 
 	return u, nil

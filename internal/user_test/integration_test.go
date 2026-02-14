@@ -281,16 +281,16 @@ func TestGetUserAuthorisation_Success(t *testing.T) {
 		t.Fatalf("want 200, got %d, body=%s", w.Code, w.Body.String())
 	}
 
-	var got shared.ApiResponse[user.UserAuthRequest]
+	var got shared.ApiResponse[user.UserAuthResponse]
 
 	if err := json.Unmarshal(w.Body.Bytes(), &got); err != nil {
 		t.Fatalf("failed to unmarshal response: %v", err)
 	}
 
 	// Expected API response
-	want := shared.ApiResponse[user.UserAuthRequest]{
+	want := shared.ApiResponse[user.UserAuthResponse]{
 		Success: true,
-		Data: user.UserAuthRequest{
+		Data: user.UserAuthResponse{
 			UserID:     1,
 			Email:      "example@example.com",
 			IsActive:   true,
@@ -322,7 +322,7 @@ func TestUpdateUserAuthorisation_Success(t *testing.T) {
 	cookies := testutil.LoginAndGetCookies(t, env.Router, adminEmail, adminPassword)
 
 	// Prepare HTTP request to the real route
-	reqPayload := []user.UserAuthRequest{
+	reqPayload := []user.UserAuthResponse{
 		{
 			UserID:     2,
 			IsActive:   true,
