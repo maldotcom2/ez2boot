@@ -1,6 +1,5 @@
 # Data
 *.sqlite*
-*.txt
 *.db
 
 # Env vars
