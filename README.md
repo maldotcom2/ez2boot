@@ -58,7 +58,7 @@ You may use the ez2boot name and branding only when:
 - Running the official, unmodified version of the software, or
 - Creating a fork solely for the purpose of contributing changes back to this repository.
 
-Any redistributed, modified, or independently published version of the software must remove or replace all ez2boot branding unless prior written permission has been obtained.
+Any modified, or independently published version of the software must remove or replace all ez2boot branding unless prior written permission has been obtained.
 
 ## Attributions
 See THIRD PARTY for attribution and compliance of libraries and components used in this project. If you're the copyright holder of any component used in this project and feel I have not complied with your license, please reach out.
