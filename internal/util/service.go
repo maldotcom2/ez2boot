@@ -49,7 +49,7 @@ func (s *Service) getVersion() (VersionResponse, error) {
 }
 
 // Check repo for latest version and update DB
-func (s *Service) UpdateVersion() error {
+func (s *Service) CheckRelease() error {
 	url := "https://api.github.com/repos/maldotcom2/ez2boot/releases"
 
 	ghReq, _ := http.NewRequest("GET", url, nil)

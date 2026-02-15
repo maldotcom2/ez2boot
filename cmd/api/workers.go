@@ -38,8 +38,8 @@ func startWorkers(ctx context.Context, cfg *config.Config, wkr *worker.Worker, s
 	// Start user session cleanup worker
 	worker.StartExpiredUserSessionCleanup(*wkr, ctx)
 
-	// Start version check worker
-	worker.StartVersionWorker(*wkr, ctx)
+	// Start release check worker
+	worker.StartReleaseWorker(*wkr, ctx)
 
 	return nil
 }

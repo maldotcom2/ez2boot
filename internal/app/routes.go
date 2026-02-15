@@ -65,7 +65,7 @@ func SetupBackendRoutes(
 
 	/////////////////////////// API subrouter and routes /////////////////////////////////
 
-	apiRouter := router.PathPrefix("/api").Subrouter()
+	apiRouter := router.PathPrefix("/api/v1").Subrouter()
 	apiRouter.Use(middleware.CORSMiddleware)
 	apiRouter.Use(mw.LimitMiddleware)
 	apiRouter.Use(middleware.JsonContentTypeMiddleware)
