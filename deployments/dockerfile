@@ -30,7 +30,7 @@ RUN go mod download
 ARG VERSION="dev"
 ARG BUILD_DATE="unknown"
 
-RUN go build -ldflags "-X main.Version=${VERSION} -X main.BuildDate=${BUILD_DATE}" -o api ./cmd/api
+RUN go build -ldflags "-X main.version=${VERSION} -X main.buildDate=${BUILD_DATE}" -o api ./cmd/api
 
 # Final
 FROM debian:bookworm-slim
