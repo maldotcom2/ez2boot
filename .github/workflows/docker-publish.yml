@@ -21,7 +21,11 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -f deployments/dockerfile -t maldotcom2/ez2boot:${{ github.ref_name }} .
+          docker build --pull -f deployments/dockerfile \
+          --build-arg VERSION=${{ github.ref_name }} \
+          --build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+          -t maldotcom2/ez2boot:${{ github.ref_name }} \
+          .
           docker tag maldotcom2/ez2boot:${{ github.ref_name }} maldotcom2/ez2boot:latest
 
       - name: Push Docker image
