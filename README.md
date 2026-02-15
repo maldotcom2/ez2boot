@@ -28,10 +28,10 @@ Note: Currently, only AWS is supported but there is a plan to support Azure and 
 - The app will now be available at `http://localhost:8000` and data will be persisted in a directory named 'data' so it will not be lost if the container is replaced.
 - Permissions required: 
   - AWS:
-    "ec2:DescribeInstances"
-    "ec2:DescribeTags"     
-    "ec2:StartInstances"
-    "ec2:StopInstances"
+    - "ec2:DescribeInstances"
+    - "ec2:DescribeTags"     
+    - "ec2:StartInstances"
+    - "ec2:StopInstances"
 
 ## Motivations and inspirations
 Like most ideas, this was born out of necessity. My workplace had a use for such an application, but so too would many others. I made the decison to build this using my own time and resources, to give back to the Open Source community which has provided me with many great solutions over the years. 
