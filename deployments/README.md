@@ -13,7 +13,7 @@ https://github.com/niXman/mingw-builds-binaries/releases/download/15.2.0-rt_v13-
 - Add C:\Mingw64\bin to path so you can run gcc from cli
 
 
-Testing containerised app:
+Dev Testing containerised app:
 - Ensure Docker is running locally, eg Docker Deskop
 - CD to the deployments directory and run the single command to build and bring the container online:
 - ```docker compose up --build -d```
