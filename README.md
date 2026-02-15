@@ -33,7 +33,6 @@ This license can cause some confusion, but after significant consideration I fel
 - This ensures improvements are shared with the community, while routine usage, configuration and maintenance are exempt.
 
 ## Trademark Notice
-
 The ez2boot name, logos, banners and icons are trademarks of the ez2boot project and are not licensed under the GNU AGPLv3. All rights are reserved.
 
 You may use the ez2boot name and branding only when:
