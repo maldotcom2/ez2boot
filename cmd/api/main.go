@@ -10,10 +10,11 @@ import (
 	"os"
 )
 
-func main() {
-	var version = "0.0.0-dev"
-	var buildDate = "unknown"
+// Defaults - overwritten by build
+var version = "0.0.0-dev"
+var buildDate = "unknown"
 
+func main() {
 	// Load env vars
 	cfg, err := config.GetEnvVars()
 	if err != nil {
