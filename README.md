@@ -1,5 +1,6 @@
 ## Intro
 Welcome to ez2boot. This is a self hosted web application designed to provide a simple interface for your colleagues to start and stop your public cloud servers, on demand. Cloud based servers are billed hourly. This is an expected cost for 24/7 production use cases but what about non-production? Often, non-production servers are used in an ad-hoc manner by those who may not have permissions or knowledge to access the native cloud console and start the required servers as needed. Perhaps this means developers, QA teams, sales reps etc. What if they forget to turn them off afterwards, leading to unexpected cloud costs? This project aims to solve this challenge in a secure, user-friendly and compliant way.
+Note: Currently, only AWS is supported but there is a plan to support Azure and Google Cloud.
 
 ## Features
 - Simple setup, intended to run as a docker container within your cloud environment.
