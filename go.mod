@@ -5,7 +5,7 @@ go 1.25.1
 require github.com/mattn/go-sqlite3 v1.14.32 // Requires C compiler gcc.exe on path
 
 require (
-	github.com/Masterminds/semver v1.5.0
+	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/alexedwards/argon2id v1.0.0
 	github.com/aws/aws-sdk-go-v2 v1.39.2
 	github.com/aws/aws-sdk-go-v2/config v1.31.12

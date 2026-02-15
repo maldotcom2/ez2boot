@@ -13,12 +13,12 @@ func GetEnvVars() (*Config, error) {
 		log.Print("Could not load .env file, assuming env vars from other means")
 	}
 
-	val := os.Getenv("TRUST_PROXY_HEADERS")
-	if val == "" {
-		val = "true" // default
+	trustProxyHeadersStr := os.Getenv("TRUST_PROXY_HEADERS")
+	if trustProxyHeadersStr == "" {
+		trustProxyHeadersStr = "true" // default
 	}
 
-	trustProxyHeaders, err := strconv.ParseBool(val)
+	trustProxyHeaders, err := strconv.ParseBool(trustProxyHeadersStr)
 	if err != nil {
 		return nil, err
 	}
@@ -92,6 +92,16 @@ func GetEnvVars() (*Config, error) {
 		return nil, err
 	}
 
+	showBetaVersionsStr := os.Getenv("SHOW_BETA_VERSIONS")
+	if showBetaVersionsStr == "" {
+		showBetaVersionsStr = "true" // default
+	}
+
+	showBetaVersions, err := strconv.ParseBool(showBetaVersionsStr)
+	if err != nil {
+		return nil, err
+	}
+
 	cfg := &Config{
 		TrustProxyHeaders:   trustProxyHeaders,
 		CloudProvider:       cloudProvider,
@@ -104,6 +114,7 @@ func GetEnvVars() (*Config, error) {
 		LogLevel:            logLevel,
 		EncryptionPhrase:    encryptionPhrase,
 		RateLimit:           rateLimit,
+		ShowBetaVersions:    showBetaVersions,
 	}
 
 	return cfg, nil

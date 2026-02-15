@@ -8,7 +8,7 @@
         Copyright © 2026 maldotcom2<br />
         <span>
           Version: {{ version.version }} ({{ version.buildDate }})
-           <span class="update-nag" v-if="version.updateAvailable"><a :href="version.releaseURL" target="_blank">Update Available! - {{ version.latestVersion }}</a></span>
+           <span class="update-nag" v-if="version.updateAvailable"><a :href="version.releaseURL" target="_blank">Update Available! - {{ version.latestRelease }}</a></span>
            <span v-else>Up to date</span>
            <span> - last checked: {{ version.checkedAt ? new Date(version.checkedAt * 1000).toLocaleString() : 'never' }}</span>
         </span>

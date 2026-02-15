@@ -60,7 +60,7 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 
 	// Util
 	utilRepo := util.NewRepository(repo)
-	utilService := util.NewService(utilRepo, buildInfo, logger)
+	utilService := util.NewService(utilRepo, cfg, buildInfo, logger)
 	utilHandler := util.NewHandler(utilService, logger)
 
 	// Email

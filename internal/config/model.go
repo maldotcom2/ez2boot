@@ -18,5 +18,6 @@ type Config struct {
 	LogLevel            slog.Level    // Logging level, use info unless debugging
 	EncryptionPhrase    string        // Implementation specific encryption phrase used to derive an encryption key to encrypt sensitive credentials within the app
 	RateLimit           int           // Max number of requests per second allowed by each user of this application
+	ShowBetaVersions    bool          // UI will show alert for beta releases and not just full releases
 	// Add more fields as needed
 }

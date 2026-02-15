@@ -6,43 +6,81 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Masterminds/semver"
+	"github.com/Masterminds/semver/v3"
 )
 
 // Get version info for UI
 func (s *Service) getVersion() (VersionResponse, error) {
-	defaultResp := VersionResponse{
+	resp := VersionResponse{
 		Version:   s.BuildInfo.Version,
 		BuildDate: s.BuildInfo.BuildDate,
 	}
 
-	version, err := s.Repo.getVersion()
+	release, err := s.Repo.getRelease()
 	if err != nil {
-		return defaultResp, err
+		return resp, err
 	}
 
-	current, err := semver.NewVersion(s.BuildInfo.Version)
+	currentVersion, err := semver.NewVersion(s.BuildInfo.Version)
 	if err != nil {
-		return defaultResp, err
+		return resp, err
 	}
 
-	latest, err := semver.NewVersion(version.LatestRelease)
-	if err != nil {
-		return defaultResp, err
+	if release.CheckedAt != nil {
+		resp.CheckedAt = *release.CheckedAt
 	}
 
-	updateAvailable := false
-	if latest.GreaterThan(current) {
-		updateAvailable = true
+	var latestRelease, latestPreRelease *semver.Version
+
+	// Parse latest release
+	if release.LatestRelease != nil && *release.LatestRelease != "" {
+		latestRelease, err = semver.NewVersion(*release.LatestRelease)
+		if err != nil {
+			return resp, err
+		}
 	}
 
-	resp := VersionResponse{
-		Version:         s.BuildInfo.Version,
-		BuildDate:       s.BuildInfo.BuildDate,
-		UpdateAvailable: updateAvailable,
-		LatestRelease:   version.LatestRelease,
-		CheckedAt:       version.CheckedAt,
-		ReleaseURL:      version.ReleaseURL,
+	// Parse latest prerelease
+	if release.LatestPreRelease != nil && *release.LatestPreRelease != "" {
+		latestPreRelease, err = semver.NewVersion(*release.LatestPreRelease)
+		if err != nil {
+			return resp, err
+		}
+	}
+
+	// Select candidate version
+	var candidate *semver.Version
+
+	if latestRelease != nil {
+		candidate = latestRelease
+	}
+
+	if s.Config.ShowBetaVersions && latestPreRelease != nil && (candidate == nil || latestPreRelease.GreaterThan(candidate)) {
+		candidate = latestPreRelease
+	}
+
+	// Determine candidate tag and URL - defensive against nil pointer dereference
+	if candidate != nil {
+		switch candidate {
+		case latestRelease:
+			if release.LatestRelease != nil {
+				resp.LatestRelease = *release.LatestRelease
+			}
+			if release.ReleaseURL != nil {
+				resp.ReleaseURL = *release.ReleaseURL
+			}
+		case latestPreRelease:
+			if release.LatestPreRelease != nil {
+				resp.LatestRelease = *release.LatestPreRelease
+			}
+			if release.PreReleaseURL != nil {
+				resp.ReleaseURL = *release.PreReleaseURL
+			}
+		}
+
+		if candidate.GreaterThan(currentVersion) {
+			resp.UpdateAvailable = true
+		}
 	}
 
 	return resp, nil
@@ -109,7 +147,7 @@ func (s *Service) CheckRelease() error {
 	}
 
 	// Write to DB
-	if err := s.Repo.updateVersion(req); err != nil {
+	if err := s.Repo.updateRelease(req); err != nil {
 		return err
 	}
 

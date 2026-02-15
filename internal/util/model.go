@@ -1,6 +1,7 @@
 package util
 
 import (
+	"ez2boot/internal/config"
 	"ez2boot/internal/db"
 	"log/slog"
 )
@@ -12,6 +13,7 @@ type Repository struct {
 
 type Service struct {
 	Repo      *Repository
+	Config    *config.Config
 	BuildInfo BuildInfo
 	Logger    *slog.Logger
 }
@@ -35,6 +37,15 @@ type RepoReleaseRequest struct {
 	PreReleaseURL    string `json:"prerelease_url"`
 }
 
+// Internal transport
+type LatestRelease struct {
+	LatestRelease    *string `json:"-"`
+	LatestPreRelease *string `json:"-"`
+	CheckedAt        *int64  `json:"-"`
+	ReleaseURL       *string `json:"-"`
+	PreReleaseURL    *string `json:"-"`
+}
+
 type GitHubRelease struct {
 	TagName    string `json:"tag_name"`
 	HTMLURL    string `json:"html_url"`
@@ -43,11 +54,10 @@ type GitHubRelease struct {
 
 // Used by UI
 type VersionResponse struct {
-	Version          string `json:"version"`
-	BuildDate        string `json:"build_date"`
-	UpdateAvailable  bool   `json:"update_available"`
-	LatestRelease    string `json:"latest_release"`
-	LatestPreRelease string `json:"latest_prerelease"`
-	CheckedAt        int64  `json:"checked_at"`
-	ReleaseURL       string `json:"release_url"`
+	Version         string `json:"version"`
+	BuildDate       string `json:"build_date"`
+	UpdateAvailable bool   `json:"update_available"`
+	LatestRelease   string `json:"latest_release"`
+	CheckedAt       int64  `json:"checked_at"`
+	ReleaseURL      string `json:"release_url"`
 }
