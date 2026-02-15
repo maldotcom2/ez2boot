@@ -1,0 +1,12 @@
+name: ez2boot
+services:
+  ez2boot:
+    image: maldotcom2/ez2boot:1.0.0-beta.0
+    container_name: ez2boot
+    environment:
+      PORT: 8000
+    ports:
+     - 8000:8000
+    volumes:
+      - ./data:/app/data
+    restart: "unless-stopped"

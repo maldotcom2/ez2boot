@@ -1,3 +1,4 @@
+# This file is for development testing - not for production deployment. See compose.example
 services:
   ez2boot:
     image: ez2boot:dev

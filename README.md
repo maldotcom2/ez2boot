@@ -19,6 +19,20 @@ Note: Currently, only AWS is supported but there is a plan to support Azure and 
 - Dual-auth. Session-based UI for interactive use, and basic auth API for programmatic control.
 - Operations teams can tweak the app's behaviour through environment variables.
 
+## Quick-Start Guide
+- Currently, only containerised deployment is documented.
+- Official builds are hosted on DockerHub under maldotcom2/ez2boot. All other sources are unoffical and unsupported.
+- To run this app, you will need a container runtime such as [Docker](https://docs.docker.com/engine/install/) and Docker Compose already installed and running.
+- An example minimal docker compose file is provided at deployments/compose.example, copy the contents of this to your machine in a file named compose.yaml and substitute the version for desired version. Avoid using 'latest' in production.
+- CD into this directory and run `docker compose up -d`
+- The app will now be available at `http://localhost:8000`
+- Permissions required: 
+  - AWS:
+    "ec2:DescribeInstances"
+    "ec2:DescribeTags"     
+    "ec2:StartInstances"
+    "ec2:StopInstances"
+
 ## Motivations and inspirations
 Like most ideas, this was born out of necessity. My workplace had a use for such an application, but so too would many others. I made the decison to build this using my own time and resources, to give back to the Open Source community which has provided me with many great solutions over the years. 
 
