@@ -1,0 +1,91 @@
+html, body, #app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: var(--background);
+  font-family: Arial, sans-serif;
+}
+
+:root {
+  --background:rgb(20, 28, 43);
+  --container-modal:rgb(36, 44, 57);
+  --low-glare:rgb(228, 228, 228);
+  --btn-blue:rgb(53, 127, 255);
+  --warn-amber:rgb(222, 145, 29);
+  --btn-disabled:rgb(145,145,145);
+  --error-msg: rgb(160, 34, 34);
+  --success-msg: rgb(228,228,228);
+  --small-radius: 7px;
+  --big-radius: 15px;
+  --input-height: 30px;
+}
+
+h1 {
+    color: var(--low-glare);
+    font-size: 20px;
+}
+
+input {
+    height: var(--input-height);
+    background-color: var(--low-glare);
+    border: none;
+    border-radius: var(--small-radius);
+}
+
+select {
+  height: var(--input-height);
+}
+
+input:focus {
+  outline: none
+}
+
+button {
+  padding: 10px 20px;
+  background-color: var(--btn-blue);
+  color: var(--low-glare);
+  border: none;
+  border-radius: var(--small-radius);
+  cursor: pointer;
+}
+
+button:disabled {
+  background-color: var(--btn-disabled);
+  cursor: not-allowed;
+}
+
+input:disabled {
+  background-color: var(--btn-disabled);
+  cursor: not-allowed;
+}
+
+button:not(:disabled):hover {
+  filter: brightness(1.3);
+}
+
+.message.error {
+  color: var(--error-msg);
+}
+
+.message.success {
+  color: var(--success-msg);
+}
+
+/* Notification channels */
+.channel-config input {
+  width: 500px;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.checkbox-row {
+  display: flex;
+  flex-direction: column;
+}
+
+.channel-config input[type="checkbox"] {
+  width: var(--input-height);
+  margin: 0;
+  display: inline-block;
+  margin-bottom: 1rem;
+}

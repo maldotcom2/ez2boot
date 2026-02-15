@@ -1,0 +1,13 @@
+# Data
+*.sqlite*
+*.txt
+*.db
+
+# Env vars
+*.env
+.env
+
+# Go build artifacts
+*.exe
+*.test
+*.out

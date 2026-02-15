@@ -1,0 +1,13 @@
+services:
+  ez2boot:
+    image: ez2boot:dev
+    container_name: ez2boot
+    build:
+      context: ..
+      dockerfile: deployments/dockerfile
+    environment:
+      PORT: 8000
+    ports:
+     - 8000:8000
+    volumes:
+      - ./data:/app/data
