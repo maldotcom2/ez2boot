@@ -31,7 +31,16 @@ This license can cause some confusion, but after significant consideration I fel
 - **OS or base image updates do not count as modifications.**
   Patching the operating system or libraries (e.g., `apt-get update` inside the container) does NOT trigger the obligation to release the source code.
 - This ensures improvements are shared with the community, while routine usage, configuration and maintenance are exempt.
-- The ez2boot name, logos, banners, icons, and other branding assets are trademarks of the ez2boot project and are not licensed under the AGPLv3. All rights are reserved. Forks created for the purpose of contributing back to this repository may retain the ez2boot name and branding. Redistributed or independently published versions must remove or replace them unless prior written permission is obtained.
+
+## Trademark Notice
+
+The ez2boot name, logos, banners and icons are trademarks of the ez2boot project and are not licensed under the GNU AGPLv3. All rights are reserved.
+
+You may use the ez2boot name and branding only when:
+- Running the official, unmodified version of the software, or
+- Creating a fork solely for the purpose of contributing changes back to this repository.
+
+Any redistributed, modified, or independently published version of the software must remove or replace all ez2boot branding unless prior written permission has been obtained.
 
 ## Attributions
 See THIRD PARTY for attribution and compliance of libraries and components used in this project. If you're the copyright holder of any component used in this project and feel I have not complied with your license, please reach out.
