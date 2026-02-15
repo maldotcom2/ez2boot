@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Setup from '@/components/Setup.vue'
-import Login from '@/components/Login.vue'
+import Login from '@/components/login.vue'
 import AdminPanel from '@/components/admin/AdminPanel.vue'
 import Dashboard from '@/components/Dashboard.vue'
 import UserSettings from '@/components/user/UserSettings.vue'
