@@ -29,8 +29,7 @@ Note: Currently, only AWS is supported but there is a plan to support Azure and 
 - The app will now be available at `http://localhost:8000` and data will be persisted in a directory named 'data' so it will not be lost if the container is replaced.
 - Permissions required: 
   - AWS:
-    - "ec2:DescribeInstances"
-    - "ec2:DescribeTags"     
+    - "ec2:DescribeInstances"    
     - "ec2:StartInstances"
     - "ec2:StopInstances"
 

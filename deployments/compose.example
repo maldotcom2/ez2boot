@@ -9,4 +9,4 @@ services:
      - 8000:8000
     volumes:
       - ./data:/app/data
-    restart: "unless-stopped"
+    restart: unless-stopped
