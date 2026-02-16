@@ -1,4 +1,4 @@
-Development:
+## Development
 - CD to project root and run the Go backend
 - ```go run ./cmd/api/```
 - CD to /web/app and run the Vite web server
@@ -13,7 +13,7 @@ https://github.com/niXman/mingw-builds-binaries/releases/download/15.2.0-rt_v13-
 - Add C:\Mingw64\bin to path so you can run gcc from cli
 
 
-Dev Testing containerised app:
+## Dev Testing local containerised app:
 - Ensure Docker is running locally, eg Docker Deskop
 - CD to the deployments directory and run the single command to build and bring the container online:
 - ```docker compose up --build -d```
