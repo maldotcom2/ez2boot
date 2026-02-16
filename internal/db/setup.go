@@ -46,5 +46,17 @@ func (r *Repository) SetupDB() error {
 		return err
 	}
 
+	// delete active server sessions if all the associated servers are removed
+	if _, err := r.DB.Exec(`CREATE TRIGGER IF NOT EXISTS cleanup_server_session AFTER DELETE ON servers
+							BEGIN
+							DELETE FROM server_sessions
+							WHERE server_group = OLD.server_group
+							AND NOT EXISTS (
+							SELECT 1 FROM servers
+							WHERE server_group = OLD.server_group);
+							END;`); err != nil {
+		return err
+	}
+
 	return nil
 }
