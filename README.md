@@ -19,8 +19,8 @@ Note: Currently, only AWS is supported but there is a plan to support Azure and 
 - Dual-auth. Session-based UI for interactive use, and basic auth API for programmatic control.
 - Operations teams can tweak the app's behaviour through environment variables.
 
-## Quick-Start Guide
-- Official images are hosted on DockerHub under maldotcom2/ez2boot. All other sources are unoffical and unsupported.
+## Quick Start Guide
+- Official images are hosted on DockerHub under maldotcom2/ez2boot. All other sources are unofficial and unsupported.
 - Read the [Quick Start Guide](https://github.com/maldotcom2/ez2boot/wiki/Quick-Start-Guide) for steps to quickly deploy ez2boot into your cloud environment.
 
 ## Motivations and inspirations
