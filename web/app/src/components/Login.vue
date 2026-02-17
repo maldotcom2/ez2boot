@@ -1,9 +1,15 @@
 <template>
   <div class="centre-container" >
     <form class="login-form" @submit.prevent="login">
-      <p class="prompt">Login</p>
-      <input v-model="email" placeholder="Email" />
-      <input v-model="password" type="password" placeholder="Password" />
+      <h1>Login</h1>
+      <label>
+        Email
+        <input v-model="email" />
+      </label>
+      <label>
+        Password
+        <input v-model="password" type="password" />
+      </label>
       <button type="submit" :disabled="!email || !password">Login</button>
       <p class="result" :class="messageType">{{ message || '\u00A0' }}</p>
     </form>
@@ -25,6 +31,11 @@ const messageType = ref('')
 if (route.query.message === 'password-changed') {
   messageType.value = 'success'
   message.value = 'Your password was changed. Please log in again.'
+}
+
+if (route.query.message === 'user-created') {
+  messageType.value = 'success'
+  message.value = 'Initial user created. Please login.'
 }
 
 // async login function
@@ -79,6 +90,7 @@ async function login() {
 .login-form {
   display: flex;
   flex-direction: column;
+  color: var(--low-glare);
   background-color: var(--container-modal);
   justify-content: center;
   align-items: center;
@@ -89,11 +101,18 @@ async function login() {
   outline: auto;
 }
 
-.prompt {
-  color: var(--low-glare);
+h1 {
+  display: flex;
+  justify-content: center;
 }
 
 input {
+  width: 100%;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
   width: 100%;
 }
 
