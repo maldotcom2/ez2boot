@@ -18,12 +18,22 @@ Note: Currently, only AWS is supported but there is a plan to support Azure and 
 - Customisable user notifications channels, allowing users to opt into automated notifications about their session states.
 - Dual-auth. Session-based UI for interactive use, and basic auth API for programmatic control.
 - Operations teams can tweak the app's behaviour through environment variables.
+<br></br>
+Dashboard
+<img width="1275" height="500" alt="dashboard_demo" src="https://github.com/user-attachments/assets/d6a10378-d658-4c70-bdb3-9a235f0192b8" />
+<br></br>
+User Management
+<img width="1274" height="269" alt="usermgmt_demo" src="https://github.com/user-attachments/assets/6eb92052-cc3b-487b-8d8e-7e1790f4d0d6" />
+<br></br>
+Audit Log 
+<img width="1262" height="525" alt="auditlog_demo" src="https://github.com/user-attachments/assets/edbe58f2-6f8c-4403-9fed-8dafd91ce33f" />
+<br></br>
 
 ## Quick Start Guide
 - Official images are hosted on DockerHub under maldotcom2/ez2boot. All other sources are unofficial and unsupported.
 - Read the [Quick Start Guide](https://github.com/maldotcom2/ez2boot/wiki/Quick-Start-Guide) for steps to quickly deploy ez2boot into your cloud environment.
 
-## Motivations and inspirations
+## Motivations and Inspirations
 Like most ideas, this was born out of necessity. My workplace had a use for such an application, but so too would many others. I made the decison to build this using my own time and resources, to give back to the Open Source community which has provided me with many great solutions over the years. 
 
 If you're reading this, you're right on time to be an early adopter. The project is in a beta phase and I would appreciate comments, suggestions and criticisms - it is far from perfect - however every effort is made to minimise bugs and to deliver a functional product. In terms of feature ideas and inspirations, I am drawing from projects such as Prometheus and Uptime Kuma, both of which I use extensively.
