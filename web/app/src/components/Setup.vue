@@ -1,15 +1,22 @@
 <template>
   <div class="centre-container" >
-    <div class="setup-form" >
-      <p class="prompt">Create initial user</p>
-      <input v-model="email" placeholder="Email" />
-      <input v-model="password" type="password" placeholder="Password" />
-      <input v-model="confirmPassword" type="password" placeholder="Confirm Password" />
-      <button @click="createFirstUser">Create</button>
-      <div class="message-container" >
-        <p class="message" :class="{error: error}" v-if="error">{{ error }}</p>
-      </div>
-    </div>
+    <form class="setup-form" @submit.prevent="createFirstUser">
+      <h1>Create initial user</h1>
+      <label>
+        Email
+        <input v-model="email" placeholder="example@example.com" />
+      </label>
+      <label>
+        Password
+        <input v-model="password" type="password" />
+      </label>
+      <label>
+        Confirm Password
+        <input v-model="confirmPassword" type="password" />
+      </label>
+      <button type=submit :disabled="!email || !password || !confirmPassword">Create</button>
+      <p class="result" :class="messageType">{{ message || '\u00A0' }}</p> 
+    </form>
   </div>
 </template>
 
@@ -22,10 +29,10 @@ const router = useRouter()
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
-const error = ref('')
+const message = ref('')
+const messageType = ref('')
 
 async function createFirstUser() {
-  error.value = ''  // Reset error
   if (password.value !== confirmPassword.value) {
     console.error("password and confirm password do not match")
     return
@@ -37,20 +44,28 @@ async function createFirstUser() {
         password: password.value
       }
     )
-    console.log('User creation successful:', response.data)
 
-    router.push('/login')
+    message.value = 'User created'
+    messageType.value = 'success'
+    console.log('User creation successful:', response.data)
+    setTimeout(() => {
+        router.push({
+        path: '/login',
+        query: { message: 'user-created' }
+      })
+    }, 2000)
 
   } catch (err) {
+    messageType.value = 'error'
     if (err.response) {
       // Get server response
-      error.value = `User creation failed: ${err.response.data.error || err.response.statusText}`
+      message.value = `User creation failed: ${err.response.data.error || err.response.statusText}`
     } else if (err.request) {
       // No response
-      error.value = 'No response from server'
+      message.value = 'No response from server'
     } else {
       // other errors
-      error.value = err.message
+      message.value = err.message
     }
   }
 }
@@ -68,6 +83,7 @@ async function createFirstUser() {
 .setup-form {
   display: flex;
   flex-direction: column;
+  color: var(--low-glare);
   background-color: var(--container-modal);
   justify-content: center;
   align-items: center;
@@ -78,20 +94,36 @@ async function createFirstUser() {
   outline: auto;
 }
 
-.message-container {
-  width: 100%;
-  outline: auto;
-}
-
-.prompt {
-  color: var(--low-glare);
+h1 {
+  display: flex;
+  justify-content: center;
 }
 
 input {
   width: 100%;
 }
 
+label {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
 button {
   width: 100%;
+}
+
+.result {
+  min-height: 1.2rem;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.result.error {
+  color: var(--error-msg);
+}
+
+.result.success {
+  color: var(--success-msg);
 }
 </style>
