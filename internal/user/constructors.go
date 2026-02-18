@@ -7,9 +7,10 @@ import (
 	"log/slog"
 )
 
-func NewHandler(userService *Service, logger *slog.Logger) *Handler {
+func NewHandler(userService *Service, cfg *config.Config, logger *slog.Logger) *Handler {
 	return &Handler{
 		Service: userService,
+		Config:  cfg,
 		Logger:  logger,
 	}
 }
