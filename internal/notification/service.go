@@ -6,6 +6,7 @@ import (
 	"errors"
 	"ez2boot/internal/encryption"
 	"ez2boot/internal/shared"
+	"sort"
 )
 
 // Global in-memory store of available notification channels
@@ -32,6 +33,11 @@ func (s *Service) getNotificationTypes() []NotificationTypeResponse {
 			Label: sender.Label(),
 		})
 	}
+
+	sort.SliceStable(list, func(i, j int) bool {
+		return list[i].Type < list[j].Type
+	})
+
 	return list
 }
 
