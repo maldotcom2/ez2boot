@@ -47,7 +47,7 @@ func main() {
 	defer cancel()
 
 	// Start background workers
-	if err := startWorkers(ctx, cfg, wkr, services, logger); err != nil {
+	if err := startWorkers(ctx, cfg, wkr, services); err != nil {
 		logger.Error("Startup error", "error", err)
 		os.Exit(1)
 	}

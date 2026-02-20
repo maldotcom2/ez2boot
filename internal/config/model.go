@@ -19,5 +19,6 @@ type Config struct {
 	EncryptionPhrase    string        // Implementation specific encryption phrase used to derive an encryption key to encrypt sensitive credentials within the app
 	RateLimit           int           // Max number of requests per second allowed by each user of this application
 	ShowBetaVersions    bool          // UI will show alert for beta releases and not just full releases
+	AzureSubscriptionID string        // Azure subscription ID, Azure scrape specific
 	// Add more fields as needed
 }

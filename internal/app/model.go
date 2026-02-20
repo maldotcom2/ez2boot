@@ -7,6 +7,7 @@ import (
 	"ez2boot/internal/notification/teams"
 	"ez2boot/internal/notification/telegram"
 	"ez2boot/internal/provider/aws"
+	"ez2boot/internal/provider/azure"
 	"ez2boot/internal/server"
 	"ez2boot/internal/session"
 	"ez2boot/internal/user"
@@ -21,6 +22,7 @@ type Services struct {
 	UtilService         *util.Service
 	EmailService        *email.Service
 	AWSService          *aws.Service
+	AzureService        *azure.Service
 }
 
 type Handlers struct {

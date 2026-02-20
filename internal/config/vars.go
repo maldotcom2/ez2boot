@@ -102,6 +102,11 @@ func GetEnvVars() (*Config, error) {
 		return nil, err
 	}
 
+	azureSubscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID")
+	if azureSubscriptionID == "" {
+		azureSubscriptionID = "0" //default
+	}
+
 	cfg := &Config{
 		TrustProxyHeaders:   trustProxyHeaders,
 		CloudProvider:       cloudProvider,
@@ -115,6 +120,7 @@ func GetEnvVars() (*Config, error) {
 		EncryptionPhrase:    encryptionPhrase,
 		RateLimit:           rateLimit,
 		ShowBetaVersions:    showBetaVersions,
+		AzureSubscriptionID: azureSubscriptionID,
 	}
 
 	return cfg, nil

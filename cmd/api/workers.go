@@ -7,10 +7,9 @@ import (
 	"ez2boot/internal/provider"
 	"ez2boot/internal/worker"
 	"fmt"
-	"log/slog"
 )
 
-func startWorkers(ctx context.Context, cfg *config.Config, wkr *worker.Worker, services *app.Services, logger *slog.Logger) error {
+func startWorkers(ctx context.Context, cfg *config.Config, wkr *worker.Worker, services *app.Services) error {
 	// Assign scrape implementation based off configured cloud provider
 	var scraper provider.Scraper
 	var manager provider.Manager
@@ -19,6 +18,9 @@ func startWorkers(ctx context.Context, cfg *config.Config, wkr *worker.Worker, s
 	case "aws":
 		scraper = services.AWSService
 		manager = services.AWSService
+	case "azure":
+		scraper = services.AzureService
+		manager = services.AzureService
 	default:
 		return fmt.Errorf("unsupported provider: %s", cfg.CloudProvider)
 	}
