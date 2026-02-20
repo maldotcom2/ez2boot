@@ -59,7 +59,7 @@ func (s *Service) Scrape() error {
 
 			svr := server.Server{
 				UniqueID:    *vm.ID,
-				Name:        *vm.Name,
+				Name:        vmName,
 				State:       mapState(getPowerState(&detail.VirtualMachine)),
 				ServerGroup: *vm.Tags[s.Config.TagKey],
 				TimeAdded:   time.Now().Unix(),
