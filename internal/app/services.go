@@ -17,20 +17,21 @@ import (
 	"ez2boot/internal/user"
 	"ez2boot/internal/util"
 	"ez2boot/internal/worker"
+	"fmt"
 	"log/slog"
 )
 
 // TODO this is a mess
-func InitServices(version string, buildDate string, cfg *config.Config, repo *db.Repository, logger *slog.Logger) (*middleware.Middleware, *worker.Worker, *Handlers, *Services) {
+func InitServices(version string, buildDate string, cfg *config.Config, repo *db.Repository, logger *slog.Logger) (*middleware.Middleware, *worker.Worker, *Handlers, *Services, error) {
 	buildInfo := util.BuildInfo{
 		Version:   version,
 		BuildDate: buildDate,
 	}
 
+	// Create encryptor for user notification settings
 	encryptor, err := encryption.NewAESGCMEncryptor(cfg.EncryptionPhrase)
 	if err != nil {
-		logger.Error("failed to init encryptor", "error", err)
-		panic(err)
+		return nil, nil, nil, nil, fmt.Errorf("failed to init encryptor: %w", err)
 	}
 
 	// Audit
@@ -85,7 +86,10 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 
 	// Azure
 	azureRepo := azure.NewRepository(repo)
-	azureService := azure.NewService(azureRepo, cfg, serverService, logger)
+	azureService, err := azure.NewService(azureRepo, cfg, serverService, logger)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
 
 	// Middlware
 	mw := middleware.NewMiddleware(userService, cfg, auditService, logger)
@@ -116,5 +120,5 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 		AzureService:        azureService,
 	}
 
-	return mw, wkr, handlers, services
+	return mw, wkr, handlers, services, nil
 }

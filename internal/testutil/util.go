@@ -65,6 +65,8 @@ func NewTestEnv(t *testing.T) *TestEnv {
 	}
 
 	cfg := &config.Config{
+		CloudProvider:       "aws",
+		AWSRegion:           "ap-southeast-2",
 		RateLimit:           30,
 		UserSessionDuration: 1 * time.Hour, // Prevent intermittent 401s during test
 	}

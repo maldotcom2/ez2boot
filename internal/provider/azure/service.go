@@ -6,27 +6,14 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v6"
 )
 
-// Scrape Azure to retrieve servers. Returned error is consumed only when called from endpoint, not Go routine
+// Scrape Azure to retrieve servers.
 func (s *Service) Scrape() error {
 	s.Logger.Debug("Scraping Azure")
 
-	cred, err := azidentity.NewDefaultAzureCredential(nil)
-	if err != nil {
-		s.Logger.Error("Failed to load Azure credentials", "error", err)
-		return err
-	}
-
-	vmClient, err := getVMClient(cred, s.Config.AzureSubscriptionID)
-	if err != nil {
-		s.Logger.Error("Failed to create VM client", "error", err)
-		return err
-	}
-
-	pager := vmClient.NewListAllPager(nil)
+	pager := s.VMClient.NewListAllPager(nil)
 
 	servers := []server.Server{}
 	for pager.More() {
@@ -49,7 +36,7 @@ func (s *Service) Scrape() error {
 			}
 
 			// Fetch instance view for power state
-			detail, err := vmClient.Get(context.Background(), resourceGroup, vmName, &armcompute.VirtualMachinesClientGetOptions{
+			detail, err := s.VMClient.Get(context.Background(), resourceGroup, vmName, &armcompute.VirtualMachinesClientGetOptions{
 				Expand: to.Ptr(armcompute.InstanceViewTypesInstanceView),
 			})
 			if err != nil {
@@ -77,19 +64,7 @@ func (s *Service) Scrape() error {
 
 // Start required Azure servers
 func (s *Service) Start() error {
-	s.Logger.Debug("Starting requested Azure VMs")
-
-	cred, err := azidentity.NewDefaultAzureCredential(nil)
-	if err != nil {
-		s.Logger.Error("Failed to load Azure credentials", "error", err)
-		return err
-	}
-
-	vmClient, err := getVMClient(cred, s.Config.AzureSubscriptionID)
-	if err != nil {
-		s.Logger.Error("Failed to create VM client", "error", err)
-		return err
-	}
+	s.Logger.Debug("Starting requested VMs")
 
 	// Get start VM IDs
 	vmIDs, err := s.ServerService.GetPending("off", "on")
@@ -112,9 +87,9 @@ func (s *Service) Start() error {
 			continue
 		}
 
-		s.Logger.Debug("Starting", "name", vmName)
+		s.Logger.Debug("Starting VM", "name", vmName)
 
-		_, err = vmClient.BeginStart(context.Background(), resourceGroup, vmName, nil)
+		_, err = s.VMClient.BeginStart(context.Background(), resourceGroup, vmName, nil)
 		if err != nil {
 			s.Logger.Error("Failed to start VM", "name", vmName, "error", err)
 			continue
@@ -128,19 +103,7 @@ func (s *Service) Start() error {
 
 // Stop no longer required Azure servers
 func (s *Service) Stop() error {
-	s.Logger.Debug("Stopping requested Azure VMs")
-
-	cred, err := azidentity.NewDefaultAzureCredential(nil)
-	if err != nil {
-		s.Logger.Error("Failed to load Azure credentials", "error", err)
-		return err
-	}
-
-	vmClient, err := getVMClient(cred, s.Config.AzureSubscriptionID)
-	if err != nil {
-		s.Logger.Error("Failed to create VM client", "error", err)
-		return err
-	}
+	s.Logger.Debug("Stopping requested VMs")
 
 	vmIDs, err := s.ServerService.GetPending("on", "off")
 	if err != nil {
@@ -160,9 +123,9 @@ func (s *Service) Stop() error {
 			continue
 		}
 
-		s.Logger.Debug("Stopping", "name", vmName)
+		s.Logger.Debug("Stopping VM", "name", vmName)
 
-		_, err = vmClient.BeginDeallocate(context.Background(), resourceGroup, vmName, nil)
+		_, err = s.VMClient.BeginDeallocate(context.Background(), resourceGroup, vmName, nil)
 		if err != nil {
 			s.Logger.Error("Failed to stop VM", "name", vmName, "error", err)
 			continue
