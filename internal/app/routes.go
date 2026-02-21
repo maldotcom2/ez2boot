@@ -21,9 +21,9 @@ func SetupBackendRoutes(
 	/////////////////////////// Public routes, no auth ///////////////////////////////////
 
 	publicRouter := router.PathPrefix("/ui").Subrouter()
-	publicRouter.Use(middleware.CORSMiddleware)
+	publicRouter.Use(mw.CORSMiddleware)
 	publicRouter.Use(mw.LimitMiddleware)
-	publicRouter.Use(middleware.JsonContentTypeMiddleware)
+	publicRouter.Use(mw.JsonContentTypeMiddleware)
 
 	publicRouter.HandleFunc("/user/login", handlers.UserHandler.Login()).Methods("POST")
 	publicRouter.HandleFunc("/mode", handlers.UserHandler.GetMode()).Methods("GET")
@@ -34,10 +34,10 @@ func SetupBackendRoutes(
 	/////////////////////////// UI subrouter and routes //////////////////////////////////
 
 	uiRouter := router.PathPrefix("/ui").Subrouter()
-	uiRouter.Use(middleware.CORSMiddleware)
+	uiRouter.Use(mw.CORSMiddleware)
 	uiRouter.Use(mw.LimitMiddleware)
-	uiRouter.Use(middleware.JsonContentTypeMiddleware)
-	uiRouter.Use(mw.SessionAuthMiddleware())
+	uiRouter.Use(mw.JsonContentTypeMiddleware)
+	uiRouter.Use(mw.SessionAuthMiddleware()) // This pattern allows passing in params, can be simplified.
 
 	//// Server Sessions
 	uiRouter.HandleFunc("/sessions/summary", handlers.SessionHandler.GetServerSessionSummary()).Methods("GET")
@@ -66,10 +66,10 @@ func SetupBackendRoutes(
 	/////////////////////////// API subrouter and routes /////////////////////////////////
 
 	apiRouter := router.PathPrefix("/api/v1").Subrouter()
-	apiRouter.Use(middleware.CORSMiddleware)
+	apiRouter.Use(mw.CORSMiddleware)
 	apiRouter.Use(mw.LimitMiddleware)
-	apiRouter.Use(middleware.JsonContentTypeMiddleware)
-	apiRouter.Use(mw.BasicAuthMiddleware())
+	apiRouter.Use(mw.JsonContentTypeMiddleware)
+	apiRouter.Use(mw.BasicAuthMiddleware()) // This pattern allows passing in params, can be simplified.
 
 	//// Server sessions
 	apiRouter.HandleFunc("/session", handlers.SessionHandler.NewServerSession()).Methods("POST")

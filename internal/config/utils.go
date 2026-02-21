@@ -2,6 +2,7 @@ package config
 
 import (
 	"log/slog"
+	"net/http"
 	"strings"
 	"time"
 )
@@ -29,5 +30,19 @@ func ParseLogLevel(strValue string) slog.Level {
 	default:
 		// Fallback to info if unknown
 		return slog.LevelInfo
+	}
+}
+
+func ParseSameSiteMode(strValue string) http.SameSite {
+	switch strings.ToLower(strValue) {
+	case "lax":
+		return http.SameSiteLaxMode
+	case "strict":
+		return http.SameSiteStrictMode
+	case "none":
+		return http.SameSiteNoneMode
+	default:
+		// Fallback to lax if unknown
+		return http.SameSiteLaxMode
 	}
 }

@@ -102,6 +102,23 @@ func GetEnvVars() (*Config, error) {
 		return nil, err
 	}
 
+	secureCookieStr := os.Getenv("SECURE_COOKIE")
+	if secureCookieStr == "" {
+		secureCookieStr = "false" //default
+	}
+
+	secureCookie, err := strconv.ParseBool(secureCookieStr)
+	if err != nil {
+		return nil, err
+	}
+
+	sameSiteModeStr := os.Getenv("SAME_SITE_MODE")
+	if sameSiteModeStr == "" {
+		sameSiteModeStr = "lax" //default
+	}
+
+	sameSiteMode := ParseSameSiteMode(sameSiteModeStr)
+
 	cfg := &Config{
 		TrustProxyHeaders:   trustProxyHeaders,
 		CloudProvider:       cloudProvider,
@@ -115,6 +132,8 @@ func GetEnvVars() (*Config, error) {
 		EncryptionPhrase:    encryptionPhrase,
 		RateLimit:           rateLimit,
 		ShowBetaVersions:    showBetaVersions,
+		SecureCookie:        secureCookie,
+		SameSiteMode:        sameSiteMode,
 	}
 
 	return cfg, nil
