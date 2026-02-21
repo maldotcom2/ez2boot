@@ -100,6 +100,22 @@ func GetEnvVars() (*Config, error) {
 	}
 
 	azureSubscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID") // "" default
+	secureCookieStr := os.Getenv("SECURE_COOKIE")
+	if secureCookieStr == "" {
+		secureCookieStr = "false" //default
+	}
+
+	secureCookie, err := strconv.ParseBool(secureCookieStr)
+	if err != nil {
+		return nil, err
+	}
+
+	sameSiteModeStr := os.Getenv("SAME_SITE_MODE")
+	if sameSiteModeStr == "" {
+		sameSiteModeStr = "lax" //default
+	}
+
+	sameSiteMode := ParseSameSiteMode(sameSiteModeStr)
 
 	cfg := &Config{
 		TrustProxyHeaders:   trustProxyHeaders,
@@ -115,6 +131,8 @@ func GetEnvVars() (*Config, error) {
 		RateLimit:           rateLimit,
 		ShowBetaVersions:    showBetaVersions,
 		AzureSubscriptionID: azureSubscriptionID,
+		SecureCookie:        secureCookie,
+		SameSiteMode:        sameSiteMode,
 	}
 
 	return cfg, nil

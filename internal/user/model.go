@@ -21,6 +21,7 @@ type Service struct {
 
 type Handler struct {
 	Service *Service
+	Config  *config.Config
 	Logger  *slog.Logger
 }
 

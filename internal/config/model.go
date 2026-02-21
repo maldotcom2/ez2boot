@@ -2,6 +2,7 @@ package config
 
 import (
 	"log/slog"
+	"net/http"
 	"time"
 )
 
@@ -20,5 +21,7 @@ type Config struct {
 	RateLimit           int           // Max number of requests per second allowed by each user of this application
 	ShowBetaVersions    bool          // UI will show alert for beta releases and not just full releases
 	AzureSubscriptionID string        // Azure subscription ID, Azure scrape specific
+	SecureCookie        bool          // Session cookie parameter. Browser will send cookie over https only - affects insecure http login
+	SameSiteMode        http.SameSite // Session cookie parameter. Controls when the browser will send cookie
 	// Add more fields as needed
 }
