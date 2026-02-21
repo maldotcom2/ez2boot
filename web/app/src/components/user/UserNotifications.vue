@@ -7,8 +7,8 @@
         </option>
       </select>
       <div class="actions">
-        <button type="button" @click="saveUserNotification">Save</button>
-        <button type="button" @click="deleteUserNotification">Delete</button>
+        <button type="button" @click="saveUserNotification" :disabled="!isDirty">Save</button>
+        <button type="button" @click="deleteUserNotification" :disabled="!canDelete">Delete</button>
       </div>
       <p class="result" :class="messageType">{{ message || '\u00A0' }}</p>
     </aside>
@@ -19,7 +19,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, onMounted, watch, computed } from 'vue'
 import axios from 'axios'
 import EmailForm from './notifications/Email.vue'
 import TeamsForm from './notifications/Teams.vue'
@@ -30,12 +30,36 @@ const supportedTypes = ref([])
 const notificationData = reactive({})
 const message = ref('')
 const messageType = ref('')
+const savedType = ref(null)
+const originalData = reactive({})
+
+// For enabling delete button
+const canDelete = computed(() => {
+  return (
+    savedType.value !== null &&
+    selectedType.value === savedType.value
+  )
+})
+
+// Track changes to saved notifications
+const isDirty = computed(() => {
+  if (!selectedType.value) return false
+  const current = notificationData[selectedType.value] || {}
+  const original = originalData[selectedType.value] || {}
+  return JSON.stringify(current) !== JSON.stringify(original)
+})
+
+
 
 // Gracefully handle case of no user notification settings from load, pass valid object to child
 watch(selectedType, (newType) => {
   if (newType && !notificationData[newType]) {
     notificationData[newType] = {}
   }
+
+  // Clear message when notification channel is changed
+  message.value = ''
+  messageType.value = ''
 })
 
 const formComponents = {
@@ -82,10 +106,18 @@ async function loadUserNotification() {
     if (response.data.success && response.data.data) {
       const userNotif = response.data.data
       selectedType.value = userNotif.type || selectedType.value
+
       // Populates fields with existing config if available
       notificationData[userNotif.type] = userNotif.channel_config || {}
+
+      // Snapshot data
+      originalData[userNotif.type] = JSON.parse(JSON.stringify(notificationData[userNotif.type]))
+      savedType.value = userNotif.type
+    } else {
+      savedType.value = null
     }
   } catch (err) {
+    savedType.value = null
     messageType.value = 'error'
     if (err.response) {
       // Get server response
@@ -113,9 +145,21 @@ async function saveUserNotification() {
 
     const response = await axios.post('/ui/user/notification', payload)
     if (response.data.success) {
-    console.log("Notification settings saved")
-    message.value = 'Notification settings saved'
-    messageType.value = 'success'
+      console.log("Notification settings saved")
+      message.value = 'Notification settings saved'
+      messageType.value = 'success'
+      savedType.value = selectedType.value
+
+      // Snapshot data
+      originalData[selectedType.value] = JSON.parse(JSON.stringify(notificationData[selectedType.value]))
+
+      // Purge values of non-selected notification forms
+      Object.keys(notificationData).forEach((type) => {
+        if (type !== selectedType.value) {
+          delete notificationData[type]
+          delete originalData[type]
+        }
+      })
     }
 
   } catch (err) {
@@ -144,6 +188,10 @@ async function deleteUserNotification() {
       notificationData[selectedType.value] = {}
       message.value = 'Notification settings deleted'
       messageType.value = 'success'
+      savedType.value = null
+
+      // Snapshot data
+      originalData[selectedType.value] = JSON.parse(JSON.stringify(notificationData[selectedType.value]))
     }
   } catch (err) {
     messageType.value = 'error'
