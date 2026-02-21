@@ -58,10 +58,7 @@ func GetEnvVars() (*Config, error) {
 		tagKey = "ez2boot" //default
 	}
 
-	awsRegion := os.Getenv("AWS_REGION")
-	if awsRegion == "" {
-		awsRegion = "ap-southeast-2" //default
-	}
+	awsRegion := os.Getenv("AWS_REGION") // "" default
 
 	userSessionDurationStr := os.Getenv("USER_SESSION_DURATION")
 	if userSessionDurationStr == "" {
@@ -80,7 +77,7 @@ func GetEnvVars() (*Config, error) {
 
 	logLevel := ParseLogLevel(logLevelStr)
 
-	encryptionPhrase := os.Getenv("ENCRYPTION_PHRASE") // optional
+	encryptionPhrase := os.Getenv("ENCRYPTION_PHRASE") // "" default
 
 	rateLimitStr := os.Getenv("RATE_LIMIT")
 	if rateLimitStr == "" {
@@ -102,6 +99,7 @@ func GetEnvVars() (*Config, error) {
 		return nil, err
 	}
 
+	azureSubscriptionID := os.Getenv("AZURE_SUBSCRIPTION_ID") // "" default
 	secureCookieStr := os.Getenv("SECURE_COOKIE")
 	if secureCookieStr == "" {
 		secureCookieStr = "false" //default
@@ -132,6 +130,7 @@ func GetEnvVars() (*Config, error) {
 		EncryptionPhrase:    encryptionPhrase,
 		RateLimit:           rateLimit,
 		ShowBetaVersions:    showBetaVersions,
+		AzureSubscriptionID: azureSubscriptionID,
 		SecureCookie:        secureCookie,
 		SameSiteMode:        sameSiteMode,
 	}

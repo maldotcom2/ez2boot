@@ -10,7 +10,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 )
 
-// Scrape AWS to retrieve servers. Returned error is consumed only when called from endpoint, not Go routine
+// Scrape AWS to retrieve servers.
+// TODO factor out the client creation into the service constructor the same as for Azure
 func (s *Service) Scrape() error {
 	s.Logger.Debug("Scraping AWS")
 	awsCFG, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(s.Config.AWSRegion))

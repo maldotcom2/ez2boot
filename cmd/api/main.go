@@ -25,6 +25,7 @@ func main() {
 	logger := initLogger(cfg)
 
 	logger.Info(fmt.Sprintf("ez2boot version %s date %s", version, buildDate))
+	logger.Info(fmt.Sprintf("cloud provider is set to %s", cfg.CloudProvider))
 
 	// Connect to db and hold connection open
 	conn, repo := initDatabase(logger)
@@ -47,10 +48,7 @@ func main() {
 	defer cancel()
 
 	// Start background workers
-	if err := startWorkers(ctx, cfg, wkr, services, logger); err != nil {
-		logger.Error("Startup error", "error", err)
-		os.Exit(1)
-	}
+	startWorkers(ctx, cfg, wkr, services)
 
 	//Start server
 	logger.Info("Server is ready and listening", "port", cfg.Port)
