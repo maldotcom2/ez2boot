@@ -14,9 +14,11 @@ func StartServerSessionWorker(w Worker, ctx context.Context) {
 		for {
 			select {
 			case <-ctx.Done():
+				w.Logger.Debug("Exiting server session worker", "domain", "worker")
 				// Break out of Go Routine
 				return
 			case <-ticker.C:
+				w.Logger.Debug("Running server session worker", "domain", "worker")
 				// Process expired or aging sessions
 				w.SessionService.ProcessServerSessions(ctx)
 			}

@@ -14,18 +14,18 @@ func StartManageRoutine(w Worker, ctx context.Context, manager provider.Manager)
 		for {
 			select {
 			case <-ctx.Done():
-				w.Logger.Debug("Exiting manager")
+				w.Logger.Debug("Exiting manager", "domain", "worker")
 				// Break out of Go Routine
 				return
 			case <-ticker.C:
-				w.Logger.Debug("Running manager")
+				w.Logger.Debug("Running manager", "domain", "worker")
 				err := manager.Start()
 				if err != nil {
-					w.Logger.Error("An error occured during managed start:", "error", err)
+					w.Logger.Error("Failed during managed start", "domain", "worker", "error", err)
 				}
 				err = manager.Stop()
 				if err != nil {
-					w.Logger.Error("An error occured during managed stop:", "error", err)
+					w.Logger.Error("Failed during managed stop", "domain", "worker", "error", err)
 				}
 			}
 		}

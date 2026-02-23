@@ -70,11 +70,11 @@ func (h *Handler) SetUserNotificationSettings() http.HandlerFunc {
 				}
 
 			default:
-				h.Logger.Error("Failed to store notification preferences", "user", email, "domain", "notification", "error", err)
+				h.Logger.Error("Failed to set user notification settings", "user", email, "domain", "notification", "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   "Failed to store notification preferences",
+					Error:   "Failed to set user notification settings",
 				}
 			}
 
@@ -82,7 +82,7 @@ func (h *Handler) SetUserNotificationSettings() http.HandlerFunc {
 			return
 		}
 
-		h.Logger.Info("User notification config set", "user", email, "domain", "notification", "type", req.Type)
+		h.Logger.Info("User notification settings set", "user", email, "domain", "notification", "type", req.Type)
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
@@ -98,7 +98,7 @@ func (h *Handler) DeleteUserNotificationSettings() http.HandlerFunc {
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to delete user notification"})
 		}
 
-		h.Logger.Info("User notification deleted", "user", email, "domain", "notification")
+		h.Logger.Info("User notification settings deleted", "user", email, "domain", "notification")
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }

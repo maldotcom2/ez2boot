@@ -12,18 +12,20 @@ func StartReleaseWorker(w Worker, ctx context.Context) {
 
 		// Initial check at startup
 		if err := w.UtilService.CheckRelease(); err != nil {
-			w.Logger.Error("Error while checking for new releases", "error", err)
+			w.Logger.Error("Failed to check for new releases", "domain", "worker", "error", err)
 		}
 
 		for {
 			select {
 			case <-ctx.Done():
+				w.Logger.Debug("Exiting release worker", "domain", "worker")
 				// Break out of Go Routine
 				return
 			case <-ticker.C:
+				w.Logger.Debug("Running release worker", "domain", "worker")
 				// Get new releases
 				if err := w.UtilService.CheckRelease(); err != nil {
-					w.Logger.Error("Error while checking for new releases", "error", err)
+					w.Logger.Error("Failed to check for new releases", "domain", "worker", "error", err)
 				}
 			}
 		}
