@@ -175,7 +175,7 @@ func (h *Handler) UpdateUserAuthorisation() http.HandlerFunc {
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   err.Error(),
+					Error:   "Failed to update user authorisation",
 				}
 			default:
 				h.Logger.Error("Failed to update user authorisation", "user", email, "domain", "user", "error", err)
@@ -318,7 +318,7 @@ func (h *Handler) DeleteUser() http.HandlerFunc {
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   shared.ErrCannotDeleteOwnUser.Error(),
+					Error:   "Failed to delete user",
 				}
 			} else {
 				h.Logger.Error("Failed to delete user", "user", email, "domain", "user", "target_user", email, "error", err)

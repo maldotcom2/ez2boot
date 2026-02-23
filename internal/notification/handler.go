@@ -118,7 +118,7 @@ func (h *Handler) RotateEncryptionPhrase() http.HandlerFunc {
 
 		if err := h.Service.rotateEncryptionPhrase(req); err != nil {
 			if errors.Is(err, shared.ErrFieldMissing) {
-				h.Logger.Error("Required field missing", "user", email, "domain", "notification", "error", err.Error())
+				h.Logger.Error("Required field missing", "user", email, "domain", "notification", "error", err)
 				w.WriteHeader(http.StatusBadRequest)
 				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Required field missing"})
 				return
