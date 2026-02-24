@@ -3,12 +3,7 @@ package audit
 import (
 	"ez2boot/internal/db"
 	"log/slog"
-	"net/http"
 )
-
-type AdminChecker interface {
-	UserIsAdmin(w http.ResponseWriter, r *http.Request) bool
-}
 
 type Repository struct {
 	Base *db.Repository
@@ -20,9 +15,8 @@ type Service struct {
 }
 
 type Handler struct {
-	Service      *Service
-	AdminChecker AdminChecker
-	Logger       *slog.Logger
+	Service *Service
+	Logger  *slog.Logger
 }
 
 type Event struct {

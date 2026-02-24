@@ -25,11 +25,6 @@ func (h *Handler) GetAuditEvents() http.HandlerFunc {
 			return
 		}
 
-		// Admin check
-		if !h.AdminChecker.UserIsAdmin(w, r) {
-			return // response written by helper
-		}
-
 		events, err := h.Service.GetAuditEvents(req)
 		if err != nil {
 			h.Logger.Error("Failed to fetch audit events", "error", err)

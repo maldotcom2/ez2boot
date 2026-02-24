@@ -158,11 +158,6 @@ func (h *Handler) UpdateUserAuthorisation() http.HandlerFunc {
 			return
 		}
 
-		// Admin check
-		if !h.UserIsAdmin(w, r) {
-			return // Response written by helper
-		}
-
 		if err := h.Service.updateUserAuthorisation(req, ctx); err != nil {
 			var resp shared.ApiResponse[any]
 			switch {
@@ -220,11 +215,6 @@ func (h *Handler) CreateUser() http.HandlerFunc {
 		}
 
 		h.Logger.Info("Attempted user creation", "email", req.Email)
-
-		// Admin check
-		if !h.UserIsAdmin(w, r) {
-			return // Response written by helper
-		}
 
 		var resp shared.ApiResponse[any]
 		if err := h.Service.createUser(req, ctx); err != nil {
@@ -293,11 +283,6 @@ func (h *Handler) DeleteUser() http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
 			return
-		}
-
-		// Admin check
-		if !h.UserIsAdmin(w, r) {
-			return // Response written by helper
 		}
 
 		email, err := h.Service.GetEmailFromUserID(req.UserID)
@@ -476,27 +461,4 @@ func (h *Handler) ChangePassword() http.HandlerFunc {
 		h.Logger.Info("Password changed for user", "email", email)
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
-}
-
-// Handler helper to guard admin routes
-func (h *Handler) UserIsAdmin(w http.ResponseWriter, r *http.Request) bool {
-	ctx := r.Context()
-	userID, _ := ctxutil.GetActor(ctx)
-
-	user, err := h.Service.GetUserAuthorisation(userID)
-	if err != nil {
-		h.Logger.Error("Error while fetching user authorisation")
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Error while fetching user authorisation"})
-		return false
-	}
-
-	if !user.IsAdmin {
-		h.Logger.Error("Non-admin user attempted to access admin functions", "email", user.Email)
-		w.WriteHeader(http.StatusForbidden)
-		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Unauthorised"})
-		return false
-	}
-
-	return true
 }

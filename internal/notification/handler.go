@@ -108,11 +108,6 @@ func (h *Handler) RotateEncryptionPhrase() http.HandlerFunc {
 		var req RotateEncryptionPhraseRequest
 		json.NewDecoder(r.Body).Decode(&req)
 
-		// Admin check
-		if !h.AdminChecker.UserIsAdmin(w, r) {
-			return // response written by helper
-		}
-
 		if err := h.Service.rotateEncryptionPhrase(req); err != nil {
 			if errors.Is(err, shared.ErrFieldMissing) {
 				h.Logger.Error("Required field missing", "error", err.Error())
