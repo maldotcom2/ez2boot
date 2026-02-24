@@ -82,7 +82,10 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 
 	// AWS
 	awsRepo := aws.NewRepository(repo)
-	awsService := aws.NewService(awsRepo, cfg, serverService, logger)
+	awsService, err := aws.NewService(awsRepo, cfg, serverService, logger)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
 
 	// Azure
 	azureRepo := azure.NewRepository(repo)
