@@ -6,26 +6,17 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 )
 
 // Scrape AWS to retrieve servers.
-// TODO factor out the client creation into the service constructor the same as for Azure
 func (s *Service) Scrape() error {
-	s.Logger.Debug("Scraping AWS", "domain", "aws")
-	awsCFG, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(s.Config.AWSRegion))
-	if err != nil {
-		s.Logger.Error("Failed to load AWS config", "domain", "aws", "error", err)
-		return err
-	}
-
-	ec2Client := getEC2Client(awsCFG)
+	s.Logger.Debug("Scraping AWS")
 
 	input := getDescribeInstancesInput(s.Config.TagKey) // Target tagged instances
 
 	// Describe instances from AWS. Max 1000 responses without pagination
-	result, err := ec2Client.DescribeInstances(context.TODO(), input)
+	result, err := s.EC2Client.DescribeInstances(context.Background(), input)
 	if err != nil {
 		s.Logger.Error("Failed to describe EC2 instances", "domain", "aws", "error", err)
 		return err
@@ -56,14 +47,7 @@ func (s *Service) Scrape() error {
 
 // Start required AWS servers
 func (s *Service) Start() error {
-	s.Logger.Debug("Starting requested AWS instances", "domain", "aws")
-	awsCFG, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(s.Config.AWSRegion))
-	if err != nil {
-		s.Logger.Error("Failed to load AWS config", "domain", "aws", "error", err)
-		return err
-	}
-
-	ec2Client := getEC2Client(awsCFG)
+	s.Logger.Debug("Starting requested AWS servers")
 
 	// Get start instance IDs
 	instanceIDs, err := s.ServerService.GetPending("off", "on")
@@ -85,7 +69,7 @@ func (s *Service) Start() error {
 			InstanceIds: []string{id},
 		}
 
-		result, err := ec2Client.StartInstances(context.TODO(), input)
+		result, err := s.EC2Client.StartInstances(context.Background(), input)
 		if err != nil {
 			s.Logger.Error("Failed to start instance", "id", id, "domain", "aws", "error", err)
 			continue
@@ -105,14 +89,7 @@ func (s *Service) Start() error {
 
 // Stop no longer required AWS servers
 func (s *Service) Stop() error {
-	s.Logger.Debug("Stopping requested AWS instances", "domain", "aws")
-	awsCFG, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(s.Config.AWSRegion))
-	if err != nil {
-		s.Logger.Error("Failed to load AWS config", "domain", "aws", "error", err)
-		return err
-	}
-
-	ec2Client := getEC2Client(awsCFG)
+	s.Logger.Debug("Stopping requested AWS servers")
 
 	// Get start instance IDs
 	instanceIDs, err := s.ServerService.GetPending("on", "off")
@@ -134,7 +111,7 @@ func (s *Service) Stop() error {
 			InstanceIds: []string{id},
 		}
 
-		result, err := ec2Client.StopInstances(context.TODO(), input)
+		result, err := s.EC2Client.StopInstances(context.Background(), input)
 		if err != nil {
 			s.Logger.Error("Failed to stop instance", "id", id, "domain", "aws", "error", err)
 			continue
