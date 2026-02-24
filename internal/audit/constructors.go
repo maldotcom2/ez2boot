@@ -5,11 +5,10 @@ import (
 	"log/slog"
 )
 
-func NewHandler(auditService *Service, adminChecker AdminChecker, logger *slog.Logger) *Handler {
+func NewHandler(auditService *Service, logger *slog.Logger) *Handler {
 	return &Handler{
-		Service:      auditService,
-		AdminChecker: adminChecker,
-		Logger:       logger,
+		Service: auditService,
+		Logger:  logger,
 	}
 }
 

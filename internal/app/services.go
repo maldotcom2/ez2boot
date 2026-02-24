@@ -21,7 +21,6 @@ import (
 	"log/slog"
 )
 
-// TODO this is a mess
 func InitServices(version string, buildDate string, cfg *config.Config, repo *db.Repository, logger *slog.Logger) (*middleware.Middleware, *worker.Worker, *Handlers, *Services, error) {
 	buildInfo := util.BuildInfo{
 		Version:   version,
@@ -37,6 +36,7 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 	// Audit
 	auditRepo := audit.NewRepository(repo)
 	auditService := audit.NewService(auditRepo, logger)
+	auditHandler := audit.NewHandler(auditService, logger)
 
 	// Server
 	serverRepo := server.NewRepository(repo)
@@ -51,9 +51,7 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 	// Notification
 	notificationRepo := notification.NewRepository(repo)
 	notificationService := notification.NewService(notificationRepo, auditService, encryptor, logger)
-	notificationHandler := notification.NewHandler(notificationService, userHandler, logger)
-
-	auditHandler := audit.NewHandler(auditService, userHandler, logger) //TODO reorganise this
+	notificationHandler := notification.NewHandler(notificationService, logger)
 
 	// Session
 	sessionRepo := session.NewRepository(repo)
@@ -92,7 +90,7 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 	}
 
 	// Middlware
-	mw := middleware.NewMiddleware(userService, cfg, auditService, logger)
+	mw := middleware.NewMiddleware(userService, cfg, logger)
 
 	// Worker
 	wkr := worker.NewWorker(serverService, sessionService, userService, notificationService, utilService, cfg, logger)

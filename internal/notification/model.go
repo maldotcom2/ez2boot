@@ -4,12 +4,7 @@ import (
 	"ez2boot/internal/audit"
 	"ez2boot/internal/db"
 	"log/slog"
-	"net/http"
 )
-
-type AdminChecker interface {
-	UserIsAdmin(w http.ResponseWriter, r *http.Request) bool
-}
 
 type Encryptor interface {
 	Encrypt([]byte) ([]byte, error)
@@ -28,9 +23,8 @@ type Service struct {
 }
 
 type Handler struct {
-	Service      *Service
-	AdminChecker AdminChecker
-	Logger       *slog.Logger
+	Service *Service
+	Logger  *slog.Logger
 }
 
 type NotificationChannel interface {

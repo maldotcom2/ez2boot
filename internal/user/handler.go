@@ -162,11 +162,6 @@ func (h *Handler) UpdateUserAuthorisation() http.HandlerFunc {
 			return
 		}
 
-		// Admin check
-		if !h.UserIsAdmin(w, r) {
-			return // Response written by helper
-		}
-
 		if err := h.Service.updateUserAuthorisation(req, ctx); err != nil {
 			var resp shared.ApiResponse[any]
 			switch {
@@ -224,10 +219,7 @@ func (h *Handler) CreateUser() http.HandlerFunc {
 			return
 		}
 
-		// Admin check
-		if !h.UserIsAdmin(w, r) {
-			return // Response written by helper
-		}
+		h.Logger.Info("Attempted user creation", "email", req.Email)
 
 		var resp shared.ApiResponse[any]
 		if err := h.Service.createUser(req, ctx); err != nil {
@@ -297,11 +289,6 @@ func (h *Handler) DeleteUser() http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
 			return
-		}
-
-		// Admin check
-		if !h.UserIsAdmin(w, r) {
-			return // Response written by helper
 		}
 
 		email, err := h.Service.GetEmailFromUserID(req.UserID)
@@ -479,27 +466,4 @@ func (h *Handler) ChangePassword() http.HandlerFunc {
 		h.Logger.Info("Password changed for user", "user", email, "domain", "user")
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
-}
-
-// Handler helper to guard admin routes
-func (h *Handler) UserIsAdmin(w http.ResponseWriter, r *http.Request) bool {
-	ctx := r.Context()
-	userID, email := ctxutil.GetActor(ctx)
-
-	user, err := h.Service.GetUserAuthorisation(userID)
-	if err != nil {
-		h.Logger.Error("Failed to fetch user authorisation", "user", email, "domain", "user", "error", err)
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to fetch user authorisation"})
-		return false
-	}
-
-	if !user.IsAdmin {
-		h.Logger.Error("Failed admin check. Non-admin user attempted to access admin functions", "user", email, "domain", "user")
-		w.WriteHeader(http.StatusForbidden)
-		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Unauthorised"})
-		return false
-	}
-
-	return true
 }
