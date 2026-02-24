@@ -13,10 +13,10 @@ import (
 // Scrape AWS to retrieve servers.
 // TODO factor out the client creation into the service constructor the same as for Azure
 func (s *Service) Scrape() error {
-	s.Logger.Debug("Scraping AWS")
+	s.Logger.Debug("Scraping AWS", "domain", "aws")
 	awsCFG, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(s.Config.AWSRegion))
 	if err != nil {
-		s.Logger.Error("Failed to load AWS config", "error", err)
+		s.Logger.Error("Failed to load AWS config", "domain", "aws", "error", err)
 		return err
 	}
 
@@ -27,7 +27,7 @@ func (s *Service) Scrape() error {
 	// Describe instances from AWS. Max 1000 responses without pagination
 	result, err := ec2Client.DescribeInstances(context.TODO(), input)
 	if err != nil {
-		s.Logger.Error("Failed to describe EC2 instances", "error", err)
+		s.Logger.Error("Failed to describe EC2 instances", "domain", "aws", "error", err)
 		return err
 	}
 
@@ -48,7 +48,7 @@ func (s *Service) Scrape() error {
 		}
 	}
 
-	s.Logger.Debug("Scraped and found number of matching servers", "count", len(servers))
+	s.Logger.Debug("Scraped and found number of matching instances", "domain", "aws", "count", len(servers))
 	s.ServerService.UpdateServers(servers)
 
 	return nil
@@ -56,10 +56,10 @@ func (s *Service) Scrape() error {
 
 // Start required AWS servers
 func (s *Service) Start() error {
-	s.Logger.Debug("Starting requested AWS servers")
+	s.Logger.Debug("Starting requested AWS instances", "domain", "aws")
 	awsCFG, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(s.Config.AWSRegion))
 	if err != nil {
-		s.Logger.Error("Failed to load AWS config", "error", err)
+		s.Logger.Error("Failed to load AWS config", "domain", "aws", "error", err)
 		return err
 	}
 
@@ -68,31 +68,31 @@ func (s *Service) Start() error {
 	// Get start instance IDs
 	instanceIDs, err := s.ServerService.GetPending("off", "on")
 	if err != nil {
-		s.Logger.Error("Failed to get instance IDs pending on", "error", err)
+		s.Logger.Error("Failed to get instance IDs pending on", "domain", "aws", "error", err)
 		return err
 	}
 
 	// Nothing to do
 	if len(instanceIDs) == 0 {
-		s.Logger.Debug("No instances to start")
+		s.Logger.Debug("No instances to start", "domain", "aws")
 		return nil
 	}
 
 	// Loop and turn each on
 	for _, id := range instanceIDs {
-		s.Logger.Debug("Starting", "id", id)
+		s.Logger.Debug("Starting", "id", id, "domain", "aws")
 		input := &ec2.StartInstancesInput{
 			InstanceIds: []string{id},
 		}
 
 		result, err := ec2Client.StartInstances(context.TODO(), input)
 		if err != nil {
-			s.Logger.Error("failed to start instance", "id", id, "error", err)
+			s.Logger.Error("Failed to start instance", "id", id, "domain", "aws", "error", err)
 			continue
 		}
 
 		for _, instance := range result.StartingInstances {
-			s.Logger.Info("Instance start initiated",
+			s.Logger.Info("Instance start initiated", "domain", "aws",
 				"id", aws.ToString(instance.InstanceId),
 				"previous_state", instance.PreviousState.Name,
 				"current_state", instance.CurrentState.Name,
@@ -105,10 +105,10 @@ func (s *Service) Start() error {
 
 // Stop no longer required AWS servers
 func (s *Service) Stop() error {
-	s.Logger.Debug("Stopping requested AWS servers")
+	s.Logger.Debug("Stopping requested AWS instances", "domain", "aws")
 	awsCFG, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(s.Config.AWSRegion))
 	if err != nil {
-		s.Logger.Error("Failed to load AWS config", "error", err)
+		s.Logger.Error("Failed to load AWS config", "domain", "aws", "error", err)
 		return err
 	}
 
@@ -117,31 +117,31 @@ func (s *Service) Stop() error {
 	// Get start instance IDs
 	instanceIDs, err := s.ServerService.GetPending("on", "off")
 	if err != nil {
-		s.Logger.Error("Failed to get instance IDs pending off", "error", err)
+		s.Logger.Error("Failed to get instance IDs pending off", "domain", "aws", "error", err)
 		return err
 	}
 
 	// Nothing to do
 	if len(instanceIDs) == 0 {
-		s.Logger.Debug("No instances to stop")
+		s.Logger.Debug("No instances to stop", "domain", "aws")
 		return nil
 	}
 
 	// Loop and turn each on
 	for _, id := range instanceIDs {
-		s.Logger.Debug("Stopping", "id", id)
+		s.Logger.Debug("Stopping", "id", id, "domain", "aws")
 		input := &ec2.StopInstancesInput{
 			InstanceIds: []string{id},
 		}
 
 		result, err := ec2Client.StopInstances(context.TODO(), input)
 		if err != nil {
-			s.Logger.Error("Failed to stop instance", "id", id, "error", err)
+			s.Logger.Error("Failed to stop instance", "id", id, "domain", "aws", "error", err)
 			continue
 		}
 
 		for _, instance := range result.StoppingInstances {
-			s.Logger.Info("Instance stop initiated",
+			s.Logger.Info("Instance stop initiated", "domain", "aws",
 				"id", aws.ToString(instance.InstanceId),
 				"previous_state", instance.PreviousState.Name,
 				"current_state", instance.CurrentState.Name,

@@ -11,13 +11,13 @@ func (s *Service) UpdateServers(servers []Server) {
 	// Delete servers from DB not in scrape
 	err := s.Repo.deleteObsolete(ids)
 	if err != nil {
-		s.Logger.Error("Failed to delete obsolete servers from DB", "error", err)
+		s.Logger.Error("Failed to delete obsolete servers from DB", "domain", "server", "error", err)
 	}
 
 	// Process update
 	for _, server := range servers {
 		if err := s.Repo.addOrUpdate(server); err != nil {
-			s.Logger.Error("Failed to add or update server from scrape", "server", server, "error", err) // Log here to show error and continue
+			s.Logger.Error("Failed to add or update server from scrape", "domain", "server", "server", server, "error", err) // Log here to show error and continue
 			continue
 		}
 	}

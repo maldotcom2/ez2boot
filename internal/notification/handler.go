@@ -19,12 +19,12 @@ func (h *Handler) GetNotificationTypes() http.HandlerFunc {
 func (h *Handler) GetUserNotificationSettings() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		userID, _ := ctxutil.GetActor(ctx)
+		userID, email := ctxutil.GetActor(ctx)
 
 		var n NotificationConfigResponse
 		n, err := h.Service.getUserNotificationSettings(userID)
 		if err != nil {
-			h.Logger.Error("Failed to get user notification", "error", err)
+			h.Logger.Error("Failed to get user notification settings", "user", email, "domain", "notification", "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to get user notification"})
 			return
@@ -37,7 +37,7 @@ func (h *Handler) GetUserNotificationSettings() http.HandlerFunc {
 func (h *Handler) SetUserNotificationSettings() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		userID, _ := ctxutil.GetActor(ctx)
+		userID, email := ctxutil.GetActor(ctx)
 
 		var req NotificationConfigRequest
 		json.NewDecoder(r.Body).Decode(&req)
@@ -46,7 +46,7 @@ func (h *Handler) SetUserNotificationSettings() http.HandlerFunc {
 		if err := h.Service.setUserNotificationSettings(userID, req); err != nil {
 			switch {
 			case errors.Is(err, shared.ErrNotificationTypeNotSupported):
-				h.Logger.Error(err.Error())
+				h.Logger.Error("Notification type not supported", "user", email, "domain", "notification", "type", req.Type)
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
@@ -54,7 +54,7 @@ func (h *Handler) SetUserNotificationSettings() http.HandlerFunc {
 				}
 
 			case errors.Is(err, shared.ErrFieldMissing):
-				h.Logger.Error("Required field missing", "error", err.Error())
+				h.Logger.Error("Required field missing", "user", email, "domain", "notification", "type", req.Type)
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
@@ -62,7 +62,7 @@ func (h *Handler) SetUserNotificationSettings() http.HandlerFunc {
 				}
 
 			case errors.Is(err, shared.ErrMissingAuthValues):
-				h.Logger.Error("Missing username or password", "error", err.Error())
+				h.Logger.Error("Missing username or password", "user", email, "domain", "notification", "type", req.Type)
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
@@ -70,11 +70,11 @@ func (h *Handler) SetUserNotificationSettings() http.HandlerFunc {
 				}
 
 			default:
-				h.Logger.Error("Failed to store notification preferences", "error", err)
+				h.Logger.Error("Failed to set user notification settings", "user", email, "domain", "notification", "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   "Failed to store notification preferences",
+					Error:   "Failed to set user notification settings",
 				}
 			}
 
@@ -82,7 +82,7 @@ func (h *Handler) SetUserNotificationSettings() http.HandlerFunc {
 			return
 		}
 
-		h.Logger.Info("User notification config set")
+		h.Logger.Info("User notification settings set", "user", email, "domain", "notification", "type", req.Type)
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
@@ -90,38 +90,41 @@ func (h *Handler) SetUserNotificationSettings() http.HandlerFunc {
 func (h *Handler) DeleteUserNotificationSettings() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		userID, _ := ctxutil.GetActor(ctx)
+		userID, email := ctxutil.GetActor(ctx)
 
 		if err := h.Service.deleteUserNotificationSettings(userID); err != nil {
-			h.Logger.Error("Failed to delete user notification", "error", err)
+			h.Logger.Error("Failed to delete user notification settings", "user", email, "domain", "notification", "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to delete user notification"})
 		}
 
-		h.Logger.Info("User notification deleted")
+		h.Logger.Info("User notification settings deleted", "user", email, "domain", "notification")
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
 
 func (h *Handler) RotateEncryptionPhrase() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		_, email := ctxutil.GetActor(ctx)
+
 		var req RotateEncryptionPhraseRequest
 		json.NewDecoder(r.Body).Decode(&req)
 
 		if err := h.Service.rotateEncryptionPhrase(req); err != nil {
 			if errors.Is(err, shared.ErrFieldMissing) {
-				h.Logger.Error("Required field missing", "error", err.Error())
+				h.Logger.Error("Required field missing", "user", email, "domain", "notification", "error", err)
 				w.WriteHeader(http.StatusBadRequest)
 				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Required field missing"})
 				return
 			}
-			h.Logger.Error("Failed to rotate encryption phrase", "error", err)
+			h.Logger.Error("Failed to rotate encryption phrase", "user", email, "domain", "notification", "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to rotate encryption phrase"})
 			return
 		}
 
-		h.Logger.Info("Rotated encryption phrase")
+		h.Logger.Info("Rotated encryption phrase", "user", email, "domain", "notification")
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }

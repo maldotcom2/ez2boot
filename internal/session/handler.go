@@ -10,9 +10,12 @@ import (
 
 func (h *Handler) GetServerSessionSummary() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		_, email := ctxutil.GetActor(ctx)
+
 		summary, err := h.Service.getServerSessionSummary()
 		if err != nil {
-			h.Logger.Error("Failed to get server session summary", "error", err)
+			h.Logger.Error("Failed to get server session summary", "user", email, "domain", "session", "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to get server session summary"})
 			return
@@ -25,7 +28,7 @@ func (h *Handler) GetServerSessionSummary() http.HandlerFunc {
 func (h *Handler) NewServerSession() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		userID, _ := ctxutil.GetActor(ctx)
+		userID, email := ctxutil.GetActor(ctx)
 
 		var session ServerSessionRequest
 		json.NewDecoder(r.Body).Decode(&session)
@@ -34,7 +37,7 @@ func (h *Handler) NewServerSession() http.HandlerFunc {
 		// Create the session
 		expiry, err := h.Service.newServerSession(session, ctx)
 		if err != nil {
-			h.Logger.Error("Failed to create new session", "error", err)
+			h.Logger.Error("Failed to create new session", "user", email, "domain", "session", "server_group", session.ServerGroup, "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to create new session"})
 			return
@@ -53,7 +56,7 @@ func (h *Handler) NewServerSession() http.HandlerFunc {
 func (h *Handler) UpdateServerSession() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		userID, _ := ctxutil.GetActor(ctx)
+		userID, email := ctxutil.GetActor(ctx)
 
 		var session ServerSessionRequest
 		json.NewDecoder(r.Body).Decode(&session)
@@ -62,14 +65,14 @@ func (h *Handler) UpdateServerSession() http.HandlerFunc {
 		expiry, err := h.Service.updateServerSession(session, ctx)
 		if err != nil {
 			if errors.Is(err, shared.ErrNoRowsUpdated) {
-				h.Logger.Error("Requsted session for update was either not found or not owned", "error", err)
+				h.Logger.Warn("Requsted session for update was either not found or not owned", "user", email, "domain", "session", "server_group", session.ServerGroup, "error", err)
 				w.WriteHeader(http.StatusUnauthorized)
 				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to find session"})
 				return
 			}
-			h.Logger.Error("Error while updating session", "error", err)
+			h.Logger.Error("Failed to update server session", "user", email, "domain", "session", "server_group", session.ServerGroup, "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Error while updating session"})
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to update server session"})
 			return
 		}
 

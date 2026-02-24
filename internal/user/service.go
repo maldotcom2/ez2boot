@@ -339,16 +339,16 @@ func (s *Service) GetSessionStatus(token string) (UserSessionResponse, error) {
 func (s *Service) ProcessUserSessions() error {
 	rows, err := s.Repo.deleteExpiredUserSessions()
 	if err != nil {
-		s.Logger.Error("Error while deleting expired user sessions", "error", err)
+		s.Logger.Error("Failed to delete expired user sessions", "domain", "user", "error", err)
 		return err
 	}
 
 	if rows == 0 {
-		s.Logger.Debug("No expired user sessions to cleanup")
+		s.Logger.Debug("No expired user sessions to cleanup", "domain", "user")
 	}
 
 	if rows > 0 {
-		s.Logger.Debug("Deleted expired user sessions", "count", rows)
+		s.Logger.Debug("Deleted expired user sessions", "domain", "user", "count", rows)
 	}
 
 	return nil

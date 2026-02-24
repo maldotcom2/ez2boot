@@ -50,7 +50,7 @@ func (m *Middleware) LimitMiddleware(next http.Handler) http.Handler {
 		if clientIP == "" {
 			host, _, err := net.SplitHostPort(r.RemoteAddr)
 			if err != nil {
-				m.Logger.Error("Limit middleware error", "error", err)
+				m.Logger.Error("Limit middleware error", "domain", "middleware", "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Limit middleware error"})
 				return
@@ -61,7 +61,7 @@ func (m *Middleware) LimitMiddleware(next http.Handler) http.Handler {
 
 		limiter := getVisitor(clientIP, m.Config.RateLimit)
 		if !limiter.Allow() {
-			m.Logger.Warn("Too many requests", "source ip", clientIP)
+			m.Logger.Warn("Too many requests", "domain", "middleware", "source ip", clientIP)
 			w.WriteHeader(http.StatusTooManyRequests)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Too many requests"})
 			return
