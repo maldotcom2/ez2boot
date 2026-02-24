@@ -12,24 +12,24 @@ func (s *Service) ProcessNotifications(ctx context.Context) error {
 	// Remove any from queue where user does not have configured notifications
 	rows, err := s.Repo.deleteOrphanedNotifications()
 	if err != nil {
-		s.Logger.Error("Error while removing orphaned notifications", "error", err)
+		s.Logger.Error("Failed to remove orphaned notifications", "domain", "notification", "error", err)
 		return err
 	}
 
 	if rows > 0 {
-		s.Logger.Debug("Deleted orphaned notifications", "count", rows)
+		s.Logger.Info("Deleted orphaned notifications", "domain", "notification", "count", rows)
 	}
 
 	// Get remaining pending
 	notifications, err := s.Repo.getPendingNotifications()
 	if err != nil {
-		s.Logger.Error("Error while getting pending notifications", "error", err)
+		s.Logger.Error("Failed to get pending notifications", "domain", "notification", "error", err)
 		return err
 	}
 
 	// Nothing to do
 	if len(notifications) == 0 {
-		s.Logger.Debug("No pending notifications")
+		s.Logger.Debug("No pending notifications", "domain", "notification")
 		return nil
 	}
 
@@ -37,10 +37,10 @@ func (s *Service) ProcessNotifications(ctx context.Context) error {
 	for _, n := range notifications {
 		sender, ok := s.getNotificationSender(n.Type)
 		if !ok {
-			s.Logger.Error("Notification type not supported. Removing from queue", "id", n.Id, "type", n.Type, "title", n.Title)
+			s.Logger.Warn("Notification type not supported. Removing from queue", "domain", "notification", "id", n.Id, "type", n.Type, "title", n.Title)
 			_, err := s.Repo.deleteNotificationFromQueue(n.Id)
 			if err != nil {
-				s.Logger.Error("Could not delete notification from queue", "id", n.Id, "type", n.Type, "title", n.Title, "error", err)
+				s.Logger.Error("Could not delete notification from queue", "domain", "notification", "id", n.Id, "type", n.Type, "title", n.Title, "error", err)
 			}
 			continue
 		}
@@ -48,11 +48,11 @@ func (s *Service) ProcessNotifications(ctx context.Context) error {
 		// Decrypt config
 		cfgBytes, err := s.Encryptor.Decrypt(n.EncConfig)
 		if err != nil {
-			s.Logger.Error("Failed to decrypt notification config", "id", n.Id, "type", n.Type, "error", err)
+			s.Logger.Error("Failed to decrypt notification config", "domain", "notification", "id", n.Id, "type", n.Type, "error", err)
 
 			_, err = s.Repo.deleteNotificationFromQueue(n.Id)
 			if err != nil {
-				s.Logger.Error("Could not delete notification from queue", "id", n.Id, "error", err)
+				s.Logger.Error("Failed to delete notification from queue", "domain", "notification", "id", n.Id, "error", err)
 			}
 			continue // skip sending if decryption fails
 		}
@@ -61,7 +61,7 @@ func (s *Service) ProcessNotifications(ctx context.Context) error {
 		sent := false
 		for i := 0; i < 3; i++ {
 			if err := sender.Send(n.Msg, n.Title, string(cfgBytes)); err != nil {
-				s.Logger.Error("Failed to send notification", "attempt", i+1, "id", n.Id, "type", n.Type, "title", n.Title, "error", err)
+				s.Logger.Error("Failed to send notification", "domain", "notification", "attempt", i+1, "id", n.Id, "type", n.Type, "title", n.Title, "error", err)
 				continue
 			}
 			// success
@@ -87,14 +87,14 @@ func (s *Service) ProcessNotifications(ctx context.Context) error {
 		// Delete notification whether it was sent successfully or not
 		_, err = s.Repo.deleteNotificationFromQueue(n.Id)
 		if err != nil {
-			s.Logger.Error("Could not delete notification from queue", "id", n.Id, "error", err)
+			s.Logger.Error("Failed to delete notification from queue", "domain", "notification", "id", n.Id, "error", err)
 			continue
 		}
 
 		if sent {
-			s.Logger.Debug("Successfully sent notification and removed from queue", "id", n.Id, "type", n.Type, "title", n.Title)
+			s.Logger.Info("Sent notification and removed from queue", "domain", "notification", "id", n.Id, "type", n.Type, "title", n.Title)
 		} else {
-			s.Logger.Warn("Failed to send notification", "id", n.Id, "type", n.Type, "title", n.Title)
+			s.Logger.Warn("Failed to send notification", "domain", "notification", "id", n.Id, "type", n.Type, "title", n.Title)
 		}
 	}
 

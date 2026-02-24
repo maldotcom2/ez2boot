@@ -31,6 +31,24 @@ func SetupBackendRoutes(
 		publicRouter.HandleFunc("/setup", handlers.UserHandler.CreateFirstTimeUser()).Methods("POST")
 	}
 
+	/////////////////////////// Admin UI subrouter and routes ////////////////////////////
+
+	adminUIRouter := router.PathPrefix("/ui").Subrouter()
+	adminUIRouter.Use(mw.CORSMiddleware)
+	adminUIRouter.Use(mw.LimitMiddleware)
+	adminUIRouter.Use(mw.JsonContentTypeMiddleware)
+	adminUIRouter.Use(mw.SessionAuthMiddleware()) // This pattern allows passing in params, can be simplified.
+	adminUIRouter.Use(mw.AdminMiddleware)
+
+	// User
+	adminUIRouter.HandleFunc("/user", handlers.UserHandler.CreateUser()).Methods("POST")
+	adminUIRouter.HandleFunc("/user", handlers.UserHandler.DeleteUser()).Methods("DELETE")
+	adminUIRouter.HandleFunc("/user/auth", handlers.UserHandler.UpdateUserAuthorisation()).Methods("PUT")
+	// Notification
+	adminUIRouter.HandleFunc("/notifications/passphrase", handlers.NotificationHandler.RotateEncryptionPhrase()).Methods("PUT")
+	// Audit
+	adminUIRouter.HandleFunc("/audit/events", handlers.AuditHandler.GetAuditEvents()).Methods("GET")
+
 	/////////////////////////// UI subrouter and routes //////////////////////////////////
 
 	uiRouter := router.PathPrefix("/ui").Subrouter()
@@ -45,11 +63,8 @@ func SetupBackendRoutes(
 	uiRouter.HandleFunc("/session", handlers.SessionHandler.UpdateServerSession()).Methods("PUT")
 	//// Users
 	uiRouter.HandleFunc("/users", handlers.UserHandler.GetUsers()).Methods("GET")
-	uiRouter.HandleFunc("/user", handlers.UserHandler.CreateUser()).Methods("POST")
-	uiRouter.HandleFunc("/user", handlers.UserHandler.DeleteUser()).Methods("DELETE")
 	uiRouter.HandleFunc("/user/session", handlers.UserHandler.CheckSession()).Methods("GET") // UI specific
 	uiRouter.HandleFunc("/user/auth", handlers.UserHandler.GetUserAuthorisation()).Methods("GET")
-	uiRouter.HandleFunc("/user/auth", handlers.UserHandler.UpdateUserAuthorisation()).Methods("PUT")
 	uiRouter.HandleFunc("/user/password", handlers.UserHandler.ChangePassword()).Methods("PUT")
 	uiRouter.HandleFunc("/user/logout", handlers.UserHandler.Logout()).Methods("POST") // UI specific
 	/// Notification channels
@@ -57,11 +72,27 @@ func SetupBackendRoutes(
 	uiRouter.HandleFunc("/user/notification", handlers.NotificationHandler.SetUserNotificationSettings()).Methods("POST")
 	uiRouter.HandleFunc("/user/notification", handlers.NotificationHandler.DeleteUserNotificationSettings()).Methods("DELETE")
 	uiRouter.HandleFunc("/notification/types", handlers.NotificationHandler.GetNotificationTypes()).Methods("GET")
-	uiRouter.HandleFunc("/notifications/passphrase", handlers.NotificationHandler.RotateEncryptionPhrase()).Methods("PUT")
-	// Audit
-	uiRouter.HandleFunc("/audit/events", handlers.AuditHandler.GetAuditEvents()).Methods("GET")
+
 	// Version
 	uiRouter.HandleFunc("/version", handlers.UtilHandler.GetVersion()).Methods("GET")
+
+	/////////////////////////// Admin API subrouter and routes ///////////////////////////
+
+	adminAPIRouter := router.PathPrefix("/api/v1").Subrouter()
+	adminAPIRouter.Use(mw.CORSMiddleware)
+	adminAPIRouter.Use(mw.LimitMiddleware)
+	adminAPIRouter.Use(mw.JsonContentTypeMiddleware)
+	adminAPIRouter.Use(mw.BasicAuthMiddleware()) // This pattern allows passing in params, can be simplified.
+	adminAPIRouter.Use(mw.AdminMiddleware)
+
+	// User
+	adminAPIRouter.HandleFunc("/user", handlers.UserHandler.CreateUser()).Methods("POST")
+	adminAPIRouter.HandleFunc("/user", handlers.UserHandler.DeleteUser()).Methods("DELETE")
+	adminAPIRouter.HandleFunc("/user/auth", handlers.UserHandler.UpdateUserAuthorisation()).Methods("PUT")
+	// Notification
+	adminAPIRouter.HandleFunc("/notifications/passphrase", handlers.NotificationHandler.RotateEncryptionPhrase()).Methods("PUT")
+	// Audit
+	adminAPIRouter.HandleFunc("/audit/events", handlers.AuditHandler.GetAuditEvents()).Methods("GET")
 
 	/////////////////////////// API subrouter and routes /////////////////////////////////
 
@@ -76,19 +107,13 @@ func SetupBackendRoutes(
 	apiRouter.HandleFunc("/session", handlers.SessionHandler.UpdateServerSession()).Methods("PUT")
 	//// Users
 	apiRouter.HandleFunc("/users", handlers.UserHandler.GetUsers()).Methods("GET")
-	apiRouter.HandleFunc("/user", handlers.UserHandler.CreateUser()).Methods("POST")
-	apiRouter.HandleFunc("/user", handlers.UserHandler.DeleteUser()).Methods("DELETE")
 	apiRouter.HandleFunc("/user/auth", handlers.UserHandler.GetUserAuthorisation()).Methods("GET")
-	apiRouter.HandleFunc("/user/auth", handlers.UserHandler.UpdateUserAuthorisation()).Methods("PUT")
 	apiRouter.HandleFunc("/user/password", handlers.UserHandler.ChangePassword()).Methods("PUT")
 	/// Notification channels
 	apiRouter.HandleFunc("/user/notification", handlers.NotificationHandler.GetUserNotificationSettings()).Methods("GET")
 	apiRouter.HandleFunc("/user/notification", handlers.NotificationHandler.SetUserNotificationSettings()).Methods("POST")
 	apiRouter.HandleFunc("/user/notification", handlers.NotificationHandler.DeleteUserNotificationSettings()).Methods("DELETE")
 	apiRouter.HandleFunc("/notification/types", handlers.NotificationHandler.GetNotificationTypes()).Methods("GET")
-	apiRouter.HandleFunc("/notifications/passphrase", handlers.NotificationHandler.RotateEncryptionPhrase()).Methods("PUT")
-	// Audit
-	apiRouter.HandleFunc("/audit/events", handlers.AuditHandler.GetAuditEvents()).Methods("GET")
 	// Version
 	apiRouter.HandleFunc("/version", handlers.UtilHandler.GetVersion()).Methods("GET")
 }

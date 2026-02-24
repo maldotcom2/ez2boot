@@ -18,7 +18,7 @@ func (s *Service) Scrape() error {
 	// Describe instances from AWS. Max 1000 responses without pagination
 	result, err := s.EC2Client.DescribeInstances(context.Background(), input)
 	if err != nil {
-		s.Logger.Error("Failed to describe EC2 instances", "error", err)
+		s.Logger.Error("Failed to describe EC2 instances", "domain", "aws", "error", err)
 		return err
 	}
 
@@ -39,7 +39,7 @@ func (s *Service) Scrape() error {
 		}
 	}
 
-	s.Logger.Debug("Scraped and found number of matching servers", "count", len(servers))
+	s.Logger.Debug("Scraped and found number of matching instances", "domain", "aws", "count", len(servers))
 	s.ServerService.UpdateServers(servers)
 
 	return nil
@@ -52,31 +52,31 @@ func (s *Service) Start() error {
 	// Get start instance IDs
 	instanceIDs, err := s.ServerService.GetPending("off", "on")
 	if err != nil {
-		s.Logger.Error("Failed to get instance IDs pending on", "error", err)
+		s.Logger.Error("Failed to get instance IDs pending on", "domain", "aws", "error", err)
 		return err
 	}
 
 	// Nothing to do
 	if len(instanceIDs) == 0 {
-		s.Logger.Debug("No instances to start")
+		s.Logger.Debug("No instances to start", "domain", "aws")
 		return nil
 	}
 
 	// Loop and turn each on
 	for _, id := range instanceIDs {
-		s.Logger.Debug("Starting", "id", id)
+		s.Logger.Debug("Starting", "id", id, "domain", "aws")
 		input := &ec2.StartInstancesInput{
 			InstanceIds: []string{id},
 		}
 
 		result, err := s.EC2Client.StartInstances(context.Background(), input)
 		if err != nil {
-			s.Logger.Error("failed to start instance", "id", id, "error", err)
+			s.Logger.Error("Failed to start instance", "id", id, "domain", "aws", "error", err)
 			continue
 		}
 
 		for _, instance := range result.StartingInstances {
-			s.Logger.Info("Instance start initiated",
+			s.Logger.Info("Instance start initiated", "domain", "aws",
 				"id", aws.ToString(instance.InstanceId),
 				"previous_state", instance.PreviousState.Name,
 				"current_state", instance.CurrentState.Name,
@@ -94,31 +94,31 @@ func (s *Service) Stop() error {
 	// Get start instance IDs
 	instanceIDs, err := s.ServerService.GetPending("on", "off")
 	if err != nil {
-		s.Logger.Error("Failed to get instance IDs pending off", "error", err)
+		s.Logger.Error("Failed to get instance IDs pending off", "domain", "aws", "error", err)
 		return err
 	}
 
 	// Nothing to do
 	if len(instanceIDs) == 0 {
-		s.Logger.Debug("No instances to stop")
+		s.Logger.Debug("No instances to stop", "domain", "aws")
 		return nil
 	}
 
 	// Loop and turn each on
 	for _, id := range instanceIDs {
-		s.Logger.Debug("Stopping", "id", id)
+		s.Logger.Debug("Stopping", "id", id, "domain", "aws")
 		input := &ec2.StopInstancesInput{
 			InstanceIds: []string{id},
 		}
 
 		result, err := s.EC2Client.StopInstances(context.Background(), input)
 		if err != nil {
-			s.Logger.Error("Failed to stop instance", "id", id, "error", err)
+			s.Logger.Error("Failed to stop instance", "id", id, "domain", "aws", "error", err)
 			continue
 		}
 
 		for _, instance := range result.StoppingInstances {
-			s.Logger.Info("Instance stop initiated",
+			s.Logger.Info("Instance stop initiated", "domain", "aws",
 				"id", aws.ToString(instance.InstanceId),
 				"previous_state", instance.PreviousState.Name,
 				"current_state", instance.CurrentState.Name,

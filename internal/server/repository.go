@@ -6,6 +6,7 @@ import (
 )
 
 func (r *Repository) deleteObsolete(ids []any) error {
+	// Successful scrape returned nothing, means remove all
 	if len(ids) == 0 {
 		_, err := r.Base.DB.Exec("DELETE FROM servers")
 		return err
