@@ -15,48 +15,48 @@ func (h *Handler) Login() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var u UserLogin
 		if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
-			h.Logger.Error("Malformed request", "email", u.Email, "error", err)
+			h.Logger.Error("Malformed request", "user", u.Email, "domain", "user", "error", err)
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
 			return
 		}
 
-		h.Logger.Info("Login attempted", "email", u.Email)
+		h.Logger.Debug("Login attempted", "user", u.Email, "domain", "user")
 
 		var resp shared.ApiResponse[any]
 		token, err := h.Service.login(u)
 		if err != nil {
 			switch {
 			case errors.Is(err, shared.ErrEmailOrPasswordMissing):
-				h.Logger.Warn("Login failed", "reason", shared.ErrEmailOrPasswordMissing)
+				h.Logger.Warn("Login failed", "user", u.Email, "domain", "user", "error", err)
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
 					Error:   "Missing email or password for login",
 				}
 			case errors.Is(err, shared.ErrAuthenticationFailed):
-				h.Logger.Warn("Login failed", "email", u.Email, "reason", shared.ErrAuthenticationFailed, "error", err)
+				h.Logger.Warn("Login failed", "user", u.Email, "domain", "user", "error", err)
 				w.WriteHeader(http.StatusUnauthorized)
 				resp = shared.ApiResponse[any]{
 					Success: false,
 					Error:   "Invalid email or password",
 				}
 			case errors.Is(err, shared.ErrUserInactive):
-				h.Logger.Warn("Login failed", "email", u.Email, "reason", shared.ErrUserInactive, "error", err)
+				h.Logger.Warn("Login failed", "user", u.Email, "domain", "user", "error", err)
 				w.WriteHeader(http.StatusForbidden)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   "User inactive",
+					Error:   "User not authorised",
 				}
 			case errors.Is(err, shared.ErrUserNotAuthorised):
-				h.Logger.Warn("User inactive", "email", u.Email, "reason", shared.ErrUserNotAuthorised, "error", err)
+				h.Logger.Warn("Login failed", "user", u.Email, "domain", "user", "error", err)
 				w.WriteHeader(http.StatusForbidden)
 				resp = shared.ApiResponse[any]{
 					Success: false,
 					Error:   "User not authorised",
 				}
 			default:
-				h.Logger.Error("Failed to login", "email", u.Email, "error", err)
+				h.Logger.Error("Failed to login", "user", u.Email, "domain", "user", "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				resp = shared.ApiResponse[any]{
 					Success: false,
@@ -73,12 +73,12 @@ func (h *Handler) Login() http.HandlerFunc {
 			Value:    token,
 			Path:     "/",
 			Expires:  time.Now().Add(h.Service.Config.UserSessionDuration),
-			SameSite: h.Config.SameSiteMode, // Use SameSiteLaxMode for testing
+			SameSite: h.Config.SameSiteMode,
 			HttpOnly: true,
-			Secure:   h.Config.SecureCookie, // Use false for testing
+			Secure:   h.Config.SecureCookie,
 		})
 
-		h.Logger.Info("User logged in", "email", u.Email)
+		h.Logger.Debug("User logged in", "user", u.Email, "domain", "user")
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
@@ -93,9 +93,9 @@ func (h *Handler) Logout() http.HandlerFunc {
 		cookie, _ := r.Cookie("session")
 
 		if err := h.Service.logout(cookie.Value, ctx); err != nil {
-			h.Logger.Error("Error while logging out user", "error", err)
+			h.Logger.Error("Failed to logout user", "user", email, "domain", "user", "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Server error while processing logout"})
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to logout user"})
 			return
 		}
 
@@ -109,18 +109,21 @@ func (h *Handler) Logout() http.HandlerFunc {
 			MaxAge:   -1,
 		})
 
-		h.Logger.Info("User logged out", "email", email)
+		h.Logger.Debug("User logged out", "user", email, "domain", "user")
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
 
 func (h *Handler) GetUsers() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		_, email := ctxutil.GetActor(ctx)
+
 		users, err := h.Service.getUsers()
 		if err != nil {
-			h.Logger.Error("Error while fetching users", "error", err)
+			h.Logger.Error("Failed to fetch users", "user", email, "domain", "user", "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Error while fetching users"})
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to fetch users"})
 			return
 		}
 
@@ -132,13 +135,13 @@ func (h *Handler) GetUsers() http.HandlerFunc {
 func (h *Handler) GetUserAuthorisation() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		userID, _ := ctxutil.GetActor(ctx)
+		userID, email := ctxutil.GetActor(ctx)
 
 		user, err := h.Service.GetUserAuthorisation(userID)
 		if err != nil {
-			h.Logger.Error("Error while fetching user authorisation")
+			h.Logger.Error("Failed to fetch user authorisation", "user", email, "domain", "user", "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Error while fetching user authorisation"})
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to fetch user authorisation"})
 			return
 		}
 
@@ -149,10 +152,11 @@ func (h *Handler) GetUserAuthorisation() http.HandlerFunc {
 func (h *Handler) UpdateUserAuthorisation() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
+		_, email := ctxutil.GetActor(ctx)
 
 		var req []UpdateUserRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			h.Logger.Error("Malformed request", "error", err)
+			h.Logger.Error("Malformed request", "user", email, "domain", "user", "error", err)
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
 			return
@@ -167,18 +171,18 @@ func (h *Handler) UpdateUserAuthorisation() http.HandlerFunc {
 			var resp shared.ApiResponse[any]
 			switch {
 			case errors.Is(err, shared.ErrCannotModifyOwnAuth):
-				h.Logger.Error("User cannot modify their own authorisations")
+				h.Logger.Error("Failed", "user", email, "domain", "user", "error", err)
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   err.Error(),
+					Error:   "Failed to update user authorisation",
 				}
 			default:
-				h.Logger.Info("Error updating user authorisation", "error", err)
+				h.Logger.Error("Failed to update user authorisation", "user", email, "domain", "user", "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				resp = (shared.ApiResponse[any]{
 					Success: false,
-					Error:   "Error updating user authorisation"})
+					Error:   "Failed to update user authorisation"})
 			}
 
 			json.NewEncoder(w).Encode(resp)
@@ -210,16 +214,15 @@ func (h *Handler) CheckSession() http.HandlerFunc {
 func (h *Handler) CreateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
+		_, email := ctxutil.GetActor(ctx)
 
 		var req CreateUserRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			h.Logger.Error("Malformed request", "error", err)
+			h.Logger.Error("Malformed request", "user", email, "domain", "user", "error", err)
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
 			return
 		}
-
-		h.Logger.Info("Attempted user creation", "email", req.Email)
 
 		// Admin check
 		if !h.UserIsAdmin(w, r) {
@@ -230,42 +233,42 @@ func (h *Handler) CreateUser() http.HandlerFunc {
 		if err := h.Service.createUser(req, ctx); err != nil {
 			switch {
 			case errors.Is(err, shared.ErrUserAlreadyExists):
-				h.Logger.Error("Failed to create user, user already exists")
+				h.Logger.Error("Failed to create user", "user", email, "domain", "user", "target_user", req.Email, "error", err)
 				w.WriteHeader(http.StatusConflict)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   shared.ErrUserAlreadyExists.Error(),
+					Error:   "User already exists",
 				}
 			case errors.Is(err, shared.ErrEmailPattern):
-				h.Logger.Error("Failed to create user, email does not match pattern", "email", req.Email)
+				h.Logger.Error("Failed to create user", "user", email, "domain", "user", "target_user", req.Email, "error", err)
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   shared.ErrEmailPattern.Error(),
+					Error:   "Invalid email",
 				}
 			case errors.Is(err, shared.ErrPasswordLength):
-				h.Logger.Error("Failed to create user, password too short", "email", req.Email)
+				h.Logger.Error("Failed to create user", "user", email, "domain", "user", "target_user", req.Email, "error", err)
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   shared.ErrPasswordLength.Error(),
+					Error:   "Password too short",
 				}
 			case errors.Is(err, shared.ErrEmailContainsPassword):
-				h.Logger.Error("Failed to create user, email contains password", "email", req.Email)
+				h.Logger.Error("Failed to create user", "user", email, "domain", "user", "target_user", req.Email, "error", err)
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   shared.ErrEmailContainsPassword.Error(),
+					Error:   "Email contains password",
 				}
 			case errors.Is(err, shared.ErrPasswordContainsEmail):
-				h.Logger.Error("Failed to create user, password contains email", "email", req.Email)
+				h.Logger.Error("Failed to create user", "user", email, "domain", "user", "target_user", req.Email, "error", err)
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   shared.ErrPasswordContainsEmail.Error(),
+					Error:   "Password contains email",
 				}
 			default:
-				h.Logger.Error("Failed to create user", "email", req.Email, "error", err)
+				h.Logger.Error("Failed to create user", "user", email, "domain", "user", "target_user", req.Email, "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				resp = shared.ApiResponse[any]{
 					Success: false,
@@ -277,7 +280,7 @@ func (h *Handler) CreateUser() http.HandlerFunc {
 			return
 		}
 
-		h.Logger.Info("New user created", "email", req.Email)
+		h.Logger.Info("New user created", "user", email, "domain", "user", "target_user", req.Email)
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
@@ -286,10 +289,11 @@ func (h *Handler) CreateUser() http.HandlerFunc {
 func (h *Handler) DeleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
+		_, email := ctxutil.GetActor(ctx)
 
 		var req DeleteUserRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			h.Logger.Error("Malformed request", "error", err)
+			h.Logger.Error("Malformed request", "user", email, "domain", "user", "target_user", req.UserID, "error", err)
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
 			return
@@ -302,22 +306,22 @@ func (h *Handler) DeleteUser() http.HandlerFunc {
 
 		email, err := h.Service.GetEmailFromUserID(req.UserID)
 		if err != nil {
-			h.Logger.Error("Failed to get email from userID", "error", err)
+			h.Logger.Error("Failed to get email from userID", "user", email, "domain", "user", "target_user", req.UserID, "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to get email from userID"})
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to delete user"})
 		}
 
 		var resp shared.ApiResponse[any]
 		if err := h.Service.deleteUser(req.UserID, ctx); err != nil {
 			if errors.Is(err, shared.ErrCannotDeleteOwnUser) {
-				h.Logger.Error("User attempted to delete own user", "email", email)
+				h.Logger.Error("Failed to delete user", "user", email, "domain", "user", "target_user", email, "error", err)
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   shared.ErrCannotDeleteOwnUser.Error(),
+					Error:   "Failed to delete user",
 				}
 			} else {
-				h.Logger.Error("Failed to delete user", "error", err)
+				h.Logger.Error("Failed to delete user", "user", email, "domain", "user", "target_user", email, "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				resp = shared.ApiResponse[any]{
 					Success: false,
@@ -335,9 +339,10 @@ func (h *Handler) DeleteUser() http.HandlerFunc {
 func (h *Handler) CreateFirstTimeUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
+
 		// Block subsequent requests
 		if !h.Service.Config.SetupMode {
-			h.Logger.Error("First time user creation blocked")
+			h.Logger.Warn("First time user creation blocked", "domain", "user")
 			w.WriteHeader(http.StatusForbidden)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "First time user creation blocked"})
 			return
@@ -345,13 +350,11 @@ func (h *Handler) CreateFirstTimeUser() http.HandlerFunc {
 
 		var req CreateUserRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			h.Logger.Error("Malformed request", "email", req.Email)
+			h.Logger.Error("Malformed request", "domain", "user", "error", err)
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
 			return
 		}
-
-		h.Logger.Info("First time user creation", "email", req.Email)
 
 		req.IsActive = true
 		req.IsAdmin = true
@@ -362,35 +365,35 @@ func (h *Handler) CreateFirstTimeUser() http.HandlerFunc {
 		if err := h.Service.createUser(req, ctx); err != nil {
 			switch {
 			case errors.Is(err, shared.ErrEmailPattern):
-				h.Logger.Error("Failed to create user, email does not match pattern", "email", req.Email)
+				h.Logger.Error("Failed to create user", "domain", "user", "target_user", req.Email, "error", err)
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   shared.ErrEmailPattern.Error(),
+					Error:   "Invalid email",
 				}
 			case errors.Is(err, shared.ErrPasswordLength):
-				h.Logger.Error("Failed to create user, password too short", "email", req.Email)
+				h.Logger.Error("Failed to create user", "domain", "user", "target_user", req.Email, "error", err)
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   shared.ErrPasswordLength.Error(),
+					Error:   "Password too short",
 				}
 			case errors.Is(err, shared.ErrEmailContainsPassword):
-				h.Logger.Error("Failed to create user, email contains password", "email", req.Email)
+				h.Logger.Error("Failed to create user", "domain", "user", "target_user", req.Email, "error", err)
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   shared.ErrEmailContainsPassword.Error(),
+					Error:   "Email contains password",
 				}
 			case errors.Is(err, shared.ErrPasswordContainsEmail):
-				h.Logger.Error("Failed to create user, password contains email", "email", req.Email)
+				h.Logger.Error("Failed to create user", "domain", "user", "target_user", req.Email, "error", err)
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   shared.ErrPasswordContainsEmail.Error(),
+					Error:   "Password contains email",
 				}
 			default:
-				h.Logger.Error("Failed to create user", "email", req.Email, "error", err)
+				h.Logger.Error("Failed to create user", "domain", "user", "target_user", req.Email, "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				resp = shared.ApiResponse[any]{
 					Success: false,
@@ -401,9 +404,9 @@ func (h *Handler) CreateFirstTimeUser() http.HandlerFunc {
 			return
 		}
 
-		// Disable setup mode
+		// Disable setup mode, mode will set false automatically on next restart
 		h.Service.Config.SetupMode = false
-		h.Logger.Info("First time user created", "email", req.Email)
+		h.Logger.Info("First time user created", "domain", "user", "target_user", req.Email)
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
@@ -412,11 +415,11 @@ func (h *Handler) CreateFirstTimeUser() http.HandlerFunc {
 func (h *Handler) ChangePassword() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		userID, email := ctxutil.GetActor(ctx)
+		_, email := ctxutil.GetActor(ctx)
 
 		var req ChangePasswordRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			h.Logger.Error("Malformed request", "userid", userID)
+			h.Logger.Error("Malformed request", "user", email, "domain", "user", "error", err)
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
 			return
@@ -427,41 +430,41 @@ func (h *Handler) ChangePassword() http.HandlerFunc {
 		if err != nil {
 			switch {
 			case errors.Is(err, shared.ErrCurrentOrNewPasswordMissing):
-				h.Logger.Error("Failed to change password for user, current or new password missing", "email", email)
+				h.Logger.Error("Failed to change password", "user", email, "domain", "user", "error", err)
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   "current or new password missing",
+					Error:   "Current or new password missing",
 				}
 			case errors.Is(err, shared.ErrAuthenticationFailed):
-				h.Logger.Error("Failed to change password for user, authentication failed", "email", email)
+				h.Logger.Error("Failed to change password", "user", email, "domain", "user", "error", err)
 				w.WriteHeader(http.StatusUnauthorized)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   "authentication failed",
+					Error:   "Authentication failed",
 				}
 			case errors.Is(err, shared.ErrInvalidPassword):
-				h.Logger.Error("Failed to change password for user, password did not match complexity requirements", "email", email)
+				h.Logger.Error("Failed to change password", "user", email, "domain", "user", "error", err)
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   "password did not match complexity requirements",
+					Error:   "Password did not match complexity requirements",
 				}
 			case errors.Is(err, shared.ErrNoRowsUpdated):
-				h.Logger.Error("Failed to change password for user, no rows were updated", "email", email)
+				h.Logger.Error("Failed to change password", "user", email, "domain", "user", "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   "no rows updated",
+					Error:   "Password was not changed",
 				}
 			case errors.Is(err, shared.ErrNoRowsDeleted):
-				h.Logger.Warn("Failed to clear sessions after password change, no rows were deleted", "email", email)
+				h.Logger.Warn("Failed to clear sessions after password change", "user", email, "domain", "user", "error", err)
 				// Not an actual error
 				resp = shared.ApiResponse[any]{
 					Success: true,
 				}
 			default:
-				h.Logger.Error("Failed to change password for user", "email", email, "error", err)
+				h.Logger.Error("Failed to change password", "user", email, "domain", "user", "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				resp = shared.ApiResponse[any]{
 					Success: false,
@@ -473,7 +476,7 @@ func (h *Handler) ChangePassword() http.HandlerFunc {
 			return
 		}
 
-		h.Logger.Info("Password changed for user", "email", email)
+		h.Logger.Info("Password changed for user", "user", email, "domain", "user")
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
@@ -481,18 +484,18 @@ func (h *Handler) ChangePassword() http.HandlerFunc {
 // Handler helper to guard admin routes
 func (h *Handler) UserIsAdmin(w http.ResponseWriter, r *http.Request) bool {
 	ctx := r.Context()
-	userID, _ := ctxutil.GetActor(ctx)
+	userID, email := ctxutil.GetActor(ctx)
 
 	user, err := h.Service.GetUserAuthorisation(userID)
 	if err != nil {
-		h.Logger.Error("Error while fetching user authorisation")
+		h.Logger.Error("Failed to fetch user authorisation", "user", email, "domain", "user", "error", err)
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Error while fetching user authorisation"})
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to fetch user authorisation"})
 		return false
 	}
 
 	if !user.IsAdmin {
-		h.Logger.Error("Non-admin user attempted to access admin functions", "email", user.Email)
+		h.Logger.Error("Failed admin check. Non-admin user attempted to access admin functions", "user", email, "domain", "user")
 		w.WriteHeader(http.StatusForbidden)
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Unauthorised"})
 		return false
