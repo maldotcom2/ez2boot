@@ -11,7 +11,7 @@ import (
 
 // Scrape AWS to retrieve servers.
 func (s *Service) Scrape() error {
-	s.Logger.Debug("Scraping AWS")
+	s.Logger.Debug("Scraping AWS", "domain", "aws")
 
 	input := getDescribeInstancesInput(s.Config.TagKey) // Target tagged instances
 
@@ -47,7 +47,7 @@ func (s *Service) Scrape() error {
 
 // Start required AWS servers
 func (s *Service) Start() error {
-	s.Logger.Debug("Starting requested AWS servers")
+	s.Logger.Debug("Starting requested AWS instances", "domain", "aws")
 
 	// Get start instance IDs
 	instanceIDs, err := s.ServerService.GetPending("off", "on")
@@ -89,7 +89,7 @@ func (s *Service) Start() error {
 
 // Stop no longer required AWS servers
 func (s *Service) Stop() error {
-	s.Logger.Debug("Stopping requested AWS servers")
+	s.Logger.Debug("Stopping requested AWS instances", "domain", "aws")
 
 	// Get start instance IDs
 	instanceIDs, err := s.ServerService.GetPending("on", "off")
