@@ -139,7 +139,7 @@ func (r *Repository) changePassword(userID int64, newHash string) error {
 	// Clear existing sessions
 	resPurge, err := r.Base.DB.Exec("DELETE FROM user_sessions WHERE user_id = $1", userID)
 	if err != nil {
-
+		return err
 	}
 
 	rowsPurge, err := resPurge.RowsAffected()
