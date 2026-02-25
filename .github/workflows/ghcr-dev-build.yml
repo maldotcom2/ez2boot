@@ -1,0 +1,41 @@
+name: Build and Push Dev
+
+on:
+  push:
+    branches:
+      - next
+
+jobs:
+  build-and-push:
+    # This defines the runner environment
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: |
+          docker build --pull -f deployments/dockerfile \
+          --build-arg VERSION=${{ github.sha }}-rc \
+          --build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+          -t ghcr.io/maldotcom2/ez2boot:${{ github.sha }}-rc \
+          .
+
+      - name: Push Docker image
+        run: |
+          docker push ghcr.io/maldotcom2/ez2boot:${{ github.sha }}-rc
+
+      - name: Delete old packages
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: ez2boot
+          package-type: container
+          min-versions-to-keep: 5
