@@ -5,6 +5,10 @@ on:
     branches:
       - next
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   build-and-push:
     # This defines the runner environment
