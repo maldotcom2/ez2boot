@@ -54,7 +54,13 @@ func (s *Service) login(u UserLogin) (token string, err error) {
 		return "", authErr
 	}
 
-	if !authenticated || authErr == shared.ErrUserNotFound {
+	// User not found
+	if authErr == shared.ErrUserNotFound {
+		return "", shared.ErrUserNotFound
+	}
+
+	// Found but not authenticated
+	if !authenticated {
 		return "", shared.ErrAuthenticationFailed
 	}
 
@@ -291,7 +297,7 @@ func (s *Service) changePassword(req ChangePasswordRequest, ctx context.Context)
 func (s *Service) AuthenticateUser(email string, password string) (int64, bool, error) {
 	id, hash, err := s.Repo.getUserIDHashByEmail(email)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return 0, false, shared.ErrUserNotFound
+		return 0, false, err // generic error other than no user
 	}
 
 	if errors.Is(err, sql.ErrNoRows) {

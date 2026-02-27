@@ -34,12 +34,19 @@ func (h *Handler) Login() http.HandlerFunc {
 					Success: false,
 					Error:   "Missing email or password for login",
 				}
+			case errors.Is(err, shared.ErrUserNotFound):
+				h.Logger.Warn("Login failed", "user", u.Email, "domain", "user", "error", err)
+				w.WriteHeader(http.StatusUnauthorized)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "Invalid email or password", // Make sure this stays the same as for auth fail
+				}
 			case errors.Is(err, shared.ErrAuthenticationFailed):
 				h.Logger.Warn("Login failed", "user", u.Email, "domain", "user", "error", err)
 				w.WriteHeader(http.StatusUnauthorized)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   "Invalid email or password",
+					Error:   "Invalid email or password", // Make sure this stays the same as for user not found
 				}
 			case errors.Is(err, shared.ErrUserInactive):
 				h.Logger.Warn("Login failed", "user", u.Email, "domain", "user", "error", err)
