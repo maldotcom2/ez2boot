@@ -484,10 +484,17 @@ func (h *Handler) EnrolMFA() http.HandlerFunc {
 
 		// Get QR code
 		bytes, err := h.Service.enrolMFA(userID, email)
-		if err != nil {
+		if err != nil && !errors.Is(err, shared.ErrMFANotSupported) {
 			h.Logger.Error("Failed to enrol MFA", "user", email, "domain", "user", "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to enrol MFA"})
+			return
+		}
+
+		if errors.Is(err, shared.ErrMFANotSupported) {
+			h.Logger.Warn("Failed to enrol MFA", "user", email, "domain", "user", "error", err)
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "MFA enrolment not supported for this user type"})
 			return
 		}
 

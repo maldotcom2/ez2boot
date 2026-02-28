@@ -291,12 +291,13 @@ func TestGetUserAuthorisation_Success(t *testing.T) {
 	want := shared.ApiResponse[user.UserAuthResponse]{
 		Success: true,
 		Data: user.UserAuthResponse{
-			UserID:     1,
-			Email:      "example@example.com",
-			IsActive:   true,
-			IsAdmin:    false,
-			APIEnabled: true,
-			UIEnabled:  true,
+			UserID:           1,
+			Email:            "example@example.com",
+			IsActive:         true,
+			IsAdmin:          false,
+			APIEnabled:       true,
+			UIEnabled:        true,
+			IdentityProvider: "local",
 		},
 		Error: "",
 	}

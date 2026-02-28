@@ -373,6 +373,16 @@ func (s *Service) GetEmailFromUserID(userID int64) (string, error) {
 }
 
 func (s *Service) enrolMFA(userID int64, email string) ([]byte, error) {
+	user, err := s.GetUserAuthorisation(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// SSO users would get MFA via IDP
+	if user.IdentityProvider == "oidc" {
+		return nil, shared.ErrMFANotSupported
+	}
+
 	key, err := totp.Generate(totp.GenerateOpts{
 		Issuer:      "ez2boot",
 		AccountName: email,

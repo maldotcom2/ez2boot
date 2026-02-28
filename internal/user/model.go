@@ -94,12 +94,13 @@ type CreateUser struct {
 }
 
 type UserAuthResponse struct {
-	UserID     int64  `json:"user_id"`
-	Email      string `json:"email"`
-	IsActive   bool   `json:"is_active"`
-	IsAdmin    bool   `json:"is_admin"`
-	APIEnabled bool   `json:"api_enabled"`
-	UIEnabled  bool   `json:"ui_enabled"`
+	UserID           int64  `json:"user_id"`
+	Email            string `json:"email"`
+	IsActive         bool   `json:"is_active"`
+	IsAdmin          bool   `json:"is_admin"`
+	APIEnabled       bool   `json:"api_enabled"`
+	UIEnabled        bool   `json:"ui_enabled"`
+	IdentityProvider string `json:"identity_provider"`
 }
 
 type SetupResponse struct {

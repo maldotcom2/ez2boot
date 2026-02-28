@@ -51,10 +51,10 @@ func (r *Repository) getUsers() ([]User, error) {
 }
 
 func (r *Repository) getUserAuthorisation(userID int64) (UserAuthResponse, error) {
-	query := `SELECT id, email, is_active, is_admin, api_enabled, ui_enabled FROM users WHERE id = $1`
+	query := `SELECT id, email, is_active, is_admin, api_enabled, ui_enabled, identity_provider FROM users WHERE id = $1`
 
 	var u UserAuthResponse
-	if err := r.Base.DB.QueryRow(query, userID).Scan(&u.UserID, &u.Email, &u.IsActive, &u.IsAdmin, &u.APIEnabled, &u.UIEnabled); err != nil {
+	if err := r.Base.DB.QueryRow(query, userID).Scan(&u.UserID, &u.Email, &u.IsActive, &u.IsAdmin, &u.APIEnabled, &u.UIEnabled, &u.IdentityProvider); err != nil {
 		return UserAuthResponse{}, err
 	}
 
