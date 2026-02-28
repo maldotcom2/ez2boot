@@ -105,3 +105,14 @@ type UserAuthResponse struct {
 type SetupResponse struct {
 	SetupMode bool `json:"setup_mode"`
 }
+
+// Setup of new MFA
+type EnrolMFARequest struct {
+	UserID int64  `json:"-"`
+	Secret string `json:"secret"`
+}
+
+type CheckMFARequest struct {
+	UserID int64  `json:"-"`
+	Code   string `json:"code"`
+}

@@ -1,6 +1,7 @@
 package user
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"ez2boot/internal/ctxutil"
@@ -470,7 +471,88 @@ func (h *Handler) ChangePassword() http.HandlerFunc {
 			return
 		}
 
-		h.Logger.Info("Password changed for user", "user", email, "domain", "user")
+		h.Logger.Info("Password changed", "user", email, "domain", "user")
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
+	}
+}
+
+// Initial MFA enrolment - user served with QR code
+func (h *Handler) EnrolMFA() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		userID, email := ctxutil.GetActor(ctx)
+
+		// Get QR code
+		bytes, err := h.Service.enrolMFA(userID, email)
+		if err != nil {
+			h.Logger.Error("Failed to enrol MFA", "user", email, "domain", "user", "error", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to enrol MFA"})
+			return
+		}
+
+		h.Logger.Info("MFA enrolment begun", "user", email, "domain", "user")
+		//w.Header().Set("Content-Type", "image/png")
+		//w.Write(bytes) // test
+		encodedBytes := base64.StdEncoding.EncodeToString(bytes)
+		json.NewEncoder(w).Encode(shared.ApiResponse[string]{Success: true, Data: encodedBytes})
+	}
+}
+
+// Second step of enrolment - user enters code to complete MFA enrolment
+func (h *Handler) ValidateMFA() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		userID, email := ctxutil.GetActor(ctx)
+
+		var req CheckMFARequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			h.Logger.Error("Malformed request", "user", email, "domain", "user", "error", err)
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
+			return
+		}
+
+		req.UserID = userID
+
+		match, err := h.Service.checkMFA(req)
+		if err != nil && !errors.Is(err, shared.ErrMFANotEnrolled) {
+			h.Logger.Error("Failed to check MFA code", "user", email, "domain", "user", "error", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to check MFA code"})
+			return
+		}
+
+		if errors.Is(err, shared.ErrMFANotEnrolled) {
+			h.Logger.Warn("MFA not enrolled", "user", email, "domain", "user")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "MFA not enrolled"})
+			return
+		}
+
+		if !match {
+			h.Logger.Warn("MFA code incorrect", "user", email, "domain", "user")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "MFA code incorrect"})
+			return
+		}
+
+		err = h.Service.confirmMFA(userID)
+		if err != nil && !errors.Is(err, shared.ErrNoRowsUpdated) {
+			h.Logger.Error("Failed to validate MFA", "user", email, "domain", "user", "error", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to validate MFA"})
+			return
+		}
+
+		if errors.Is(err, shared.ErrNoRowsUpdated) {
+			h.Logger.Warn("MFA already validated", "user", email, "domain", "user")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "MFA already validated"})
+			return
+		}
+
+		h.Logger.Info("MFA enrolment validated", "user", email, "domain", "user")
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }

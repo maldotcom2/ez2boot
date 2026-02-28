@@ -163,6 +163,14 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
+## otp
+
+otp
+Copyright (c) 2014, Paul Querna
+
+This product includes software developed by 
+Paul Querna (http://paul.querna.org/).
+
 ---
 
 ## Apache 2.0 License

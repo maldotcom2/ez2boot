@@ -1,6 +1,7 @@
 package user
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"errors"
@@ -9,9 +10,11 @@ import (
 	"ez2boot/internal/shared"
 	"ez2boot/internal/util"
 	"fmt"
+	"image/png"
 	"time"
 
 	"github.com/alexedwards/argon2id"
+	"github.com/pquerna/otp/totp"
 )
 
 // Attempt user login using even-time
@@ -367,4 +370,59 @@ func (s *Service) GetEmailFromUserID(userID int64) (string, error) {
 	}
 
 	return email, nil
+}
+
+func (s *Service) enrolMFA(userID int64, email string) ([]byte, error) {
+	key, err := totp.Generate(totp.GenerateOpts{
+		Issuer:      "ez2boot",
+		AccountName: email,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+	img, err := key.Image(200, 200)
+	if err != nil {
+		return nil, err
+	}
+
+	png.Encode(&buf, img)
+
+	// store secret
+	if err := s.Repo.setMFASecret(key.Secret(), userID); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+// Initial enrolment only
+func (s *Service) confirmMFA(userID int64) error {
+	rows, err := s.Repo.confirmMFA(userID)
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 { // Nothing happened, user trying to validate when already validated
+		return shared.ErrNoRowsUpdated
+	}
+
+	return nil
+}
+
+func (s *Service) checkMFA(req CheckMFARequest) (bool, error) {
+	// Get secret from DB
+	secret, err := s.Repo.getMFASecret(req.UserID)
+	if err != nil {
+		return false, err
+	}
+
+	if secret == nil {
+		return false, shared.ErrMFANotEnrolled
+	}
+
+	isValid := totp.Validate(req.Code, *secret)
+
+	return isValid, nil
 }

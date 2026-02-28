@@ -58,5 +58,9 @@ func (r *Repository) SetupDB() error {
 		return err
 	}
 
+	// TODO proper migration
+	r.DB.Exec("ALTER TABLE users ADD COLUMN mfa_secret TEXT")
+	r.DB.Exec("ALTER TABLE users ADD COLUMN mfa_confirmed INTEGER NOT NULL DEFAULT 0 CHECK (mfa_confirmed IN (0, 1))")
+
 	return nil
 }
