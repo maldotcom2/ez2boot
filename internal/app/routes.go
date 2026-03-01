@@ -67,8 +67,9 @@ func SetupBackendRoutes(
 	uiRouter.HandleFunc("/user/auth", handlers.UserHandler.GetUserAuthorisation()).Methods("GET")
 	uiRouter.HandleFunc("/user/password", handlers.UserHandler.ChangePassword()).Methods("PUT")
 	uiRouter.HandleFunc("/user/logout", handlers.UserHandler.Logout()).Methods("POST") // UI specific
-	uiRouter.HandleFunc("/user/mfa/enrol", handlers.UserHandler.EnrolMFA()).Methods("POST")
-	uiRouter.HandleFunc("/user/mfa/validate", handlers.UserHandler.ValidateMFA()).Methods("POST")
+	uiRouter.HandleFunc("/user/mfa", handlers.UserHandler.EnrolMFA()).Methods("POST")
+	uiRouter.HandleFunc("/user/mfa/confirm", handlers.UserHandler.ConfirmMFA()).Methods("POST")
+	uiRouter.HandleFunc("/user/mfa", handlers.UserHandler.DeleteMFA()).Methods("DELETE")
 	/// Notification channels
 	uiRouter.HandleFunc("/user/notification", handlers.NotificationHandler.GetUserNotificationSettings()).Methods("GET")
 	uiRouter.HandleFunc("/user/notification", handlers.NotificationHandler.SetUserNotificationSettings()).Methods("POST")

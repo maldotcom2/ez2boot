@@ -397,19 +397,36 @@ func (s *Service) enrolMFA(userID int64, email string) ([]byte, error) {
 		return nil, err
 	}
 
-	png.Encode(&buf, img)
+	if err := png.Encode(&buf, img); err != nil {
+		return nil, err
+	}
 
 	// store secret
-	if err := s.Repo.setMFASecret(key.Secret(), userID); err != nil {
+	secret := key.Secret()
+	rows, err := s.Repo.setMFASecret(&secret, userID)
+	if err != nil {
 		return nil, err
+	}
+
+	if rows == 0 {
+		return nil, shared.ErrNoRowsUpdated
 	}
 
 	return buf.Bytes(), nil
 }
 
 // Initial enrolment only
-func (s *Service) confirmMFA(userID int64) error {
-	rows, err := s.Repo.confirmMFA(userID)
+func (s *Service) confirmMFA(req MFARequest) error {
+	ok, err := s.checkMFA(req)
+	if err != nil {
+		return err
+	}
+
+	if !ok {
+		return shared.ErrIncorrectMFACode
+	}
+
+	rows, err := s.Repo.confirmMFA(req.UserID)
 	if err != nil {
 		return err
 	}
@@ -421,7 +438,7 @@ func (s *Service) confirmMFA(userID int64) error {
 	return nil
 }
 
-func (s *Service) checkMFA(req CheckMFARequest) (bool, error) {
+func (s *Service) checkMFA(req MFARequest) (bool, error) {
 	// Get secret from DB
 	secret, err := s.Repo.getMFASecret(req.UserID)
 	if err != nil {
@@ -435,4 +452,29 @@ func (s *Service) checkMFA(req CheckMFARequest) (bool, error) {
 	isValid := totp.Validate(req.Code, *secret)
 
 	return isValid, nil
+}
+
+func (s *Service) deleteMFA(req MFARequest) error {
+	// Check code
+	ok, err := s.checkMFA(req)
+	if err != nil {
+		return err
+	}
+
+	if !ok {
+		return shared.ErrIncorrectMFACode
+	}
+
+	// null the secret
+	rows, err := s.Repo.setMFASecret(nil, req.UserID)
+	if err != nil {
+		return err
+	}
+
+	// This is defensive - should never run
+	if rows == 0 {
+		return shared.ErrNoRowsUpdated
+	}
+
+	return nil
 }

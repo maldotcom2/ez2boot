@@ -185,12 +185,18 @@ func (r *Repository) deleteExpiredUserSessions() (int64, error) {
 	return rows, nil
 }
 
-func (r *Repository) setMFASecret(secret string, userID int64) error {
-	if _, err := r.Base.DB.Exec("UPDATE users SET mfa_secret = $1 WHERE id = $2", secret, userID); err != nil {
-		return err
+func (r *Repository) setMFASecret(secret *string, userID int64) (int64, error) {
+	result, err := r.Base.DB.Exec("UPDATE users SET mfa_secret = $1, mfa_confirmed = 0 WHERE id = $2", secret, userID)
+	if err != nil {
+		return 0, err
 	}
 
-	return nil
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+
+	return rows, nil
 }
 
 func (r *Repository) confirmMFA(userID int64) (int64, error) {

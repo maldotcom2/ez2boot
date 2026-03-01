@@ -113,7 +113,7 @@ type EnrolMFARequest struct {
 	Secret string `json:"secret"`
 }
 
-type CheckMFARequest struct {
+type MFARequest struct {
 	UserID int64  `json:"-"`
 	Code   string `json:"code"`
 }
