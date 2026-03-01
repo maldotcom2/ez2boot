@@ -66,10 +66,10 @@ func SetupBackendRoutes(
 	uiRouter.HandleFunc("/user/session", handlers.UserHandler.CheckSession()).Methods("GET") // UI specific
 	uiRouter.HandleFunc("/user/auth", handlers.UserHandler.GetUserAuthorisation()).Methods("GET")
 	uiRouter.HandleFunc("/user/password", handlers.UserHandler.ChangePassword()).Methods("PUT")
-	uiRouter.HandleFunc("/user/logout", handlers.UserHandler.Logout()).Methods("POST") // UI specific
-	uiRouter.HandleFunc("/user/mfa", handlers.UserHandler.EnrolMFA()).Methods("POST")
-	uiRouter.HandleFunc("/user/mfa/confirm", handlers.UserHandler.ConfirmMFA()).Methods("POST")
-	uiRouter.HandleFunc("/user/mfa", handlers.UserHandler.DeleteMFA()).Methods("DELETE")
+	uiRouter.HandleFunc("/user/logout", handlers.UserHandler.Logout()).Methods("POST")          // UI specific
+	uiRouter.HandleFunc("/user/mfa", handlers.UserHandler.EnrolMFA()).Methods("POST")           // UI specific
+	uiRouter.HandleFunc("/user/mfa/confirm", handlers.UserHandler.ConfirmMFA()).Methods("POST") // UI specific
+	uiRouter.HandleFunc("/user/mfa", handlers.UserHandler.DeleteMFA()).Methods("DELETE")        // UI specific
 	/// Notification channels
 	uiRouter.HandleFunc("/user/notification", handlers.NotificationHandler.GetUserNotificationSettings()).Methods("GET")
 	uiRouter.HandleFunc("/user/notification", handlers.NotificationHandler.SetUserNotificationSettings()).Methods("POST")

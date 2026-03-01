@@ -508,8 +508,8 @@ func (h *Handler) EnrolMFA() http.HandlerFunc {
 		}
 
 		h.Logger.Info("MFA enrolment begun", "user", email, "domain", "user")
-		w.Header().Set("Content-Type", "image/png")
-		w.Write(bytes) // test
+		/* 		w.Header().Set("Content-Type", "image/png") // test
+		   		w.Write(bytes)                              // test */
 		encodedBytes := base64.StdEncoding.EncodeToString(bytes)
 		json.NewEncoder(w).Encode(shared.ApiResponse[string]{Success: true, Data: encodedBytes})
 	}
