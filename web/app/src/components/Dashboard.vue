@@ -23,6 +23,7 @@ onMounted(async () => {
       console.log('Current user id is', user.userID)
       console.log('Current user is', user.email)
       console.log('User is admin', user.isAdmin)
+      console.log('MFA status is', user.hasMFA)
     } catch (err) {
       console.error("Failed to load user", user.error)
     }

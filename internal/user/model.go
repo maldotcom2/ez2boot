@@ -101,6 +101,7 @@ type UserAuthResponse struct {
 	APIEnabled       bool   `json:"api_enabled"`
 	UIEnabled        bool   `json:"ui_enabled"`
 	IdentityProvider string `json:"identity_provider"`
+	MFAConfirmed     bool   `json:"mfa_confirmed"`
 }
 
 type SetupResponse struct {
