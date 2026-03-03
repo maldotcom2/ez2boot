@@ -10,7 +10,6 @@ import (
 
 // Login UI user
 func (r *Repository) createUserSession(tokenHash string, expiry int64, userID int64) error {
-	// Write hash, expiry and user ID
 	if _, err := r.Base.DB.Exec("INSERT INTO user_sessions (token_hash, session_expiry, user_id) VALUES ($1, $2, $3)", tokenHash, expiry, userID); err != nil {
 		return err
 	}
@@ -220,4 +219,46 @@ func (r *Repository) getMFASecret(userID int64) (*string, error) {
 	}
 
 	return secret, nil
+}
+
+// Create mfa pending session
+func (r *Repository) createMFAPendingSession(tokenHash string, expiry int64, userID int64) error {
+	if _, err := r.Base.DB.Exec("INSERT INTO mfa_pending_sessions (token_hash, session_expiry, user_id) VALUES ($1, $2, $3)", tokenHash, expiry, userID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Repository) getMFAPendingSessionStatus(hash string) (MFAPendingSessionResponse, error) {
+	query := `SELECT us.session_expiry, u.id, u.email
+        	FROM mfa_pending_sessions AS us
+        	JOIN users u ON us.user_id = u.id
+        	WHERE us.token_hash = $1`
+
+	var m MFAPendingSessionResponse
+	err := r.Base.DB.QueryRow(query, hash).Scan(&m.SessionExpiry, &m.UserID, &m.Email)
+	if err != nil {
+		return MFAPendingSessionResponse{}, err
+	}
+
+	return m, nil
+}
+
+func (r *Repository) deleteMFAPendingSession(hash string) error {
+	result, err := r.Base.DB.Exec("DELETE FROM mfa_pending_sessions WHERE token_hash = $1", hash)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return shared.ErrNoRowsDeleted
+	}
+
+	return nil
 }

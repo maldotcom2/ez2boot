@@ -31,6 +31,11 @@ func (r *Repository) SetupDB() error {
 		return err
 	}
 
+	// create table for low-priv MFA interval session
+	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS mfa_pending_sessions (token_hash TEXT PRIMARY KEY, session_expiry INTEGER NOT NULL, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE)"); err != nil {
+		return err
+	}
+
 	// create table for notification queue
 	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS notification_queue (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, message TEXT NOT NULL, title TEXT NOT NULL, time_added INTEGER NOT NULL)"); err != nil {
 		return err

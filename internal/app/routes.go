@@ -26,6 +26,7 @@ func SetupBackendRoutes(
 	publicRouter.Use(mw.JsonContentTypeMiddleware)
 
 	publicRouter.HandleFunc("/user/login", handlers.UserHandler.Login()).Methods("POST")
+	publicRouter.HandleFunc("/user/mfa/verify", handlers.UserHandler.VerifyMFA()).Methods("POST")
 	publicRouter.HandleFunc("/mode", handlers.UserHandler.GetMode()).Methods("GET")
 	if cfg.SetupMode {
 		publicRouter.HandleFunc("/setup", handlers.UserHandler.CreateFirstTimeUser()).Methods("POST")

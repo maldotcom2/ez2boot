@@ -10,7 +10,7 @@
           <img v-if="qrCode" class="qr-code" :src="`data:image/png;base64,${qrCode}`" />
           <label>
             6-digit Code
-            <input v-model="mfaCode" />
+            <input v-model="mfaCode" maxlength="6"/>
           </label>
           <button v-if="qrCode" type="button" :disabled="mfaCode.length !== 6" @click="confirmMFA">Confirm</button>
           <button v-if="user.hasMFA" type="button" :disabled="mfaCode.length !== 6" @click="deleteMFA">Delete</button>

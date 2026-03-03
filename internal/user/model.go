@@ -13,10 +13,11 @@ type Repository struct {
 }
 
 type Service struct {
-	Repo   *Repository
-	Config *config.Config
-	Audit  *audit.Service
-	Logger *slog.Logger
+	Repo     *Repository
+	Config   *config.Config
+	Audit    *audit.Service
+	MFACache *MFACache
+	Logger   *slog.Logger
 }
 
 type Handler struct {
@@ -117,4 +118,10 @@ type EnrolMFARequest struct {
 type MFARequest struct {
 	UserID int64  `json:"-"`
 	Code   string `json:"code"`
+}
+
+type MFAPendingSessionResponse struct {
+	UserID        int64
+	SessionExpiry int64
+	Email         string
 }
