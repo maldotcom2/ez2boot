@@ -87,8 +87,12 @@ func (h *Handler) Login() http.HandlerFunc {
 				HttpOnly: true,
 				Secure:   h.Config.SecureCookie,
 			})
+
+			var m MFARequiredResponse
+			m.MFARequired = true // Used to direct UI behaviour
+
 			h.Logger.Debug("MFA required", "user", u.Email, "domain", "user")
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: map[string]bool{"mfa_required": true}}) // Used to direct UI behaviour
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: m})
 			return
 		}
 

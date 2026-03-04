@@ -125,3 +125,7 @@ type MFAPendingSessionResponse struct {
 	SessionExpiry int64
 	Email         string
 }
+
+type MFARequiredResponse struct {
+	MFARequired bool `json:"mfa_required"`
+}
