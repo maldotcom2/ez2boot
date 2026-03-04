@@ -56,7 +56,6 @@ async function login() {
 
     message.value = 'Login successful'
     messageType.value = 'success'
-    console.log('Login successful:', response.data)
     setTimeout(() => {
       router.push({
       path: '/dashboard',
