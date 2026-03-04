@@ -14,7 +14,7 @@
         <button type="submit" :disabled="!email || !password">Login</button>
       </template>
       <template v-else>
-        <p>Open your authenticator app and enter the 6-digit code.</p>
+        <p>MFA required: Open your authenticator app and enter the 6-digit code</p>
         <input v-model="mfaCode" maxlength="6"/>
         <button type="button" :disabled="mfaCode.length !== 6" @click="verifyMFA">Verify</button>
       </template>
@@ -152,6 +152,10 @@ async function verifyMFA() {
 h1 {
   display: flex;
   justify-content: center;
+}
+
+p {
+  text-align: center;
 }
 
 input {
