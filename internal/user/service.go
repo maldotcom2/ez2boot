@@ -22,6 +22,11 @@ func (s *Service) login(u UserLogin) (token string, mfaRequired bool, err error)
 	var userID int64
 
 	defer func() {
+		// MFA succcess still pending
+		if mfaRequired {
+			return
+		}
+
 		var reason string
 		if err != nil {
 			reason = err.Error()
@@ -374,7 +379,23 @@ func (s *Service) GetEmailFromUserID(userID int64) (string, error) {
 	return email, nil
 }
 
-func (s *Service) enrolMFA(userID int64, email string) ([]byte, error) {
+func (s *Service) enrolMFA(userID int64, email string) (_ []byte, err error) {
+	defer func() {
+		var reason string
+		if err != nil {
+			reason = err.Error()
+		}
+
+		s.Audit.Log(audit.Event{
+			ActorUserID: userID,
+			ActorEmail:  email,
+			Action:      "enrol mfa",
+			Resource:    "user",
+			Success:     err == nil,
+			Reason:      reason,
+		})
+	}()
+
 	user, err := s.GetUserAuthorisation(userID)
 	if err != nil {
 		return nil, err
@@ -399,7 +420,7 @@ func (s *Service) enrolMFA(userID int64, email string) ([]byte, error) {
 		return nil, err
 	}
 
-	if err := png.Encode(&buf, img); err != nil {
+	if err = png.Encode(&buf, img); err != nil {
 		return nil, err
 	}
 
@@ -418,7 +439,25 @@ func (s *Service) enrolMFA(userID int64, email string) ([]byte, error) {
 }
 
 // Initial enrolment only
-func (s *Service) confirmMFA(req MFARequest) error {
+func (s *Service) confirmMFA(req MFARequest, ctx context.Context) (err error) {
+	actorUserID, actorEmail := ctxutil.GetActor(ctx)
+
+	defer func() {
+		var reason string
+		if err != nil {
+			reason = err.Error()
+		}
+
+		s.Audit.Log(audit.Event{
+			ActorUserID: actorUserID,
+			ActorEmail:  actorEmail,
+			Action:      "confirm mfa",
+			Resource:    "user",
+			Success:     err == nil,
+			Reason:      reason,
+		})
+	}()
+
 	ok, err := s.checkMFA(req)
 	if err != nil {
 		return err
@@ -461,10 +500,29 @@ func (s *Service) checkMFA(req MFARequest) (bool, error) {
 	}
 
 	s.MFACache.Set(req.UserID, req.Code)
+
 	return true, nil
 }
 
-func (s *Service) deleteMFA(req MFARequest) error {
+func (s *Service) deleteMFA(req MFARequest, ctx context.Context) (err error) {
+	actorUserID, actorEmail := ctxutil.GetActor(ctx)
+
+	defer func() {
+		var reason string
+		if err != nil {
+			reason = err.Error()
+		}
+
+		s.Audit.Log(audit.Event{
+			ActorUserID: actorUserID,
+			ActorEmail:  actorEmail,
+			Action:      "delete mfa",
+			Resource:    "user",
+			Success:     err == nil,
+			Reason:      reason,
+		})
+	}()
+
 	// Check code
 	ok, err := s.checkMFA(req)
 	if err != nil {
@@ -489,7 +547,27 @@ func (s *Service) deleteMFA(req MFARequest) error {
 	return nil
 }
 
-func (s *Service) verifyMFA(req MFARequest, pendingToken string) (string, string, error) {
+func (s *Service) verifyMFA(req MFARequest, pendingToken string) (_ string, _ string, err error) {
+	// Public handler, no context injection
+	var actorUserID int64
+	var actorEmail string
+
+	defer func() {
+		var reason string
+		if err != nil {
+			reason = err.Error()
+		}
+
+		s.Audit.Log(audit.Event{
+			ActorUserID: actorUserID,
+			ActorEmail:  actorEmail,
+			Action:      "login",
+			Resource:    "user",
+			Success:     err == nil,
+			Reason:      reason,
+		})
+	}()
+
 	hash := util.HashToken(pendingToken)
 
 	// Look up pending session
@@ -497,6 +575,9 @@ func (s *Service) verifyMFA(req MFARequest, pendingToken string) (string, string
 	if err != nil {
 		return "", "", shared.ErrSessionNotFound
 	}
+
+	actorUserID = m.UserID
+	actorEmail = m.Email
 
 	if time.Now().Unix() > m.SessionExpiry {
 		return "", m.Email, shared.ErrSessionExpired

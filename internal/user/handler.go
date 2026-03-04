@@ -548,7 +548,7 @@ func (h *Handler) ConfirmMFA() http.HandlerFunc {
 		req.UserID = userID
 
 		var resp shared.ApiResponse[any]
-		if err := h.Service.confirmMFA(req); err != nil {
+		if err := h.Service.confirmMFA(req, ctx); err != nil {
 			switch {
 			case errors.Is(err, shared.ErrIncorrectMFACode):
 				h.Logger.Warn("MFA code incorrect", "user", email, "domain", "user")
@@ -605,7 +605,7 @@ func (h *Handler) DeleteMFA() http.HandlerFunc {
 		req.UserID = userID
 
 		var resp shared.ApiResponse[any]
-		if err := h.Service.deleteMFA(req); err != nil {
+		if err := h.Service.deleteMFA(req, ctx); err != nil {
 			switch {
 			case errors.Is(err, shared.ErrIncorrectMFACode):
 				h.Logger.Warn("MFA code incorrect", "user", email, "domain", "user")
@@ -648,6 +648,7 @@ func (h *Handler) DeleteMFA() http.HandlerFunc {
 
 func (h *Handler) VerifyMFA() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Public endpoint - context not injected here
 		// Read pending MFA cookie
 		cookie, err := r.Cookie("mfa_pending")
 		if err != nil {
