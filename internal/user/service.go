@@ -499,6 +499,7 @@ func (s *Service) checkMFA(req MFARequest) (bool, error) {
 		return false, nil
 	}
 
+	// Add used code to cache
 	s.MFACache.Set(req.UserID, req.Code)
 
 	return true, nil
