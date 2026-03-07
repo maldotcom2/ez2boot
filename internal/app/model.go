@@ -2,6 +2,8 @@ package app
 
 import (
 	"ez2boot/internal/audit"
+	"ez2boot/internal/auth"
+	"ez2boot/internal/auth/ldap"
 	"ez2boot/internal/notification"
 	"ez2boot/internal/notification/email"
 	"ez2boot/internal/notification/teams"
@@ -16,6 +18,7 @@ import (
 
 type Services struct {
 	UserService         *user.Service
+	LdapService         *ldap.Service
 	ServerService       *server.Service
 	SessionService      *session.Service
 	NotificationService *notification.Service
@@ -26,6 +29,7 @@ type Services struct {
 }
 
 type Handlers struct {
+	AuthHandler         *auth.Handler
 	AuditHandler        *audit.Handler
 	UserHandler         *user.Handler
 	ServerHandler       *server.Handler

@@ -101,12 +101,12 @@ func (r *Repository) deleteUser(userID int64) error {
 }
 
 // Find password hash and ID by email
-func (r *Repository) getUserIDHashByEmail(email string) (int64, string, error) {
-	var passwordHash string
+func (r *Repository) getUserIDHashByEmail(email string) (int64, *string, error) {
+	var passwordHash *string
 	var id int64
 	err := r.Base.DB.QueryRow("SELECT id, password_hash FROM users WHERE email = $1", email).Scan(&id, &passwordHash)
 	if err != nil {
-		return 0, "", err
+		return 0, nil, err
 	}
 	return id, passwordHash, nil
 }

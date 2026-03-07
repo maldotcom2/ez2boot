@@ -25,11 +25,12 @@ type Handler struct {
 	Logger  *slog.Logger
 }
 
-type UserLogin struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
+/*
+	 type UserLogin struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+*/
 type ChangePasswordRequest struct {
 	CurrentPassword string `json:"current_password"`
 	NewPassword     string `json:"new_password"`

@@ -31,6 +31,11 @@ func (r *Repository) SetupDB() error {
 		return err
 	}
 
+	// create table for ldap group mapping
+	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS ldap_group_mapping (ad_group TEXT PRIMARY KEY, permissions TEXT NOT NULL DEFAULT '{}')"); err != nil {
+		return err
+	}
+
 	// create table for notification queue
 	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS notification_queue (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, message TEXT NOT NULL, title TEXT NOT NULL, time_added INTEGER NOT NULL)"); err != nil {
 		return err
