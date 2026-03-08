@@ -682,26 +682,41 @@ func (h *Handler) VerifyMFA() http.HandlerFunc {
 			return
 		}
 
+		var resp shared.ApiResponse[any]
 		token, email, err := h.Service.verifyMFA(req, cookie.Value)
 		if err != nil {
 			switch {
 			case errors.Is(err, shared.ErrSessionNotFound):
 				h.Logger.Warn("MFA pending session not found", "domain", "user")
 				w.WriteHeader(http.StatusUnauthorized)
-				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Invalid or expired MFA pending session"})
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "Invalid or expired MFA pending session",
+				}
 			case errors.Is(err, shared.ErrSessionExpired):
 				h.Logger.Warn("Invalid or expired MFA pending session", "user", email, "domain", "user")
 				w.WriteHeader(http.StatusUnauthorized)
-				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Invalid or expired MFA pending session"})
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "Invalid or expired MFA pending session",
+				}
 			case errors.Is(err, shared.ErrIncorrectMFACode):
 				h.Logger.Warn("Incorrect MFA code on verify", "user", email, "domain", "user")
 				w.WriteHeader(http.StatusUnauthorized)
-				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Incorrect MFA code"})
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "Incorrect MFA code",
+				}
 			default:
 				h.Logger.Error("Failed to verify MFA", "user", email, "domain", "user", "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
-				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to verify MFA"})
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "Failed to verify MFA",
+				}
 			}
+
+			json.NewEncoder(w).Encode(resp)
 			return
 		}
 
@@ -727,6 +742,7 @@ func (h *Handler) VerifyMFA() http.HandlerFunc {
 		})
 
 		h.Logger.Debug("MFA verified, session issued", "user", email, "domain", "user")
+		h.Logger.Info("User logged in", "user", email, "domain", "user")
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
