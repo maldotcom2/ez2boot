@@ -2,13 +2,17 @@ package ldap
 
 import (
 	"crypto/tls"
+	"database/sql"
+	"errors"
+	"ez2boot/internal/shared"
 	"fmt"
 
 	goldap "github.com/go-ldap/ldap/v3"
 )
 
+// Authenticate user from upn and password, returning AD group membership or err on auth fail
 func (s *Service) Authenticate(upn string, password string) ([]string, error) {
-	ldapCFG, err := s.Repo.getLdapConfig()
+	ldapCFG, err := s.getLdapConfigInternal()
 	if err != nil {
 		return nil, err
 	}
@@ -38,6 +42,88 @@ func (s *Service) Authenticate(upn string, password string) ([]string, error) {
 	}
 
 	return groups, nil
+}
+
+// UI calls, nulls password value
+func (s *Service) getLdapConfig() (LdapConfigResponse, error) {
+	ldapCFG, err := s.Repo.getLdapConfig()
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return LdapConfigResponse{}, shared.ErrLDAPConfigNotFound
+		}
+
+		return LdapConfigResponse{}, err
+	}
+
+	return LdapConfigResponse{
+		Host:          ldapCFG.Host,
+		Port:          ldapCFG.Port,
+		BaseDN:        ldapCFG.BaseDN,
+		BindDN:        ldapCFG.BindDN,
+		BindPassword:  "",
+		UseSSL:        ldapCFG.UseSSL,
+		SkipTLSVerify: ldapCFG.SkipTLSVerify,
+	}, nil
+}
+
+// System calls, preserves password value
+func (s *Service) getLdapConfigInternal() (LdapConfig, error) {
+	ldapCFG, err := s.Repo.getLdapConfig()
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return LdapConfig{}, nil
+		}
+
+		return LdapConfig{}, err
+	}
+
+	// Decrypt password
+	password, err := s.Encryptor.Decrypt([]byte(ldapCFG.EncBindPassword))
+	if err != nil {
+		return LdapConfig{}, err
+	}
+
+	return LdapConfig{
+		Host:          ldapCFG.Host,
+		Port:          ldapCFG.Port,
+		BaseDN:        ldapCFG.BaseDN,
+		BindDN:        ldapCFG.BindDN,
+		BindPassword:  string(password),
+		UseSSL:        ldapCFG.UseSSL,
+		SkipTLSVerify: ldapCFG.SkipTLSVerify,
+	}, nil
+}
+
+func (s *Service) setLdapConfig(req LdapConfigRequest) error {
+	// Encrypt password
+	encryptedBytes, err := s.Encryptor.Encrypt([]byte(req.BindPassword))
+	if err != nil {
+		return err
+	}
+
+	c := LdapConfigStore{
+		Host:            req.Host,
+		Port:            req.Port,
+		BaseDN:          req.BaseDN,
+		BindDN:          req.BindDN,
+		EncBindPassword: encryptedBytes,
+		UseSSL:          req.UseSSL,
+		SkipTLSVerify:   req.SkipTLSVerify,
+	}
+
+	if err = s.Repo.setLdapConfig(c); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Service) deleteLdapConfig() error {
+	if err := s.Repo.deleteLdapConfig(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Opens a connection to the LDAP server
@@ -77,6 +163,7 @@ func (s *Service) getADGroupMembership(conn *goldap.Conn, baseDN string, upn str
 	return result.Entries[0].GetAttributeValues("memberOf"), nil
 }
 
+// Returns an auth struct for ez2boot permissions based on AD group mapping
 func (s *Service) ResolvePermissions(groups []string) (ResolvedPermissions, error) {
 	// Get configured mapping of AD group names to roles
 	mappings, err := s.Repo.getGroupMappings()

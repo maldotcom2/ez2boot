@@ -2,13 +2,22 @@ package ldap
 
 import (
 	"ez2boot/internal/db"
+	"ez2boot/internal/encryption"
 	"log/slog"
 )
 
-func NewService(ldapRepo *Repository, logger *slog.Logger) *Service {
+func NewHandler(ldapService *Service, logger *slog.Logger) *Handler {
+	return &Handler{
+		Service: ldapService,
+		Logger:  logger,
+	}
+}
+
+func NewService(ldapRepo *Repository, encryptor *encryption.AESGCMEncryptor, logger *slog.Logger) *Service {
 	return &Service{
-		Repo:   ldapRepo,
-		Logger: logger,
+		Repo:      ldapRepo,
+		Encryptor: encryptor,
+		Logger:    logger,
 	}
 }
 

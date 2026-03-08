@@ -27,4 +27,5 @@ var (
 	ErrNotificationTypeNotSupported = errors.New("notification type not supported")
 	ErrFieldMissing                 = errors.New("mandatory field missing from request")
 	ErrMissingAuthValues            = errors.New("cannot perform authenticated action without username and password")
+	ErrLDAPConfigNotFound           = errors.New("ldap config not found")
 )

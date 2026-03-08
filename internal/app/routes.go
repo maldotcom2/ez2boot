@@ -48,6 +48,10 @@ func SetupBackendRoutes(
 	adminUIRouter.HandleFunc("/notifications/passphrase", handlers.NotificationHandler.RotateEncryptionPhrase()).Methods("PUT")
 	// Audit
 	adminUIRouter.HandleFunc("/audit/events", handlers.AuditHandler.GetAuditEvents()).Methods("GET")
+	/// Auth
+	adminUIRouter.HandleFunc("/auth/ldap", handlers.LdapHandler.GetLdapConfig()).Methods("GET")
+	adminUIRouter.HandleFunc("/auth/ldap", handlers.LdapHandler.SetLdapConfig()).Methods("POST")
+	adminUIRouter.HandleFunc("/auth/ldap", handlers.LdapHandler.DeleteLdapConfig()).Methods("DELETE")
 
 	/////////////////////////// UI subrouter and routes //////////////////////////////////
 

@@ -30,6 +30,7 @@ type Services struct {
 
 type Handlers struct {
 	AuthHandler         *auth.Handler
+	LdapHandler         *ldap.Handler
 	AuditHandler        *audit.Handler
 	UserHandler         *user.Handler
 	ServerHandler       *server.Handler
