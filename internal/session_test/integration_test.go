@@ -20,7 +20,7 @@ func TestNewServerSession_Success(t *testing.T) {
 	adminEmail := "admin@example.com"
 	adminPassword := "testpassword123"
 	adminHash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, adminEmail, adminHash, true, true, true, true)
+	testutil.InsertUser(t, env.DB, adminEmail, adminHash, true, true, true, true, "local")
 
 	// Create servers
 	testutil.InsertServer(t, env.DB, "i-3728hvi2vn2u4vn2", "test01", "off", "QA", time.Now().Unix())

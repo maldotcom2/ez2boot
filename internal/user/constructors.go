@@ -17,10 +17,11 @@ func NewHandler(userService *Service, cfg *config.Config, logger *slog.Logger) *
 
 func NewService(userRepo *Repository, cfg *config.Config, audit *audit.Service, logger *slog.Logger) *Service {
 	return &Service{
-		Repo:   userRepo,
-		Config: cfg,
-		Audit:  audit,
-		Logger: logger,
+		Repo:     userRepo,
+		Config:   cfg,
+		Audit:    audit,
+		MFACache: NewMFACache(),
+		Logger:   logger,
 	}
 }
 
