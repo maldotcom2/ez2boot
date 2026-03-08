@@ -10,3 +10,6 @@
 *.exe
 *.test
 *.out
+
+# Todo lists
+*.todo

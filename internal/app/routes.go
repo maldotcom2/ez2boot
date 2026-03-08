@@ -26,6 +26,7 @@ func SetupBackendRoutes(
 	publicRouter.Use(mw.JsonContentTypeMiddleware)
 
 	publicRouter.HandleFunc("/user/login", handlers.UserHandler.Login()).Methods("POST")
+	publicRouter.HandleFunc("/user/mfa/verify", handlers.UserHandler.VerifyMFA()).Methods("POST")
 	publicRouter.HandleFunc("/mode", handlers.UserHandler.GetMode()).Methods("GET")
 	if cfg.SetupMode {
 		publicRouter.HandleFunc("/setup", handlers.UserHandler.CreateFirstTimeUser()).Methods("POST")
@@ -66,7 +67,10 @@ func SetupBackendRoutes(
 	uiRouter.HandleFunc("/user/session", handlers.UserHandler.CheckSession()).Methods("GET") // UI specific
 	uiRouter.HandleFunc("/user/auth", handlers.UserHandler.GetUserAuthorisation()).Methods("GET")
 	uiRouter.HandleFunc("/user/password", handlers.UserHandler.ChangePassword()).Methods("PUT")
-	uiRouter.HandleFunc("/user/logout", handlers.UserHandler.Logout()).Methods("POST") // UI specific
+	uiRouter.HandleFunc("/user/logout", handlers.UserHandler.Logout()).Methods("POST")          // UI specific
+	uiRouter.HandleFunc("/user/mfa", handlers.UserHandler.EnrolMFA()).Methods("POST")           // UI specific
+	uiRouter.HandleFunc("/user/mfa/confirm", handlers.UserHandler.ConfirmMFA()).Methods("POST") // UI specific
+	uiRouter.HandleFunc("/user/mfa/delete", handlers.UserHandler.DeleteMFA()).Methods("POST")   // UI specific - Post to allow body
 	/// Notification channels
 	uiRouter.HandleFunc("/user/notification", handlers.NotificationHandler.GetUserNotificationSettings()).Methods("GET")
 	uiRouter.HandleFunc("/user/notification", handlers.NotificationHandler.SetUserNotificationSettings()).Methods("POST")

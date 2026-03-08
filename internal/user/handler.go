@@ -1,6 +1,7 @@
 package user
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"ez2boot/internal/ctxutil"
@@ -24,7 +25,7 @@ func (h *Handler) Login() http.HandlerFunc {
 		h.Logger.Debug("Login attempted", "user", u.Email, "domain", "user")
 
 		var resp shared.ApiResponse[any]
-		token, err := h.Service.login(u)
+		token, mfaRequired, err := h.Service.login(u)
 		if err != nil {
 			switch {
 			case errors.Is(err, shared.ErrEmailOrPasswordMissing):
@@ -72,6 +73,26 @@ func (h *Handler) Login() http.HandlerFunc {
 			}
 
 			json.NewEncoder(w).Encode(resp)
+			return
+		}
+
+		if mfaRequired {
+			// Set a short-lived temporary cookie
+			http.SetCookie(w, &http.Cookie{
+				Name:     "mfa_pending",
+				Value:    token,
+				Path:     "/",
+				Expires:  time.Now().Add(3 * time.Minute),
+				SameSite: h.Config.SameSiteMode,
+				HttpOnly: true,
+				Secure:   h.Config.SecureCookie,
+			})
+
+			var m MFARequiredResponse
+			m.MFARequired = true // Used to direct UI behaviour
+
+			h.Logger.Debug("MFA required", "user", u.Email, "domain", "user")
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: m})
 			return
 		}
 
@@ -470,7 +491,230 @@ func (h *Handler) ChangePassword() http.HandlerFunc {
 			return
 		}
 
-		h.Logger.Info("Password changed for user", "user", email, "domain", "user")
+		h.Logger.Info("Password changed", "user", email, "domain", "user")
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
+	}
+}
+
+// Initial MFA enrolment - user served with QR code
+func (h *Handler) EnrolMFA() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		userID, email := ctxutil.GetActor(ctx)
+
+		// Get QR code
+		var resp shared.ApiResponse[any]
+		bytes, err := h.Service.enrolMFA(userID, email)
+		if err != nil {
+			switch {
+			case errors.Is(err, shared.ErrMFANotSupported):
+				h.Logger.Warn("MFA enrolment not supported for this user type", "user", email, "domain", "user")
+				w.WriteHeader(http.StatusBadRequest)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "MFA enrolment not supported for this user type",
+				}
+			default:
+				h.Logger.Error("Failed to enrol MFA", "user", email, "domain", "user", "error", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "Failed to enrol MFA",
+				}
+			}
+
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
+
+		h.Logger.Info("MFA enrolment begun", "user", email, "domain", "user")
+		/* 		w.Header().Set("Content-Type", "image/png") // test
+		   		w.Write(bytes)                              // test */
+		encodedBytes := base64.StdEncoding.EncodeToString(bytes)
+		json.NewEncoder(w).Encode(shared.ApiResponse[string]{Success: true, Data: encodedBytes})
+	}
+}
+
+// Second step of enrolment - user enters code to complete MFA enrolment
+func (h *Handler) ConfirmMFA() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		userID, email := ctxutil.GetActor(ctx)
+
+		var req MFARequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			h.Logger.Error("Malformed request", "user", email, "domain", "user", "error", err)
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
+			return
+		}
+
+		req.UserID = userID
+
+		var resp shared.ApiResponse[any]
+		if err := h.Service.confirmMFA(req, ctx); err != nil {
+			switch {
+			case errors.Is(err, shared.ErrIncorrectMFACode):
+				h.Logger.Warn("MFA code incorrect", "user", email, "domain", "user")
+				w.WriteHeader(http.StatusBadRequest)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "MFA code incorrect",
+				}
+			case errors.Is(err, shared.ErrMFANotEnrolled):
+				h.Logger.Warn("MFA must be enrolled before being confirmed", "user", email, "domain", "user")
+				w.WriteHeader(http.StatusBadRequest)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "MFA must be enrolled before being confirmed",
+				}
+			case errors.Is(err, shared.ErrNoRowsUpdated):
+				h.Logger.Warn("MFA already confirmed", "user", email, "domain", "user")
+				w.WriteHeader(http.StatusBadRequest)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "MFA already confirmed",
+				}
+			default:
+				h.Logger.Error("Failed to confirm MFA", "user", email, "domain", "user", "error", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "Failed to confirm MFA",
+				}
+			}
+
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
+
+		h.Logger.Info("MFA enrolment confirmed", "user", email, "domain", "user")
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
+	}
+}
+
+func (h *Handler) DeleteMFA() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		userID, email := ctxutil.GetActor(ctx)
+
+		var req MFARequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			h.Logger.Error("Malformed request", "user", email, "domain", "user", "error", err)
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
+			return
+		}
+
+		req.UserID = userID
+
+		var resp shared.ApiResponse[any]
+		if err := h.Service.deleteMFA(req, ctx); err != nil {
+			switch {
+			case errors.Is(err, shared.ErrIncorrectMFACode):
+				h.Logger.Warn("MFA code incorrect", "user", email, "domain", "user")
+				w.WriteHeader(http.StatusBadRequest)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "MFA code incorrect",
+				}
+			case errors.Is(err, shared.ErrMFANotEnrolled):
+				h.Logger.Warn("MFA must be enrolled before being deleted", "user", email, "domain", "user")
+				w.WriteHeader(http.StatusBadRequest)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "MFA must be enrolled before being deleted",
+				}
+			case errors.Is(err, shared.ErrNoRowsUpdated):
+				h.Logger.Warn("No MFA found to delete", "user", email, "domain", "user")
+				w.WriteHeader(http.StatusNotFound)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "No MFA found to delete",
+				}
+			default:
+				h.Logger.Error("Failed to delete MFA", "user", email, "domain", "user", "error", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "Failed to delete MFA",
+				}
+			}
+
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
+
+		h.Logger.Info("MFA deleted", "user", email, "domain", "user")
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
+	}
+}
+
+func (h *Handler) VerifyMFA() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Public endpoint - context not injected here
+		// Read pending MFA cookie
+		cookie, err := r.Cookie("mfa_pending")
+		if err != nil {
+			h.Logger.Warn("MFA verify attempted without pending session", "domain", "user")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "No pending MFA session"})
+			return
+		}
+
+		var req MFARequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			h.Logger.Error("Malformed request", "domain", "user", "error", err)
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
+			return
+		}
+
+		token, email, err := h.Service.verifyMFA(req, cookie.Value)
+		if err != nil {
+			switch {
+			case errors.Is(err, shared.ErrSessionNotFound):
+				h.Logger.Warn("MFA pending session not found", "domain", "user")
+				w.WriteHeader(http.StatusUnauthorized)
+				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Invalid or expired MFA pending session"})
+			case errors.Is(err, shared.ErrSessionExpired):
+				h.Logger.Warn("Invalid or expired MFA pending session", "user", email, "domain", "user")
+				w.WriteHeader(http.StatusUnauthorized)
+				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Invalid or expired MFA pending session"})
+			case errors.Is(err, shared.ErrIncorrectMFACode):
+				h.Logger.Warn("Incorrect MFA code on verify", "user", email, "domain", "user")
+				w.WriteHeader(http.StatusUnauthorized)
+				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Incorrect MFA code"})
+			default:
+				h.Logger.Error("Failed to verify MFA", "user", email, "domain", "user", "error", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to verify MFA"})
+			}
+			return
+		}
+
+		// Delete pending cookie
+		http.SetCookie(w, &http.Cookie{
+			Name:     "mfa_pending",
+			Value:    "",
+			Path:     "/",
+			Expires:  time.Unix(0, 0),
+			HttpOnly: true,
+			Secure:   h.Config.SecureCookie,
+		})
+
+		// Set full session cookie
+		http.SetCookie(w, &http.Cookie{
+			Name:     "session",
+			Value:    token,
+			Path:     "/",
+			Expires:  time.Now().Add(h.Service.Config.UserSessionDuration),
+			SameSite: h.Config.SameSiteMode,
+			HttpOnly: true,
+			Secure:   h.Config.SecureCookie,
+		})
+
+		h.Logger.Debug("MFA verified, session issued", "user", email, "domain", "user")
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
