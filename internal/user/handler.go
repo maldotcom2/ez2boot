@@ -106,7 +106,7 @@ func (h *Handler) Login() http.HandlerFunc {
 			Secure:   h.Config.SecureCookie,
 		})
 
-		h.Logger.Debug("User logged in", "user", u.Email, "domain", "user")
+		h.Logger.Info("User logged in", "user", u.Email, "domain", "user")
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
@@ -137,7 +137,7 @@ func (h *Handler) Logout() http.HandlerFunc {
 			MaxAge:   -1,
 		})
 
-		h.Logger.Debug("User logged out", "user", email, "domain", "user")
+		h.Logger.Info("User logged out", "user", email, "domain", "user")
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
@@ -211,6 +211,14 @@ func (h *Handler) UpdateUserAuthorisation() http.HandlerFunc {
 			json.NewEncoder(w).Encode(resp)
 			return
 		}
+
+		targetIDs := make([]int64, len(req))
+		for i, u := range req {
+			targetIDs[i] = u.UserID
+		}
+
+		h.Logger.Info("Updated user authorisation", "user", email, "domain", "user", "target_users", targetIDs)
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
 
@@ -313,30 +321,31 @@ func (h *Handler) DeleteUser() http.HandlerFunc {
 
 		var req DeleteUserRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			h.Logger.Error("Malformed request", "user", email, "domain", "user", "target_user", req.UserID, "error", err)
+			h.Logger.Error("Malformed request", "user", email, "domain", "user", "error", err)
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
 			return
 		}
 
-		email, err := h.Service.GetEmailFromUserID(req.UserID)
+		targetEmail, err := h.Service.GetEmailFromUserID(req.UserID)
 		if err != nil {
 			h.Logger.Error("Failed to get email from userID", "user", email, "domain", "user", "target_user", req.UserID, "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to delete user"})
+			return
 		}
 
 		var resp shared.ApiResponse[any]
 		if err := h.Service.deleteUser(req.UserID, ctx); err != nil {
 			if errors.Is(err, shared.ErrCannotDeleteOwnUser) {
-				h.Logger.Error("Failed to delete user", "user", email, "domain", "user", "target_user", email, "error", err)
+				h.Logger.Error("Failed to delete user", "user", email, "domain", "user", "target_user", targetEmail, "error", err)
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
 					Error:   "Failed to delete user",
 				}
 			} else {
-				h.Logger.Error("Failed to delete user", "user", email, "domain", "user", "target_user", email, "error", err)
+				h.Logger.Error("Failed to delete user", "user", email, "domain", "user", "target_user", targetEmail, "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				resp = shared.ApiResponse[any]{
 					Success: false,
@@ -347,6 +356,9 @@ func (h *Handler) DeleteUser() http.HandlerFunc {
 			json.NewEncoder(w).Encode(resp)
 			return
 		}
+
+		h.Logger.Info("User deleted", "user", email, "domain", "user", "target_user", targetEmail)
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
 
