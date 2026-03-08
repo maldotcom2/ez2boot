@@ -57,7 +57,6 @@ async function logout() {
     const response = await axios.post('ui/user/logout',{withCredentials: true})
     user.$reset() // purge User store
     version.$reset() // purge Version store
-    console.log('logout successful', response.data)
     router.push('/login')
 
   } catch (err) {
@@ -71,7 +70,6 @@ async function logout() {
         // other errors
         error.value = err.message
     }
-    console.log(error.value)
   }
 }
 

@@ -81,7 +81,6 @@ async function loadServerSessions() {
     const response = await axios.get('/ui/sessions/summary')
     if (response.data.success) {
         servers.value = response.data.data
-        console.log(response.data);
     }
     duration.value = {} // empty the input
 

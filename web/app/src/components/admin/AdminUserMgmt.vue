@@ -4,6 +4,7 @@
       <button @click="createUser()">Create User</button>
       <button @click="saveChanges" :disabled="changedUsers.size === 0">Save Changes</button>
     </div>
+    <p class="result" :class="messageType">{{ message || '\u00A0' }}</p>
     <table class="user-mgmt-table">
       <thead>
         <tr>
@@ -43,9 +44,14 @@ const user = useUserStore()
 const users = ref([])
 const currentUserId = computed(() => user.userID)
 const changedUsers = ref(new Set())
+const message = ref('')
+const messageType = ref('')
 
 // Load table data from specialised endpoint
 async function getUsers() {
+  message.value = ''
+  messageType.value = ''
+
   try {
     const response = await axios.get('/ui/users')
     if (response.data.success) {
@@ -53,11 +59,24 @@ async function getUsers() {
     }
 
   } catch (err) {
-    console.error('Error loading users:', err)
+    messageType.value = 'error'
+    if (err.response) {
+      // Get server response
+      message.value = `Failed to get users: ${err.response.data.error || err.response.statusText}`
+    } else if (err.request) {
+      // No response
+      message.value = 'No response from server'
+    } else {
+      // other errors
+      message.value = err.message
+    }
   }
 }
 
 async function deleteUser(userID) {
+  message.value = ''
+  messageType.value = ''
+
   if (!confirm("Are you sure you want to delete this notification?")) {
     return
   }
@@ -69,9 +88,24 @@ async function deleteUser(userID) {
         withCredentials: true
       }
     )
+
     getUsers()
+
+    message.value = 'User deleted'
+    messageType.value = 'success'
+
   } catch (err) {
-    console.error('Error deleting user:', err)
+    messageType.value = 'error'
+    if (err.response) {
+      // Get server response
+      message.value = `Error: ${err.response.data.error || err.response.statusText}`
+    } else if (err.request) {
+      // No response
+      message.value = 'No response from server'
+    } else {
+      // other errors
+      message.value = err.message
+    }
   }
 }
 
@@ -87,6 +121,9 @@ function markChanged(userId) {
 
 // Save only changed users
 async function saveChanges() {
+  message.value = ''
+  messageType.value = ''
+
   const payload = users.value
     .filter(u => changedUsers.value.has(u.user_id)) // only changed users
     .map(u => ({
@@ -99,12 +136,29 @@ async function saveChanges() {
   try {
     await axios.put('/ui/user/auth', payload)
     changedUsers.value.clear()
+
+    message.value = 'Auth changes saved'
+    messageType.value = 'success'
+
   } catch (err) {
-    console.error('Error saving users:', err)
+    messageType.value = 'error'
+    if (err.response) {
+      // Get server response
+      message.value = `Failed to update user auth: ${err.response.data.error || err.response.statusText}`
+    } else if (err.request) {
+      // No response
+      message.value = 'No response from server'
+    } else {
+      // other errors
+      message.value = err.message
+    }
   }
 }
 
 function createUser() {
+  message.value = ''
+  messageType.value = ''
+
   // Swap the right pane to Create User
   emit('switch-pane', AdminCreateUser)
 }
@@ -160,5 +214,19 @@ p {
 .user-mgmt-table th:nth-child(5) { width: 10%; } /* UI */
 .user-mgmt-table th:nth-child(6) { width: 15%; } /* Last Login */
 .user-mgmt-table th:nth-child(7) { width: 15%; } /* Actions */
+
+.result {
+  min-height: 1.2rem;
+  font-size: 1rem;
+  text-align: right;
+}
+
+.result.error {
+  color: var(--error-msg);
+}
+
+.result.success {
+  color: var(--success-msg);
+}
 
 </style>
