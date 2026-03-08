@@ -13,10 +13,11 @@ type Repository struct {
 }
 
 type Service struct {
-	Repo   *Repository
-	Config *config.Config
-	Audit  *audit.Service
-	Logger *slog.Logger
+	Repo     *Repository
+	Config   *config.Config
+	Audit    *audit.Service
+	MFACache *MFACache
+	Logger   *slog.Logger
 }
 
 type Handler struct {
@@ -94,14 +95,37 @@ type CreateUser struct {
 }
 
 type UserAuthResponse struct {
-	UserID     int64  `json:"user_id"`
-	Email      string `json:"email"`
-	IsActive   bool   `json:"is_active"`
-	IsAdmin    bool   `json:"is_admin"`
-	APIEnabled bool   `json:"api_enabled"`
-	UIEnabled  bool   `json:"ui_enabled"`
+	UserID           int64  `json:"user_id"`
+	Email            string `json:"email"`
+	IsActive         bool   `json:"is_active"`
+	IsAdmin          bool   `json:"is_admin"`
+	APIEnabled       bool   `json:"api_enabled"`
+	UIEnabled        bool   `json:"ui_enabled"`
+	IdentityProvider string `json:"identity_provider"`
+	MFAConfirmed     bool   `json:"mfa_confirmed"`
 }
 
 type SetupResponse struct {
 	SetupMode bool `json:"setup_mode"`
+}
+
+// Setup of new MFA
+type EnrolMFARequest struct {
+	UserID int64  `json:"-"`
+	Secret string `json:"secret"`
+}
+
+type MFARequest struct {
+	UserID int64  `json:"-"`
+	Code   string `json:"code"`
+}
+
+type MFAPendingSessionResponse struct {
+	UserID        int64
+	SessionExpiry int64
+	Email         string
+}
+
+type MFARequiredResponse struct {
+	MFARequired bool `json:"mfa_required"`
 }
