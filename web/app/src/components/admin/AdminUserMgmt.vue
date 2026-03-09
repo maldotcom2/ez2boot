@@ -77,7 +77,7 @@ async function deleteUser(userID) {
   message.value = ''
   messageType.value = ''
 
-  if (!confirm("Are you sure you want to delete this notification?")) {
+  if (!confirm("Are you sure you want to delete this user?")) {
     return
   }
   
