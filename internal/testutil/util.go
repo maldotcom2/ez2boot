@@ -67,7 +67,7 @@ func NewTestEnv(t *testing.T) *TestEnv {
 	cfg := &config.Config{
 		CloudProvider:       "aws",
 		AWSRegion:           "ap-southeast-2",
-		RateLimit:           30,
+		RateLimit:           100,
 		UserSessionDuration: 1 * time.Hour, // Prevent intermittent 401s during test
 	}
 
@@ -87,11 +87,11 @@ func NewTestEnv(t *testing.T) *TestEnv {
 }
 
 // Insert a dummy user into test database
-func InsertUser(t *testing.T, db *sql.DB, email string, passwordHash string, isActive bool, isAdmin bool, apiEnabled bool, uiEnabled bool) {
+func InsertUser(t *testing.T, db *sql.DB, email string, passwordHash string, isActive bool, isAdmin bool, apiEnabled bool, uiEnabled bool, identityProvider string) {
 	t.Helper()
 
 	_, err := db.Exec(`INSERT INTO users (email, password_hash, is_active, is_admin, api_enabled, ui_enabled, identity_provider)
-        				VALUES ($1, $2, $3, $4, $5, $6, 'local')`, email, passwordHash, isActive, isAdmin, apiEnabled, uiEnabled)
+        				VALUES ($1, $2, $3, $4, $5, $6, $7)`, email, passwordHash, isActive, isAdmin, apiEnabled, uiEnabled, identityProvider)
 	if err != nil {
 		t.Fatalf("failed to insert user: %v", err)
 	}

@@ -49,7 +49,6 @@ async function createUser() {
 
     message.value = 'User created'
     messageType.value = 'success'
-    console.log('User created:', response.data)
     emit('switch-pane', AdminUserMgmt)
 
   } catch (err) {

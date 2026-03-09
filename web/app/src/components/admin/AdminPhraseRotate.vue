@@ -43,7 +43,6 @@ async function rotatePhrase() {
     
     message.value = 'Encryption phrase rotated - set environment variable now!'
     messageType.value = 'success'
-    console.log('Encryption phrase rotated:', response.data)
 
   } catch (err) {
     messageType.value = 'error'

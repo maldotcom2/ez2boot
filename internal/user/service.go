@@ -1,6 +1,7 @@
 package user
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"errors"
@@ -9,16 +10,23 @@ import (
 	"ez2boot/internal/shared"
 	"ez2boot/internal/util"
 	"fmt"
+	"image/png"
 	"time"
 
 	"github.com/alexedwards/argon2id"
+	"github.com/pquerna/otp/totp"
 )
 
-// Attempt user login using even-time
-func (s *Service) login(u UserLogin) (token string, err error) {
+// User login
+func (s *Service) login(u UserLogin) (token string, mfaRequired bool, err error) {
 	var userID int64
 
 	defer func() {
+		// MFA succcess still pending
+		if mfaRequired {
+			return
+		}
+
 		var reason string
 		if err != nil {
 			reason = err.Error()
@@ -36,49 +44,57 @@ func (s *Service) login(u UserLogin) (token string, err error) {
 
 	// Input validation
 	if u.Email == "" || u.Password == "" {
-		return "", shared.ErrEmailOrPasswordMissing
+		return "", false, shared.ErrEmailOrPasswordMissing
 	}
-
-	// Generate session token
-	token, err = util.GenerateRandomString(32)
-	if err != nil {
-		return "", err
-	}
-
-	hash := util.HashToken(token)
-	sessionExpiry := time.Now().Add(s.Config.UserSessionDuration).Unix()
 
 	// Authenticate user
 	userID, authenticated, authErr := s.AuthenticateUser(u.Email, u.Password)
 	if authErr != nil && authErr != shared.ErrUserNotFound {
-		return "", authErr
+		return "", false, authErr
 	}
 
-	if !authenticated || authErr == shared.ErrUserNotFound {
-		return "", shared.ErrAuthenticationFailed
+	// User not found
+	if authErr == shared.ErrUserNotFound {
+		return "", false, shared.ErrUserNotFound
+	}
+
+	// Found but not authenticated
+	if !authenticated {
+		return "", false, shared.ErrAuthenticationFailed
 	}
 
 	// User exists and is authenticated
-
 	user, err := s.GetUserAuthorisation(userID)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 
 	if !user.IsActive {
-		return "", shared.ErrUserInactive
+		return "", false, shared.ErrUserInactive
 	}
 
 	if !user.UIEnabled {
-		return "", shared.ErrUserNotAuthorised
+		return "", false, shared.ErrUserNotAuthorised
 	}
 
-	// Store session hash
-	if err = s.Repo.createUserSession(hash, sessionExpiry, userID); err != nil {
-		return "", err
+	// Check if MFA is required
+	if user.MFAConfirmed {
+		token, err = util.GenerateRandomString(32)
+		if err != nil {
+			return "", false, err
+		}
+		hash := util.HashToken(token)
+		expiry := time.Now().Add(3 * time.Minute).Unix()
+		if err = s.Repo.createMFAPendingSession(hash, expiry, userID); err != nil {
+			return "", false, err
+		}
+		return token, true, nil
 	}
 
-	return token, nil
+	// Create user session
+	token, err = s.createSession(userID)
+
+	return token, false, nil
 }
 
 func (s *Service) logout(token string, ctx context.Context) error {
@@ -287,11 +303,11 @@ func (s *Service) changePassword(req ChangePasswordRequest, ctx context.Context)
 	return nil
 }
 
-// Authenticate user, return userID for use in context and match bool
+// Authenticate user with even time
 func (s *Service) AuthenticateUser(email string, password string) (int64, bool, error) {
 	id, hash, err := s.Repo.getUserIDHashByEmail(email)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return 0, false, shared.ErrUserNotFound
+		return 0, false, err // generic error other than no user
 	}
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -361,4 +377,250 @@ func (s *Service) GetEmailFromUserID(userID int64) (string, error) {
 	}
 
 	return email, nil
+}
+
+func (s *Service) enrolMFA(userID int64, email string) (_ []byte, err error) {
+	defer func() {
+		var reason string
+		if err != nil {
+			reason = err.Error()
+		}
+
+		s.Audit.Log(audit.Event{
+			ActorUserID: userID,
+			ActorEmail:  email,
+			Action:      "enrol mfa",
+			Resource:    "user",
+			Success:     err == nil,
+			Reason:      reason,
+		})
+	}()
+
+	user, err := s.GetUserAuthorisation(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// SSO users would get MFA via IDP
+	if user.IdentityProvider == "oidc" {
+		return nil, shared.ErrMFANotSupported
+	}
+
+	key, err := totp.Generate(totp.GenerateOpts{
+		Issuer:      "ez2boot",
+		AccountName: email,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+	img, err := key.Image(200, 200)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = png.Encode(&buf, img); err != nil {
+		return nil, err
+	}
+
+	// store secret
+	secret := key.Secret()
+	rows, err := s.Repo.setMFASecret(&secret, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if rows == 0 {
+		return nil, shared.ErrNoRowsUpdated
+	}
+
+	return buf.Bytes(), nil
+}
+
+// Initial enrolment only
+func (s *Service) confirmMFA(req MFARequest, ctx context.Context) (err error) {
+	actorUserID, actorEmail := ctxutil.GetActor(ctx)
+
+	defer func() {
+		var reason string
+		if err != nil {
+			reason = err.Error()
+		}
+
+		s.Audit.Log(audit.Event{
+			ActorUserID: actorUserID,
+			ActorEmail:  actorEmail,
+			Action:      "confirm mfa",
+			Resource:    "user",
+			Success:     err == nil,
+			Reason:      reason,
+		})
+	}()
+
+	ok, err := s.checkMFA(req)
+	if err != nil {
+		return err
+	}
+
+	if !ok {
+		return shared.ErrIncorrectMFACode
+	}
+
+	rows, err := s.Repo.confirmMFA(req.UserID)
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 { // Nothing happened, user trying to validate when already validated
+		return shared.ErrNoRowsUpdated
+	}
+
+	return nil
+}
+
+func (s *Service) checkMFA(req MFARequest) (bool, error) {
+	// Get secret from DB
+	secret, err := s.Repo.getMFASecret(req.UserID)
+	if err != nil {
+		return false, err
+	}
+
+	if secret == nil {
+		return false, shared.ErrMFANotEnrolled
+	}
+
+	// Check if code already used
+	if s.MFACache.Has(req.UserID, req.Code) {
+		return false, nil
+	}
+
+	if !totp.Validate(req.Code, *secret) {
+		return false, nil
+	}
+
+	// Add used code to cache
+	s.MFACache.Set(req.UserID, req.Code)
+
+	return true, nil
+}
+
+func (s *Service) deleteMFA(req MFARequest, ctx context.Context) (err error) {
+	actorUserID, actorEmail := ctxutil.GetActor(ctx)
+
+	defer func() {
+		var reason string
+		if err != nil {
+			reason = err.Error()
+		}
+
+		s.Audit.Log(audit.Event{
+			ActorUserID: actorUserID,
+			ActorEmail:  actorEmail,
+			Action:      "delete mfa",
+			Resource:    "user",
+			Success:     err == nil,
+			Reason:      reason,
+		})
+	}()
+
+	// Check code
+	ok, err := s.checkMFA(req)
+	if err != nil {
+		return err
+	}
+
+	if !ok {
+		return shared.ErrIncorrectMFACode
+	}
+
+	// null the secret
+	rows, err := s.Repo.setMFASecret(nil, req.UserID)
+	if err != nil {
+		return err
+	}
+
+	// This is defensive - should never run
+	if rows == 0 {
+		return shared.ErrNoRowsUpdated
+	}
+
+	return nil
+}
+
+func (s *Service) verifyMFA(req MFARequest, pendingToken string) (_ string, _ string, err error) {
+	// Public handler, no context injection
+	var actorUserID int64
+	var actorEmail string
+
+	defer func() {
+		var reason string
+		if err != nil {
+			reason = err.Error()
+		}
+
+		s.Audit.Log(audit.Event{
+			ActorUserID: actorUserID,
+			ActorEmail:  actorEmail,
+			Action:      "login",
+			Resource:    "user",
+			Success:     err == nil,
+			Reason:      reason,
+		})
+	}()
+
+	hash := util.HashToken(pendingToken)
+
+	// Look up pending session
+	m, err := s.Repo.getMFAPendingSessionStatus(hash)
+	if err != nil {
+		return "", "", shared.ErrSessionNotFound
+	}
+
+	actorUserID = m.UserID
+	actorEmail = m.Email
+
+	if time.Now().Unix() > m.SessionExpiry {
+		return "", m.Email, shared.ErrSessionExpired
+	}
+
+	req.UserID = m.UserID
+
+	// Validate TOTP code
+	ok, err := s.checkMFA(req)
+	if err != nil {
+		return "", m.Email, err
+	}
+
+	if !ok {
+		return "", m.Email, shared.ErrIncorrectMFACode
+	}
+
+	// Delete pending session
+	if err = s.Repo.deleteMFAPendingSession(hash); err != nil {
+		if errors.Is(err, shared.ErrNoRowsDeleted) {
+			s.Logger.Warn("Failed to delete mfa_pending_session", "user", m.Email, "domain", "user", "error", err)
+		} else {
+			return "", m.Email, err
+		}
+	}
+
+	// Create user session
+	token, err := s.createSession(m.UserID)
+
+	return token, m.Email, nil
+}
+
+// Create user session
+func (s *Service) createSession(userID int64) (string, error) {
+	token, err := util.GenerateRandomString(32)
+	if err != nil {
+		return "", err
+	}
+	hash := util.HashToken(token)
+	expiry := time.Now().Add(s.Config.UserSessionDuration).Unix()
+	if err = s.Repo.createUserSession(hash, expiry, userID); err != nil {
+		return "", err
+	}
+	return token, nil
 }

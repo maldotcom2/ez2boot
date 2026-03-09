@@ -96,6 +96,7 @@ func (h *Handler) DeleteUserNotificationSettings() http.HandlerFunc {
 			h.Logger.Error("Failed to delete user notification settings", "user", email, "domain", "notification", "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to delete user notification"})
+			return
 		}
 
 		h.Logger.Info("User notification settings deleted", "user", email, "domain", "notification")

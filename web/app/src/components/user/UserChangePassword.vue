@@ -44,7 +44,6 @@ async function changePassword() {
 
     message.value = 'Password change successful'
     messageType.value = 'success'
-    console.log('Password change successful:')
     setTimeout(() => {
         router.push({
         path: '/login',

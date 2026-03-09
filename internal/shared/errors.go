@@ -27,4 +27,7 @@ var (
 	ErrNotificationTypeNotSupported = errors.New("notification type not supported")
 	ErrFieldMissing                 = errors.New("mandatory field missing from request")
 	ErrMissingAuthValues            = errors.New("cannot perform authenticated action without username and password")
+	ErrIncorrectMFACode             = errors.New("supplied mfa code incorrect")
+	ErrMFANotEnrolled               = errors.New("mfa not enrolled")
+	ErrMFANotSupported              = errors.New("mfa not supported for this user type")
 )
