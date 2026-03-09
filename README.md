@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="web/app/src/assets/branding/ez2boot_logo.svg" width=300>
+  <picture>
+    <source media="(prefers-color-scheme: light)" srcset="web/app/src/assets/branding/ez2boot_logo_light.svg">
+    <img src="web/app/src/assets/branding/ez2boot_logo.svg" width="300">
+  </picture>
 </p>
 
 ## Intro
@@ -8,7 +11,7 @@ Currently, AWS and Azure is supported, with a plan to support Google Cloud in th
 
 ## Features
 - Simple setup, intended to run as a docker container within your cloud environment.
-- User accounts to enforce authenticated access only.
+- User accounts to enforce authenticated access only, with optional MFA.
 - RBAC to give administrators control over user capabilities.
 - Tag-based server selection, allowing Operations teams full control over server availability, and grouping presentation.
 - Time-based server sessions. Users choose for how long they want a server group online, and extend or reduce the sesson on demand.
