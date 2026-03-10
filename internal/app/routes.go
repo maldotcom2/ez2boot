@@ -28,8 +28,8 @@ func SetupBackendRoutes(
 	publicRouter.HandleFunc("/user/login", handlers.AuthHandler.Login()).Methods("POST")
 	publicRouter.HandleFunc("/user/mfa/verify", handlers.UserHandler.VerifyMFA()).Methods("POST")
 	publicRouter.HandleFunc("/mode", handlers.UserHandler.GetMode()).Methods("GET")
-  
-  if cfg.SetupMode {
+
+	if cfg.SetupMode {
 		publicRouter.HandleFunc("/setup", handlers.UserHandler.CreateFirstTimeUser()).Methods("POST")
 	}
 
@@ -43,6 +43,7 @@ func SetupBackendRoutes(
 	adminUIRouter.Use(mw.AdminMiddleware)
 
 	// User
+	adminUIRouter.HandleFunc("/users", handlers.UserHandler.GetUsers()).Methods("GET")
 	adminUIRouter.HandleFunc("/user", handlers.UserHandler.CreateUser()).Methods("POST")
 	adminUIRouter.HandleFunc("/user", handlers.UserHandler.DeleteUser()).Methods("DELETE")
 	adminUIRouter.HandleFunc("/user/auth", handlers.UserHandler.UpdateUserAuthorisation()).Methods("PUT")
@@ -68,8 +69,7 @@ func SetupBackendRoutes(
 	uiRouter.HandleFunc("/session", handlers.SessionHandler.NewServerSession()).Methods("POST")
 	uiRouter.HandleFunc("/session", handlers.SessionHandler.UpdateServerSession()).Methods("PUT")
 	//// Users
-	uiRouter.HandleFunc("/users", handlers.UserHandler.GetUsers()).Methods("GET")
-	uiRouter.HandleFunc("/user/session", handlers.UserHandler.CheckSession()).Methods("GET")    // UI specific
+	uiRouter.HandleFunc("/user/session", handlers.UserHandler.CheckSession()).Methods("GET") // UI specific
 	uiRouter.HandleFunc("/user/auth", handlers.UserHandler.GetUserAuthorisation()).Methods("GET")
 	uiRouter.HandleFunc("/user/password", handlers.UserHandler.ChangePassword()).Methods("PUT")
 	uiRouter.HandleFunc("/user/logout", handlers.AuthHandler.Logout()).Methods("POST")          // UI specific
@@ -95,6 +95,7 @@ func SetupBackendRoutes(
 	adminAPIRouter.Use(mw.AdminMiddleware)
 
 	// User
+	adminAPIRouter.HandleFunc("/users", handlers.UserHandler.GetUsers()).Methods("GET")
 	adminAPIRouter.HandleFunc("/user", handlers.UserHandler.CreateUser()).Methods("POST")
 	adminAPIRouter.HandleFunc("/user", handlers.UserHandler.DeleteUser()).Methods("DELETE")
 	adminAPIRouter.HandleFunc("/user/auth", handlers.UserHandler.UpdateUserAuthorisation()).Methods("PUT")
@@ -115,7 +116,6 @@ func SetupBackendRoutes(
 	apiRouter.HandleFunc("/session", handlers.SessionHandler.NewServerSession()).Methods("POST")
 	apiRouter.HandleFunc("/session", handlers.SessionHandler.UpdateServerSession()).Methods("PUT")
 	//// Users
-	apiRouter.HandleFunc("/users", handlers.UserHandler.GetUsers()).Methods("GET")
 	apiRouter.HandleFunc("/user/auth", handlers.UserHandler.GetUserAuthorisation()).Methods("GET")
 	apiRouter.HandleFunc("/user/password", handlers.UserHandler.ChangePassword()).Methods("PUT")
 	/// Notification channels
