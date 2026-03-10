@@ -31,3 +31,4 @@ var (
 	ErrIncorrectMFACode             = errors.New("supplied mfa code incorrect")
 	ErrMFANotEnrolled               = errors.New("mfa not enrolled")
 	ErrMFANotSupported              = errors.New("mfa not supported for this user type")
+)

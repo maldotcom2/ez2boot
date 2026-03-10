@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"ez2boot/internal/auth"
 	"ez2boot/internal/shared"
 	"ez2boot/internal/testutil"
 	"ez2boot/internal/user"
@@ -1002,7 +1003,7 @@ func TestVerifyMFA_Success(t *testing.T) {
 	}
 
 	// Login again to trigger MFA flow
-	loginPayload := user.UserLogin{
+	loginPayload := auth.UserLogin{
 		Email:    email,
 		Password: password,
 	}
@@ -1155,10 +1156,11 @@ func TestVerifyMFA_IncorrectCode(t *testing.T) {
 	env.Router.ServeHTTP(w, req)
 
 	// Login again to get mfa_pending cookie
-	loginPayload := user.UserLogin{
+	loginPayload := auth.UserLogin{
 		Email:    email,
 		Password: password,
 	}
+
 	body, _ = json.Marshal(loginPayload)
 	req = httptest.NewRequest("POST", "/ui/user/login", bytes.NewReader(body))
 	w = httptest.NewRecorder()

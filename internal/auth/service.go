@@ -9,10 +9,15 @@ import (
 	"time"
 )
 
-func (s *Service) login(u UserLogin) (token string, err error) {
+func (s *Service) login(u UserLogin) (token string, mfaRequired bool, err error) {
 	var userID int64
 
 	defer func() {
+		// MFA succcess still pending
+		if mfaRequired {
+			return
+		}
+
 		var reason string
 		if err != nil {
 			reason = err.Error()
@@ -30,55 +35,57 @@ func (s *Service) login(u UserLogin) (token string, err error) {
 
 	// Input validation
 	if u.Email == "" || u.Password == "" {
-		return "", shared.ErrEmailOrPasswordMissing
+		return "", false, shared.ErrEmailOrPasswordMissing
 	}
-
-	// Generate session token
-	token, err = util.GenerateRandomString(32)
-	if err != nil {
-		return "", err
-	}
-
-	hash := util.HashToken(token)
-	sessionExpiry := time.Now().Add(s.Config.UserSessionDuration).Unix()
 
 	// Authenticate user
 	userID, authenticated, authErr := s.UserService.AuthenticateUser(u.Email, u.Password)
 	if authErr != nil && authErr != shared.ErrUserNotFound {
-		return "", authErr
+		return "", false, authErr
 	}
 
 	// User not found
 	if authErr == shared.ErrUserNotFound {
-		return "", shared.ErrUserNotFound
+		return "", false, shared.ErrUserNotFound
 	}
 
 	// Found but not authenticated
 	if !authenticated {
-		return "", shared.ErrAuthenticationFailed
+		return "", false, shared.ErrAuthenticationFailed
 	}
 
 	// User exists and is authenticated
-
 	user, err := s.UserService.GetUserAuthorisation(userID)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 
 	if !user.IsActive {
-		return "", shared.ErrUserInactive
+		return "", false, shared.ErrUserInactive
 	}
 
 	if !user.UIEnabled {
-		return "", shared.ErrUserNotAuthorised
+		return "", false, shared.ErrUserNotAuthorised
 	}
 
-	// Store session hash
-	if err = s.UserService.CreateUserSession(hash, sessionExpiry, userID); err != nil {
-		return "", err
+	// Check if MFA is required
+	if user.MFAConfirmed {
+		token, err = util.GenerateRandomString(32)
+		if err != nil {
+			return "", false, err
+		}
+		hash := util.HashToken(token)
+		expiry := time.Now().Add(3 * time.Minute).Unix()
+		if err = s.UserService.CreateMFAPendingSession(hash, expiry, userID); err != nil {
+			return "", false, err
+		}
+		return token, true, nil
 	}
 
-	return token, nil
+	// Create user session
+	token, err = s.UserService.CreateSession(userID)
+
+	return token, false, nil
 }
 
 func (s *Service) logout(token string, ctx context.Context) error {

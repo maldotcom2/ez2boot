@@ -531,13 +531,21 @@ func (s *Service) verifyMFA(req MFARequest, pendingToken string) (_ string, _ st
 	}
 
 	// Create user session
-	token, err := s.createSession(m.UserID)
+	token, err := s.CreateSession(m.UserID)
 
 	return token, m.Email, nil
 }
 
+func (s *Service) CreateMFAPendingSession(tokenHash string, expiry int64, userID int64) error {
+	if err := s.Repo.createMFAPendingSession(tokenHash, expiry, userID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Create user session
-func (s *Service) createSession(userID int64) (string, error) {
+func (s *Service) CreateSession(userID int64) (string, error) {
 	token, err := util.GenerateRandomString(32)
 	if err != nil {
 		return "", err

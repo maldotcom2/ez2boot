@@ -8,6 +8,7 @@ import (
 	"ez2boot/internal/shared"
 	"fmt"
 	"net/http"
+	"time"
 )
 
 func (h *Handler) GetUsers() http.HandlerFunc {
