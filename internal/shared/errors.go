@@ -28,4 +28,6 @@ var (
 	ErrFieldMissing                 = errors.New("mandatory field missing from request")
 	ErrMissingAuthValues            = errors.New("cannot perform authenticated action without username and password")
 	ErrLDAPConfigNotFound           = errors.New("ldap config not found")
-)
+	ErrIncorrectMFACode             = errors.New("supplied mfa code incorrect")
+	ErrMFANotEnrolled               = errors.New("mfa not enrolled")
+	ErrMFANotSupported              = errors.New("mfa not supported for this user type")

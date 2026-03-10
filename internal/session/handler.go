@@ -49,6 +49,7 @@ func (h *Handler) NewServerSession() http.HandlerFunc {
 			Expiry:      expiry,
 		}
 
+		h.Logger.Info("Server session created", "user", email, "domain", "user")
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: res})
 	}
 }
@@ -65,7 +66,7 @@ func (h *Handler) UpdateServerSession() http.HandlerFunc {
 		expiry, err := h.Service.updateServerSession(session, ctx)
 		if err != nil {
 			if errors.Is(err, shared.ErrNoRowsUpdated) {
-				h.Logger.Warn("Requsted session for update was either not found or not owned", "user", email, "domain", "session", "server_group", session.ServerGroup, "error", err)
+				h.Logger.Warn("Requested session for update was either not found or not owned", "user", email, "domain", "session", "server_group", session.ServerGroup, "error", err)
 				w.WriteHeader(http.StatusUnauthorized)
 				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to find session"})
 				return
@@ -82,6 +83,7 @@ func (h *Handler) UpdateServerSession() http.HandlerFunc {
 			Expiry:      expiry,
 		}
 
+		h.Logger.Info("Server session updated", "user", email, "domain", "user")
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: res})
 	}
 }

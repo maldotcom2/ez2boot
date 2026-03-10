@@ -10,7 +10,6 @@ import (
 
 // Login UI user
 func (r *Repository) createUserSession(tokenHash string, expiry int64, userID int64) error {
-	// Write hash, expiry and user ID
 	if _, err := r.Base.DB.Exec("INSERT INTO user_sessions (token_hash, session_expiry, user_id) VALUES ($1, $2, $3)", tokenHash, expiry, userID); err != nil {
 		return err
 	}
@@ -51,10 +50,10 @@ func (r *Repository) getUsers() ([]User, error) {
 }
 
 func (r *Repository) getUserAuthorisation(userID int64) (UserAuthResponse, error) {
-	query := `SELECT id, email, is_active, is_admin, api_enabled, ui_enabled FROM users WHERE id = $1`
+	query := `SELECT id, email, is_active, is_admin, api_enabled, ui_enabled, identity_provider, mfa_confirmed FROM users WHERE id = $1`
 
 	var u UserAuthResponse
-	if err := r.Base.DB.QueryRow(query, userID).Scan(&u.UserID, &u.Email, &u.IsActive, &u.IsAdmin, &u.APIEnabled, &u.UIEnabled); err != nil {
+	if err := r.Base.DB.QueryRow(query, userID).Scan(&u.UserID, &u.Email, &u.IsActive, &u.IsAdmin, &u.APIEnabled, &u.UIEnabled, &u.IdentityProvider, &u.MFAConfirmed); err != nil {
 		return UserAuthResponse{}, err
 	}
 
@@ -183,4 +182,83 @@ func (r *Repository) deleteExpiredUserSessions() (int64, error) {
 	}
 
 	return rows, nil
+}
+
+func (r *Repository) setMFASecret(secret *string, userID int64) (int64, error) {
+	result, err := r.Base.DB.Exec("UPDATE users SET mfa_secret = $1, mfa_confirmed = 0 WHERE id = $2", secret, userID)
+	if err != nil {
+		return 0, err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+
+	return rows, nil
+}
+
+func (r *Repository) confirmMFA(userID int64) (int64, error) {
+	result, err := r.Base.DB.Exec("UPDATE users SET mfa_confirmed = 1 WHERE mfa_confirmed = 0 AND id = $1", userID)
+	if err != nil {
+		return 0, err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+
+	return rows, nil
+}
+
+func (r *Repository) getMFASecret(userID int64) (*string, error) {
+	var secret *string
+	if err := r.Base.DB.QueryRow("SELECT mfa_secret FROM users WHERE id = $1", userID).Scan(&secret); err != nil {
+		return nil, err
+	}
+
+	return secret, nil
+}
+
+// Create mfa pending session
+func (r *Repository) createMFAPendingSession(tokenHash string, expiry int64, userID int64) error {
+	if _, err := r.Base.DB.Exec("INSERT INTO mfa_pending_sessions (token_hash, session_expiry, user_id) VALUES ($1, $2, $3)", tokenHash, expiry, userID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Repository) getMFAPendingSessionStatus(hash string) (MFAPendingSessionResponse, error) {
+	query := `SELECT us.session_expiry, u.id, u.email
+        	FROM mfa_pending_sessions AS us
+        	JOIN users u ON us.user_id = u.id
+        	WHERE us.token_hash = $1`
+
+	var m MFAPendingSessionResponse
+	err := r.Base.DB.QueryRow(query, hash).Scan(&m.SessionExpiry, &m.UserID, &m.Email)
+	if err != nil {
+		return MFAPendingSessionResponse{}, err
+	}
+
+	return m, nil
+}
+
+func (r *Repository) deleteMFAPendingSession(hash string) error {
+	result, err := r.Base.DB.Exec("DELETE FROM mfa_pending_sessions WHERE token_hash = $1", hash)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return shared.ErrNoRowsDeleted
+	}
+
+	return nil
 }

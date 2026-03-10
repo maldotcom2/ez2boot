@@ -145,7 +145,6 @@ async function saveUserNotification() {
 
     const response = await axios.post('/ui/user/notification', payload)
     if (response.data.success) {
-      console.log("Notification settings saved")
       message.value = 'Notification settings saved'
       messageType.value = 'success'
       savedType.value = selectedType.value
