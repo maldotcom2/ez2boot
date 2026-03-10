@@ -2,6 +2,8 @@ package app
 
 import (
 	"ez2boot/internal/audit"
+	"ez2boot/internal/auth"
+	"ez2boot/internal/auth/ldap"
 	"ez2boot/internal/config"
 	"ez2boot/internal/db"
 	"ez2boot/internal/encryption"
@@ -47,6 +49,15 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 	userRepo := user.NewRepository(repo, logger)
 	userService := user.NewService(userRepo, cfg, auditService, logger)
 	userHandler := user.NewHandler(userService, cfg, logger)
+
+	// LDAP
+	ldapRepo := ldap.NewRepository(repo)
+	ldapService := ldap.NewService(ldapRepo, encryptor, logger)
+	ldapHandler := ldap.NewHandler(ldapService, logger)
+
+	// Auth
+	authService := auth.NewService(userService, ldapService, cfg, auditService, logger)
+	authHandler := auth.NewHandler(authService, cfg, logger)
 
 	// Notification
 	notificationRepo := notification.NewRepository(repo)
@@ -99,6 +110,8 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 	wkr := worker.NewWorker(serverService, sessionService, userService, notificationService, utilService, cfg, logger)
 
 	handlers := &Handlers{
+		AuthHandler:         authHandler,
+		LdapHandler:         ldapHandler,
 		AuditHandler:        auditHandler,
 		UserHandler:         userHandler,
 		ServerHandler:       serverHandler,
@@ -112,6 +125,7 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 
 	services := &Services{
 		UserService:         userService,
+		LdapService:         ldapService,
 		ServerService:       serverService,
 		SessionService:      sessionService,
 		NotificationService: notificationService,

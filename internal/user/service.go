@@ -17,102 +17,18 @@ import (
 	"github.com/pquerna/otp/totp"
 )
 
-// User login
-func (s *Service) login(u UserLogin) (token string, mfaRequired bool, err error) {
-	var userID int64
-
-	defer func() {
-		// MFA succcess still pending
-		if mfaRequired {
-			return
-		}
-
-		var reason string
-		if err != nil {
-			reason = err.Error()
-		}
-
-		s.Audit.Log(audit.Event{
-			ActorUserID: userID,
-			ActorEmail:  u.Email,
-			Action:      "login",
-			Resource:    "user",
-			Success:     err == nil,
-			Reason:      reason,
-		})
-	}()
-
-	// Input validation
-	if u.Email == "" || u.Password == "" {
-		return "", false, shared.ErrEmailOrPasswordMissing
-	}
-
-	// Authenticate user
-	userID, authenticated, authErr := s.AuthenticateUser(u.Email, u.Password)
-	if authErr != nil && authErr != shared.ErrUserNotFound {
-		return "", false, authErr
-	}
-
-	// User not found
-	if authErr == shared.ErrUserNotFound {
-		return "", false, shared.ErrUserNotFound
-	}
-
-	// Found but not authenticated
-	if !authenticated {
-		return "", false, shared.ErrAuthenticationFailed
-	}
-
-	// User exists and is authenticated
-	user, err := s.GetUserAuthorisation(userID)
-	if err != nil {
-		return "", false, err
-	}
-
-	if !user.IsActive {
-		return "", false, shared.ErrUserInactive
-	}
-
-	if !user.UIEnabled {
-		return "", false, shared.ErrUserNotAuthorised
-	}
-
-	// Check if MFA is required
-	if user.MFAConfirmed {
-		token, err = util.GenerateRandomString(32)
-		if err != nil {
-			return "", false, err
-		}
-		hash := util.HashToken(token)
-		expiry := time.Now().Add(3 * time.Minute).Unix()
-		if err = s.Repo.createMFAPendingSession(hash, expiry, userID); err != nil {
-			return "", false, err
-		}
-		return token, true, nil
-	}
-
-	// Create user session
-	token, err = s.createSession(userID)
-
-	return token, false, nil
-}
-
-func (s *Service) logout(token string, ctx context.Context) error {
-	// Hash supplied session token
-	hash := util.HashToken(token)
-
-	if err := s.Repo.deleteUserSession(hash); err != nil {
+func (s *Service) CreateUserSession(hash string, expiry int64, userID int64) error {
+	if err := s.Repo.createUserSession(hash, expiry, userID); err != nil {
 		return err
 	}
 
-	userID, email := ctxutil.GetActor(ctx)
-	s.Audit.Log(audit.Event{
-		ActorUserID: userID,
-		ActorEmail:  email,
-		Action:      "logout",
-		Resource:    "user",
-		Success:     true,
-	})
+	return nil
+}
+
+func (s *Service) DeleteUserSession(hash string) error {
+	if err := s.Repo.deleteUserSession(hash); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -305,17 +221,17 @@ func (s *Service) changePassword(req ChangePasswordRequest, ctx context.Context)
 
 // Authenticate user with even time
 func (s *Service) AuthenticateUser(email string, password string) (int64, bool, error) {
-	id, hash, err := s.Repo.getUserIDHashByEmail(email)
+	id, hash, err := s.GetUserIDHashByEmail(email)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return 0, false, err // generic error other than no user
 	}
-
+	//TODO check hash for nil
 	if errors.Is(err, sql.ErrNoRows) {
-		hash = "$argon2id$v=19$m=131072,t=4,p=1$fCSLCAorTbr9UeFcmUW3Jg$q8wabA06xx+zN8j80pwmxTMk0b/T88R+M3ycbFWZPlc" // dummy
+		*hash = "$argon2id$v=19$m=131072,t=4,p=1$fCSLCAorTbr9UeFcmUW3Jg$q8wabA06xx+zN8j80pwmxTMk0b/T88R+M3ycbFWZPlc" // dummy
 		id = 0
 	}
 
-	match, err := argon2id.ComparePasswordAndHash(password, hash)
+	match, err := argon2id.ComparePasswordAndHash(password, *hash)
 	if err != nil {
 		return 0, false, err
 	}
@@ -377,6 +293,15 @@ func (s *Service) GetEmailFromUserID(userID int64) (string, error) {
 	}
 
 	return email, nil
+}
+
+func (s *Service) GetUserIDHashByEmail(email string) (int64, *string, error) {
+	userID, hash, err := s.Repo.getUserIDHashByEmail(email)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	return userID, hash, nil
 }
 
 func (s *Service) enrolMFA(userID int64, email string) (_ []byte, err error) {

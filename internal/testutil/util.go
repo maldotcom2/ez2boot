@@ -5,9 +5,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"ez2boot/internal/app"
+	"ez2boot/internal/auth"
 	"ez2boot/internal/config"
 	"ez2boot/internal/db"
-	"ez2boot/internal/user"
 	"ez2boot/internal/worker"
 	"io"
 	"log/slog"
@@ -112,7 +112,7 @@ func InsertServer(t *testing.T, db *sql.DB, uniqueID string, name string, state 
 func LoginAndGetCookies(t *testing.T, router http.Handler, email, password string) []*http.Cookie {
 	t.Helper()
 
-	payload := user.UserLogin{
+	payload := auth.UserLogin{
 		Email:    email,
 		Password: password,
 	}
