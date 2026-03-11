@@ -99,15 +99,14 @@ func (r *Repository) deleteUser(userID int64) error {
 	return nil
 }
 
-// Find password hash and ID by email
-func (r *Repository) getUserIDHashByEmail(email string) (int64, *string, error) {
-	var passwordHash *string
-	var id int64
-	err := r.Base.DB.QueryRow("SELECT id, password_hash FROM users WHERE email = $1", email).Scan(&id, &passwordHash)
+// Find info by email
+func (r *Repository) getUserInfoByEmail(email string) (UserInfo, error) {
+	var u UserInfo
+	err := r.Base.DB.QueryRow("SELECT id, password_hash, identity_provider FROM users WHERE email = $1", email).Scan(&u.UserID, &u.PasswordHash, &u.IdentityProvider)
 	if err != nil {
-		return 0, nil, err
+		return UserInfo{}, err
 	}
-	return id, passwordHash, nil
+	return u, nil
 }
 
 func (r *Repository) getEmailFromUserID(userID int64) (string, error) {

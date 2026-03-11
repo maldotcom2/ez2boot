@@ -67,3 +67,30 @@ func (h *Handler) DeleteLdapConfig() http.HandlerFunc {
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
+
+func (h *Handler) SearchUser() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		_, email := ctxutil.GetActor(ctx)
+
+		var req LdapSearchRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		user, err := h.Service.SearchUser(req)
+		if err != nil && !errors.Is(err, shared.ErrUserNotFound) {
+			h.Logger.Error("Failed to search ldap", "user", email, "domain", "ldap", "error", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to search ldap"})
+			return
+		}
+
+		if errors.Is(err, shared.ErrUserNotFound) {
+			h.Logger.Info("Ldap User not found", "user", email, "domain", "ldap")
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Ldap User not found"})
+			return
+		}
+
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: user})
+	}
+}

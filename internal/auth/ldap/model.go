@@ -73,13 +73,11 @@ type LdapClient struct {
 	LdapConfig LdapConfig
 }
 
-type ResolvedPermissions struct {
-	IsAdmin    bool
-	UIEnabled  bool
-	APIEnabled bool
+type LdapUser struct {
+	DisplayName string
+	Email       string
 }
 
-type LdapGroupMapping struct {
-	ADGroup     string
-	Permissions ResolvedPermissions
+type LdapSearchRequest struct {
+	Query string `json:"query"`
 }

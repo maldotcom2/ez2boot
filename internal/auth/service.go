@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"ez2boot/internal/audit"
 	"ez2boot/internal/ctxutil"
 	"ez2boot/internal/shared"
@@ -39,23 +40,38 @@ func (s *Service) login(u UserLogin) (token string, mfaRequired bool, err error)
 	}
 
 	// Authenticate user
-	userID, authenticated, authErr := s.UserService.AuthenticateUser(u.Email, u.Password)
-	if authErr != nil && authErr != shared.ErrUserNotFound {
-		return "", false, authErr
-	}
+	auth, authErr := s.UserService.AuthenticateUser(u.Email, u.Password)
 
-	// User not found
-	if authErr == shared.ErrUserNotFound {
+	userID = auth.UserID // For deferred audit logging
+
+	switch auth.IdentityProvider {
+	case "local":
+		if errors.Is(authErr, shared.ErrUserNotFound) {
+			return "", false, shared.ErrUserNotFound
+		}
+
+		if authErr != nil {
+			return "", false, authErr
+		}
+
+		if !auth.Authenticated {
+			return "", false, shared.ErrAuthenticationFailed
+		}
+
+	case "ldap":
+		ldapErr := s.LdapService.Authenticate(u.Email, u.Password)
+		if ldapErr != nil {
+			return "", false, shared.ErrAuthenticationFailed
+		}
+
+	case "oidc":
+		// SSO redirect
+	default:
 		return "", false, shared.ErrUserNotFound
 	}
 
-	// Found but not authenticated
-	if !authenticated {
-		return "", false, shared.ErrAuthenticationFailed
-	}
-
 	// User exists and is authenticated
-	user, err := s.UserService.GetUserAuthorisation(userID)
+	user, err := s.UserService.GetUserAuthorisation(auth.UserID)
 	if err != nil {
 		return "", false, err
 	}

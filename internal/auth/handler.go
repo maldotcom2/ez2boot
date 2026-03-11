@@ -39,6 +39,13 @@ func (h *Handler) Login() http.HandlerFunc {
 					Success: false,
 					Error:   "Invalid email or password", // Make sure this stays the same as for auth fail
 				}
+			case errors.Is(err, shared.ErrNoLocalPassword):
+				h.Logger.Warn("Login failed", "user", u.Email, "domain", "user", "error", err)
+				w.WriteHeader(http.StatusUnauthorized)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "No local password set for user",
+				}
 			case errors.Is(err, shared.ErrAuthenticationFailed):
 				h.Logger.Warn("Login failed", "user", u.Email, "domain", "user", "error", err)
 				w.WriteHeader(http.StatusUnauthorized)

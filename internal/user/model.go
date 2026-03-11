@@ -26,12 +26,6 @@ type Handler struct {
 	Logger  *slog.Logger
 }
 
-/*
-	 type UserLogin struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-*/
 type ChangePasswordRequest struct {
 	CurrentPassword string `json:"current_password"`
 	NewPassword     string `json:"new_password"`
@@ -104,6 +98,13 @@ type UserAuthResponse struct {
 	UIEnabled        bool   `json:"ui_enabled"`
 	IdentityProvider string `json:"identity_provider"`
 	MFAConfirmed     bool   `json:"mfa_confirmed"`
+}
+
+// Get user info
+type UserInfo struct {
+	UserID           int64
+	PasswordHash     string
+	IdentityProvider string
 }
 
 type SetupResponse struct {

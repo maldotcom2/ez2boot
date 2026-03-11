@@ -31,17 +31,12 @@ func (r *Repository) SetupDB() error {
 		return err
 	}
 
-	// create table for ldap group mapping
-	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS ldap_group_mapping (ad_group TEXT PRIMARY KEY, permissions TEXT NOT NULL DEFAULT '{}')"); err != nil {
+	// create table for ldap config
+	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS ldap_config (id INTEGER PRIMARY KEY CHECK (id = 1), host TEXT NOT NULL, port INTEGER NOT NULL, base_dn TEXT NOT NULL, bind_dn TEXT NOT NULL, bind_password BLOB NOT NULL, use_ssl INTEGER NOT NULL DEFAULT 1 CHECK (use_ssl IN (0, 1)), skip_tls_verify INTEGER NOT NULL DEFAULT 1 CHECK (skip_tls_verify IN (0, 1)))"); err != nil {
 		return err
 	}
 
-	// create table for ldap config
-	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS ldap_config (id INTEGER PRIMARY KEY CHECK (id = 1), host TEXT NOT NULL, port INTEGER NOT NULL, base_dn TEXT NOT NULL, bind_dn TEXT NOT NULL, bind_password BLOB NOT NULL, use_ssl INTEGER NOT NULL DEFAULT 1 CHECK (use_ssl IN (0, 1)), skip_tls_verify INTEGER NOT NULL DEFAULT 1 CHECK (skip_tls_verify IN (0, 1)))"); err != nil {
-    return err
-  }
-  
-  // create table for low-priv MFA interval session
+	// create table for low-priv MFA interval session
 	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS mfa_pending_sessions (token_hash TEXT PRIMARY KEY, session_expiry INTEGER NOT NULL, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE)"); err != nil {
 		return err
 	}

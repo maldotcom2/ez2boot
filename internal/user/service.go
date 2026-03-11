@@ -194,12 +194,12 @@ func (s *Service) changePassword(req ChangePasswordRequest, ctx context.Context)
 	}
 
 	// Check current password
-	_, isCurrentPassword, err := s.AuthenticateUser(actorEmail, req.CurrentPassword)
+	auth, err := s.AuthenticateUser(actorEmail, req.CurrentPassword)
 	if err != nil {
 		return err
 	}
 
-	if !isCurrentPassword {
+	if !auth.Authenticated {
 		return shared.ErrAuthenticationFailed
 	}
 
@@ -219,34 +219,46 @@ func (s *Service) changePassword(req ChangePasswordRequest, ctx context.Context)
 	return nil
 }
 
-// Authenticate user with even time
-func (s *Service) AuthenticateUser(email string, password string) (int64, bool, error) {
-	id, hash, err := s.GetUserIDHashByEmail(email)
+// Authenticate user with even time, returns userID, IDP, match
+func (s *Service) AuthenticateUser(email string, password string) (shared.AuthResult, error) {
+	user, err := s.Repo.getUserInfoByEmail(email)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return 0, false, err // generic error other than no user
+		return shared.AuthResult{}, err // generic error other than no user
 	}
-	//TODO check hash for nil
+
+	// User not found
 	if errors.Is(err, sql.ErrNoRows) {
-		*hash = "$argon2id$v=19$m=131072,t=4,p=1$fCSLCAorTbr9UeFcmUW3Jg$q8wabA06xx+zN8j80pwmxTMk0b/T88R+M3ycbFWZPlc" // dummy
-		id = 0
+		user.PasswordHash = "$argon2id$v=19$m=131072,t=4,p=1$fCSLCAorTbr9UeFcmUW3Jg$q8wabA06xx+zN8j80pwmxTMk0b/T88R+M3ycbFWZPlc" // dummy
+		user.IdentityProvider = "local"
+		user.UserID = 0
 	}
 
-	match, err := argon2id.ComparePasswordAndHash(password, *hash)
+	// User found, has external IDP
+	if user.IdentityProvider != "local" {
+		return shared.AuthResult{UserID: user.UserID, IdentityProvider: user.IdentityProvider, Authenticated: false}, nil
+	}
+
+	// User exists and is local, but no password - defensive
+	if user.PasswordHash == "" {
+		return shared.AuthResult{UserID: user.UserID, IdentityProvider: user.IdentityProvider, Authenticated: false}, shared.ErrNoLocalPassword
+	}
+
+	match, err := argon2id.ComparePasswordAndHash(password, user.PasswordHash)
 	if err != nil {
-		return 0, false, err
+		return shared.AuthResult{UserID: user.UserID, IdentityProvider: user.IdentityProvider, Authenticated: false}, err
 	}
 
-	if id == 0 { // User doesn't exist
-		return 0, false, shared.ErrUserNotFound
+	if user.UserID == 0 { // User doesn't exist
+		return shared.AuthResult{UserID: user.UserID, IdentityProvider: user.IdentityProvider, Authenticated: false}, shared.ErrUserNotFound
 	}
 
 	if match {
-		if err = s.Repo.updateLastLogin(id); err != nil {
-			return 0, false, err
+		if err = s.Repo.updateLastLogin(user.UserID); err != nil {
+			return shared.AuthResult{UserID: user.UserID, IdentityProvider: user.IdentityProvider, Authenticated: false}, err
 		}
 	}
 
-	return id, match, nil
+	return shared.AuthResult{UserID: user.UserID, IdentityProvider: user.IdentityProvider, Authenticated: match}, nil
 }
 
 func (s *Service) GetSessionStatus(token string) (UserSessionResponse, error) {
@@ -293,15 +305,6 @@ func (s *Service) GetEmailFromUserID(userID int64) (string, error) {
 	}
 
 	return email, nil
-}
-
-func (s *Service) GetUserIDHashByEmail(email string) (int64, *string, error) {
-	userID, hash, err := s.Repo.getUserIDHashByEmail(email)
-	if err != nil {
-		return 0, nil, err
-	}
-
-	return userID, hash, nil
 }
 
 func (s *Service) enrolMFA(userID int64, email string) (_ []byte, err error) {
