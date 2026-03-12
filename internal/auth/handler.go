@@ -44,7 +44,7 @@ func (h *Handler) Login() http.HandlerFunc {
 				w.WriteHeader(http.StatusUnauthorized)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   "No local password set for user",
+					Error:   "Invalid email or password",
 				}
 			case errors.Is(err, shared.ErrAuthenticationFailed):
 				h.Logger.Warn("Login failed", "user", u.Email, "domain", "user", "error", err)
@@ -67,8 +67,15 @@ func (h *Handler) Login() http.HandlerFunc {
 					Success: false,
 					Error:   "User not authorised",
 				}
+			case errors.Is(err, shared.ErrLDAPConnection):
+				h.Logger.Warn("Login failed", "user", u.Email, "domain", "user", "error", err)
+				w.WriteHeader(http.StatusServiceUnavailable)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "Failed to login",
+				}
 			default:
-				h.Logger.Error("Failed to login", "user", u.Email, "domain", "user", "error", err)
+				h.Logger.Error("Login failed", "user", u.Email, "domain", "user", "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				resp = shared.ApiResponse[any]{
 					Success: false,

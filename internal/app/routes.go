@@ -45,6 +45,7 @@ func SetupBackendRoutes(
 	// User
 	adminUIRouter.HandleFunc("/users", handlers.UserHandler.GetUsers()).Methods("GET")
 	adminUIRouter.HandleFunc("/user", handlers.UserHandler.CreateUser()).Methods("POST")
+	adminUIRouter.HandleFunc("/user/ldap", handlers.LdapHandler.CreateLdapUser()).Methods("POST")
 	adminUIRouter.HandleFunc("/user", handlers.UserHandler.DeleteUser()).Methods("DELETE")
 	adminUIRouter.HandleFunc("/user/auth", handlers.UserHandler.UpdateUserAuthorisation()).Methods("PUT")
 	// Notification

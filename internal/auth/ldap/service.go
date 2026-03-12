@@ -1,6 +1,7 @@
 package ldap
 
 import (
+	"context"
 	"crypto/tls"
 	"database/sql"
 	"errors"
@@ -11,7 +12,7 @@ import (
 )
 
 // Authenticate user from upn and password, returning AD group membership or err on auth fail
-func (s *Service) Authenticate(upn string, password string) error {
+func (s *Service) Authenticate(email string, password string) error {
 	ldapCFG, err := s.getLdapConfigInternal()
 	if err != nil {
 		return err
@@ -19,19 +20,23 @@ func (s *Service) Authenticate(upn string, password string) error {
 
 	conn, err := s.connect(ldapCFG)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w: %v", shared.ErrLDAPConnection, err)
 	}
 	defer conn.Close()
 
 	// Authenticate user
-	err = conn.Bind(upn, password)
+	err = conn.Bind(email, password)
 	if err != nil {
 		return err
 	}
 
-	// Re-bind as service account to search
-	err = conn.Bind(ldapCFG.BindDN, ldapCFG.BindPassword)
+	user, err := s.UserService.GetUserInfoByEmail(email)
 	if err != nil {
+		return err
+	}
+
+	// Update last login
+	if err := s.UserService.UpdateLastLogin(user.UserID); err != nil {
 		return err
 	}
 
@@ -134,22 +139,22 @@ func (s *Service) connect(ldapCFG LdapConfig) (*goldap.Conn, error) {
 	return goldap.DialURL(addr)
 }
 
-func (s *Service) SearchUser(req LdapSearchRequest) (LdapUser, error) {
+func (s *Service) searchUser(req LdapSearchRequest) (LdapSearchResponse, error) {
 	ldapCFG, err := s.getLdapConfigInternal()
 	if err != nil {
-		return LdapUser{}, err
+		return LdapSearchResponse{}, err
 	}
 
 	conn, err := s.connect(ldapCFG)
 	if err != nil {
-		return LdapUser{}, err
+		return LdapSearchResponse{}, fmt.Errorf("%w: %v", shared.ErrLDAPConnection, err)
 	}
 
 	defer conn.Close()
 
 	// Bind as service account to search
 	if err = conn.Bind(ldapCFG.BindDN, ldapCFG.BindPassword); err != nil {
-		return LdapUser{}, err
+		return LdapSearchResponse{}, err
 	}
 
 	searchRequest := goldap.NewSearchRequest(
@@ -157,7 +162,7 @@ func (s *Service) SearchUser(req LdapSearchRequest) (LdapUser, error) {
 		goldap.ScopeWholeSubtree,
 		goldap.NeverDerefAliases,
 		0, 0, false,
-		fmt.Sprintf("(mail=%s*)",
+		fmt.Sprintf("(mail=%s*)", // Target user requires a mail field
 			goldap.EscapeFilter(req.Query),
 		),
 		[]string{"cn", "mail"},
@@ -166,17 +171,35 @@ func (s *Service) SearchUser(req LdapSearchRequest) (LdapUser, error) {
 
 	result, err := conn.Search(searchRequest)
 	if err != nil {
-		return LdapUser{}, err
+		return LdapSearchResponse{}, err
 	}
 
 	if len(result.Entries) == 0 {
-		return LdapUser{}, shared.ErrUserNotFound
+		return LdapSearchResponse{}, shared.ErrUserNotFound
 	}
 
-	// Test a singular return - possibly expand to a collection
+	// Singular return - possibly expand to a collection
 	entry := result.Entries[0]
-	return LdapUser{
+	return LdapSearchResponse{
 		DisplayName: entry.GetAttributeValue("cn"),
 		Email:       entry.GetAttributeValue("mail"),
 	}, nil
+}
+
+func (s *Service) createLdapUser(email string, ctx context.Context) error {
+	req := LdapSearchRequest{
+		Query: email,
+	}
+
+	// Check user exists - no user returns an err
+	if _, err := s.searchUser(req); err != nil {
+		return err
+	}
+
+	// Create user
+	if err := s.UserService.CreateLdapUser(email, ctx); err != nil {
+		return err
+	}
+
+	return nil
 }

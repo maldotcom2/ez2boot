@@ -61,6 +61,10 @@ func (s *Service) login(u UserLogin) (token string, mfaRequired bool, err error)
 	case "ldap":
 		ldapErr := s.LdapService.Authenticate(u.Email, u.Password)
 		if ldapErr != nil {
+			if errors.Is(ldapErr, shared.ErrLDAPConnection) {
+				return "", false, ldapErr
+			}
+
 			return "", false, shared.ErrAuthenticationFailed
 		}
 

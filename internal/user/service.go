@@ -116,13 +116,13 @@ func (s *Service) createUser(req CreateUserRequest, ctx context.Context) error {
 
 	// Don't transport password
 	user := CreateUser{
-		UserID:       req.UserID,
-		Email:        req.Email,
-		PasswordHash: passwordHash,
-		IsActive:     req.IsActive,
-		IsAdmin:      req.IsAdmin,
-		APIEnabled:   req.APIEnabled,
-		UIEnabled:    req.UIEnabled,
+		Email:            req.Email,
+		PasswordHash:     passwordHash,
+		IsActive:         req.IsActive,
+		IsAdmin:          req.IsAdmin,
+		APIEnabled:       req.APIEnabled,
+		UIEnabled:        req.UIEnabled,
+		IdentityProvider: "local",
 	}
 
 	targetUserID, err := s.Repo.createUser(user)
@@ -139,6 +139,46 @@ func (s *Service) createUser(req CreateUserRequest, ctx context.Context) error {
 		Action:       "create",
 		Resource:     "user",
 		Success:      true,
+		Metadata: map[string]any{
+			"user type": "local",
+		},
+	})
+
+	return nil
+}
+
+func (s *Service) CreateLdapUser(email string, ctx context.Context) error {
+	if err := s.validateEmail(email); err != nil {
+		return err
+	}
+
+	user := CreateUser{
+		Email:            email,
+		PasswordHash:     "",
+		IsActive:         true,
+		IsAdmin:          false,
+		APIEnabled:       false,
+		UIEnabled:        true,
+		IdentityProvider: "ldap",
+	}
+
+	targetUserID, err := s.Repo.createUser(user)
+	if err != nil {
+		return err
+	}
+
+	actorUserID, actorEmail := ctxutil.GetActor(ctx)
+	s.Audit.Log(audit.Event{
+		ActorUserID:  actorUserID,
+		ActorEmail:   actorEmail,
+		TargetUserID: targetUserID,
+		TargetEmail:  email,
+		Action:       "create",
+		Resource:     "user",
+		Success:      true,
+		Metadata: map[string]any{
+			"user type": "ldap",
+		},
 	})
 
 	return nil
@@ -259,6 +299,23 @@ func (s *Service) AuthenticateUser(email string, password string) (shared.AuthRe
 	}
 
 	return shared.AuthResult{UserID: user.UserID, IdentityProvider: user.IdentityProvider, Authenticated: match}, nil
+}
+
+func (s *Service) GetUserInfoByEmail(email string) (shared.UserInfo, error) {
+	user, err := s.Repo.getUserInfoByEmail(email)
+	if err != nil {
+		return shared.UserInfo{}, err
+	}
+
+	return user, nil
+}
+
+func (s *Service) UpdateLastLogin(userID int64) error {
+	if err := s.Repo.updateLastLogin(userID); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *Service) GetSessionStatus(token string) (UserSessionResponse, error) {

@@ -69,7 +69,6 @@ type DeleteUserRequest struct {
 }
 
 type CreateUserRequest struct {
-	UserID     int64  `json:"-"`
 	Email      string `json:"email"`
 	Password   string `json:"password"`
 	IsActive   bool   `json:"is_active"`
@@ -80,13 +79,13 @@ type CreateUserRequest struct {
 
 // Intermediate stuct used after password hashing
 type CreateUser struct {
-	UserID       int64
-	Email        string
-	PasswordHash string
-	IsActive     bool
-	IsAdmin      bool
-	APIEnabled   bool
-	UIEnabled    bool
+	Email            string
+	PasswordHash     string
+	IsActive         bool
+	IsAdmin          bool
+	APIEnabled       bool
+	UIEnabled        bool
+	IdentityProvider string
 }
 
 type UserAuthResponse struct {
@@ -98,13 +97,6 @@ type UserAuthResponse struct {
 	UIEnabled        bool   `json:"ui_enabled"`
 	IdentityProvider string `json:"identity_provider"`
 	MFAConfirmed     bool   `json:"mfa_confirmed"`
-}
-
-// Get user info
-type UserInfo struct {
-	UserID           int64
-	PasswordHash     string
-	IdentityProvider string
 }
 
 type SetupResponse struct {

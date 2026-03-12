@@ -11,3 +11,9 @@ type AuthResult struct {
 	IdentityProvider string
 	Authenticated    bool
 }
+
+type UserInfo struct {
+	UserID           int64
+	PasswordHash     string
+	IdentityProvider string
+}

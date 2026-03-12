@@ -21,6 +21,7 @@ func (h *Handler) GetLdapConfig() http.HandlerFunc {
 				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "LDAP config not found"})
 				return
 			}
+
 			h.Logger.Error("Failed to get ldap config", "user", email, "domain", "ldap", "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to get ldap config"})
@@ -37,7 +38,12 @@ func (h *Handler) SetLdapConfig() http.HandlerFunc {
 		_, email := ctxutil.GetActor(ctx)
 
 		var req LdapConfigRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			h.Logger.Error("Malformed request", "user", email, "domain", "ldap", "error", err)
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
+			return
+		}
 
 		err := h.Service.setLdapConfig(req)
 		if err != nil {
@@ -56,8 +62,9 @@ func (h *Handler) DeleteLdapConfig() http.HandlerFunc {
 		ctx := r.Context()
 		_, email := ctxutil.GetActor(ctx)
 
-		err := h.Service.deleteLdapConfig()
-		if err != nil {
+		// There's only one config to delete, no payload as selector
+
+		if err := h.Service.deleteLdapConfig(); err != nil {
 			h.Logger.Error("Failed to delete ldap config", "user", email, "domain", "ldap", "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to delete ldap config"})
@@ -74,23 +81,87 @@ func (h *Handler) SearchUser() http.HandlerFunc {
 		_, email := ctxutil.GetActor(ctx)
 
 		var req LdapSearchRequest
-		json.NewDecoder(r.Body).Decode(&req)
-
-		user, err := h.Service.SearchUser(req)
-		if err != nil && !errors.Is(err, shared.ErrUserNotFound) {
-			h.Logger.Error("Failed to search ldap", "user", email, "domain", "ldap", "error", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to search ldap"})
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			h.Logger.Error("Malformed request", "user", email, "domain", "ldap", "error", err)
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
 			return
 		}
 
-		if errors.Is(err, shared.ErrUserNotFound) {
-			h.Logger.Info("Ldap User not found", "user", email, "domain", "ldap")
-			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Ldap User not found"})
+		var resp shared.ApiResponse[any]
+		user, err := h.Service.searchUser(req)
+		if err != nil {
+			switch {
+			case errors.Is(err, shared.ErrUserNotFound):
+				h.Logger.Info("Ldap User not found", "user", email, "domain", "ldap")
+				w.WriteHeader(http.StatusNotFound)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "Ldap User not found",
+				}
+			default:
+				h.Logger.Error("Failed to search ldap", "user", email, "domain", "ldap", "error", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "Failed to search ldap",
+				}
+			}
+
+			json.NewEncoder(w).Encode(resp)
 			return
 		}
 
+		h.Logger.Info("Ldap search", "user", email, "domain", "ldap", "query", req.Query)
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: user})
+	}
+}
+
+func (h *Handler) CreateLdapUser() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		_, email := ctxutil.GetActor(ctx)
+
+		var req CreateLdapUserRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			h.Logger.Error("Malformed request", "user", email, "domain", "ldap", "error", err)
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
+			return
+		}
+
+		var resp shared.ApiResponse[any]
+		if err := h.Service.createLdapUser(req.Email, ctx); err != nil {
+			switch {
+			case errors.Is(err, shared.ErrUserAlreadyExists):
+				h.Logger.Error("Failed to create user", "user", email, "domain", "ldap", "target_user", req.Email, "error", err)
+				w.WriteHeader(http.StatusConflict)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "User already exists",
+				}
+			case errors.Is(err, shared.ErrUserNotFound):
+				h.Logger.Warn("Failed to create user", "user", email, "domain", "ldap", "target_user", req.Email, "error", err)
+				w.WriteHeader(http.StatusNotFound)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "User not found in directory",
+				}
+			default:
+				h.Logger.Error("Failed to create user", "user", email, "domain", "ldap", "target_user", req.Email, "error", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "Failed to create user",
+				}
+			}
+
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
+
+		h.Logger.Info("New user created", "user", email, "domain", "ldap", "target_user", req.Email)
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }

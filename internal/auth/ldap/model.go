@@ -2,6 +2,7 @@ package ldap
 
 import (
 	"ez2boot/internal/db"
+	"ez2boot/internal/user"
 	"log/slog"
 )
 
@@ -15,9 +16,10 @@ type Repository struct {
 }
 
 type Service struct {
-	Repo      *Repository
-	Encryptor Encryptor
-	Logger    *slog.Logger
+	Repo        *Repository
+	UserService *user.Service
+	Encryptor   Encryptor
+	Logger      *slog.Logger
 }
 
 type Handler struct {
@@ -73,11 +75,15 @@ type LdapClient struct {
 	LdapConfig LdapConfig
 }
 
-type LdapUser struct {
+type LdapSearchRequest struct {
+	Query string `json:"query"`
+}
+
+type LdapSearchResponse struct {
 	DisplayName string
 	Email       string
 }
 
-type LdapSearchRequest struct {
-	Query string `json:"query"`
+type CreateLdapUserRequest struct {
+	Email string `json:"email"`
 }

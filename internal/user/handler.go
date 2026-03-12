@@ -169,7 +169,7 @@ func (h *Handler) CreateUser() http.HandlerFunc {
 				w.WriteHeader(http.StatusInternalServerError)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   fmt.Sprintf("Failed to create user %s", err),
+					Error:   "Failed to create user",
 				}
 			}
 

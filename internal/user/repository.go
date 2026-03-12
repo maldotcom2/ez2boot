@@ -80,7 +80,7 @@ func (r *Repository) updateLastLogin(userID int64) error {
 // Create new user
 func (r *Repository) createUser(u CreateUser) (int64, error) {
 	var userID int64
-	if err := r.Base.DB.QueryRow("INSERT INTO users (email, password_hash, is_active, is_admin, api_enabled, ui_enabled, identity_provider) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id", u.Email, u.PasswordHash, u.IsActive, u.IsAdmin, u.APIEnabled, u.UIEnabled, "local").Scan(&userID); err != nil {
+	if err := r.Base.DB.QueryRow("INSERT INTO users (email, password_hash, is_active, is_admin, api_enabled, ui_enabled, identity_provider) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id", u.Email, u.PasswordHash, u.IsActive, u.IsAdmin, u.APIEnabled, u.UIEnabled, u.IdentityProvider).Scan(&userID); err != nil {
 		if sqliteErr, ok := err.(sqlite3.Error); ok {
 			if sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
 				return 0, shared.ErrUserAlreadyExists
@@ -100,11 +100,11 @@ func (r *Repository) deleteUser(userID int64) error {
 }
 
 // Find info by email
-func (r *Repository) getUserInfoByEmail(email string) (UserInfo, error) {
-	var u UserInfo
+func (r *Repository) getUserInfoByEmail(email string) (shared.UserInfo, error) {
+	var u shared.UserInfo
 	err := r.Base.DB.QueryRow("SELECT id, password_hash, identity_provider FROM users WHERE email = $1", email).Scan(&u.UserID, &u.PasswordHash, &u.IdentityProvider)
 	if err != nil {
-		return UserInfo{}, err
+		return shared.UserInfo{}, err
 	}
 	return u, nil
 }
