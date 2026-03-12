@@ -260,6 +260,8 @@ func (s *Service) changePassword(req ChangePasswordRequest, ctx context.Context)
 }
 
 // Authenticate user with even time, returns userID, IDP, match
+const dummyHash = "$argon2id$v=19$m=131072,t=4,p=1$fCSLCAorTbr9UeFcmUW3Jg$q8wabA06xx+zN8j80pwmxTMk0b/T88R+M3ycbFWZPlc"
+
 func (s *Service) AuthenticateUser(email string, password string) (shared.AuthResult, error) {
 	user, err := s.Repo.getUserInfoByEmail(email)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
@@ -268,13 +270,14 @@ func (s *Service) AuthenticateUser(email string, password string) (shared.AuthRe
 
 	// User not found
 	if errors.Is(err, sql.ErrNoRows) {
-		user.PasswordHash = "$argon2id$v=19$m=131072,t=4,p=1$fCSLCAorTbr9UeFcmUW3Jg$q8wabA06xx+zN8j80pwmxTMk0b/T88R+M3ycbFWZPlc" // dummy
+		user.PasswordHash = dummyHash // dummy
 		user.IdentityProvider = "local"
 		user.UserID = 0
 	}
 
 	// User found, has external IDP
 	if user.IdentityProvider != "local" {
+		argon2id.ComparePasswordAndHash(password, dummyHash)
 		return shared.AuthResult{UserID: user.UserID, IdentityProvider: user.IdentityProvider, Authenticated: false}, nil
 	}
 
