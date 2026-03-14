@@ -1,7 +1,7 @@
 <template>
   <div class="user-mgmt-container">
     <div class="user-btn-container">
-      <button @click="createUser()">Create User</button>
+      <button @click="createUser()">Add User</button>
       <button @click="saveChanges" :disabled="changedUsers.size === 0">Save Changes</button>
     </div>
     <p class="result" :class="messageType">{{ message || '\u00A0' }}</p>
