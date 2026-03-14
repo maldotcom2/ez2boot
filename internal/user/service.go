@@ -33,7 +33,7 @@ func (s *Service) DeleteUserSession(hash string) error {
 	return nil
 }
 
-func (s *Service) getUsers() ([]User, error) {
+func (s *Service) getUsers() ([]GetUsersResponse, error) {
 	users, err := s.Repo.getUsers()
 	if err != nil {
 		return nil, err

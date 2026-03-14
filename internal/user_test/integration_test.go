@@ -49,7 +49,7 @@ func TestGetUsers_Success(t *testing.T) {
 	}
 
 	// Decode response
-	var got shared.ApiResponse[[]user.User]
+	var got shared.ApiResponse[[]user.GetUsersResponse]
 	if err := json.Unmarshal(w.Body.Bytes(), &got); err != nil {
 		t.Fatalf("failed to unmarshal response: %v", err)
 	}
@@ -60,35 +60,38 @@ func TestGetUsers_Success(t *testing.T) {
 	}
 
 	// Expected API response
-	want := shared.ApiResponse[[]user.User]{
+	want := shared.ApiResponse[[]user.GetUsersResponse]{
 		Success: true,
-		Data: []user.User{
+		Data: []user.GetUsersResponse{
 			{
-				UserID:     1,
-				Email:      "admin@example.com",
-				IsActive:   true,
-				IsAdmin:    true,
-				APIEnabled: true,
-				UIEnabled:  true,
-				LastLogin:  nil,
+				UserID:           1,
+				Email:            "admin@example.com",
+				IsActive:         true,
+				IsAdmin:          true,
+				APIEnabled:       true,
+				UIEnabled:        true,
+				IdentityProvider: "local",
+				LastLogin:        nil,
 			},
 			{
-				UserID:     2,
-				Email:      "example@example.com",
-				IsActive:   true,
-				IsAdmin:    false,
-				APIEnabled: true,
-				UIEnabled:  true,
-				LastLogin:  nil,
+				UserID:           2,
+				Email:            "example@example.com",
+				IsActive:         true,
+				IsAdmin:          false,
+				APIEnabled:       true,
+				UIEnabled:        true,
+				IdentityProvider: "local",
+				LastLogin:        nil,
 			},
 			{
-				UserID:     3,
-				Email:      "example2@example.com",
-				IsActive:   true,
-				IsAdmin:    false,
-				APIEnabled: true,
-				UIEnabled:  true,
-				LastLogin:  nil,
+				UserID:           3,
+				Email:            "example2@example.com",
+				IsActive:         true,
+				IsAdmin:          false,
+				APIEnabled:       true,
+				UIEnabled:        true,
+				IdentityProvider: "local",
+				LastLogin:        nil,
 			},
 		},
 		Error: "",
@@ -369,7 +372,7 @@ func TestCreateFirstTimeUser_Success(t *testing.T) {
 	}
 
 	// Verify DB entry
-	var u user.User
+	var u user.GetUsersResponse
 	row := env.DB.QueryRow("SELECT email, is_active, is_admin, ui_enabled, api_enabled FROM users WHERE email = $1", "admin@example.com")
 	if err := row.Scan(&u.Email, &u.IsActive, &u.IsAdmin, &u.UIEnabled, &u.APIEnabled); err != nil {
 		t.Fatalf("user not inserted: %v", err)

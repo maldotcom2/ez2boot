@@ -27,19 +27,19 @@ func (r *Repository) deleteUserSession(tokenHash string) error {
 	return nil
 }
 
-func (r *Repository) getUsers() ([]User, error) {
-	rows, err := r.Base.DB.Query("SELECT id, email, is_active, is_admin, api_enabled, ui_enabled, last_login FROM users")
+func (r *Repository) getUsers() ([]GetUsersResponse, error) {
+	rows, err := r.Base.DB.Query("SELECT id, email, is_active, is_admin, api_enabled, ui_enabled, identity_provider, last_login FROM users")
 	if err != nil {
 		return nil, err
 	}
 
 	defer rows.Close()
 
-	users := []User{}
+	users := []GetUsersResponse{}
 
 	for rows.Next() {
-		var u User
-		if err = rows.Scan(&u.UserID, &u.Email, &u.IsActive, &u.IsAdmin, &u.APIEnabled, &u.UIEnabled, &u.LastLogin); err != nil {
+		var u GetUsersResponse
+		if err = rows.Scan(&u.UserID, &u.Email, &u.IsActive, &u.IsAdmin, &u.APIEnabled, &u.UIEnabled, &u.IdentityProvider, &u.LastLogin); err != nil {
 			return nil, err
 		}
 
