@@ -13,18 +13,27 @@ func (h *Handler) GetLdapConfig() http.HandlerFunc {
 		ctx := r.Context()
 		_, email := ctxutil.GetActor(ctx)
 
+		var resp shared.ApiResponse[any]
 		c, err := h.Service.getLdapConfig()
 		if err != nil {
-			if errors.Is(err, shared.ErrLDAPConfigNotFound) {
-				h.Logger.Warn("LDAP config not found", "user", email, "domain", "ldap")
-				w.WriteHeader(http.StatusNotFound)
-				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "LDAP config not found"})
-				return
+			switch {
+			case errors.Is(err, shared.ErrLDAPConfigNotFound):
+				h.Logger.Warn("Ldap config not found", "user", email, "domain", "ldap", "error", err)
+				w.WriteHeader(http.StatusOK)
+				resp = shared.ApiResponse[any]{
+					Success: true, // No config is not an error
+					Data:    nil,
+				}
+			default:
+				h.Logger.Error("Failed to get ldap config", "user", email, "domain", "ldap", "error", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "Failed to get ldap config",
+				}
 			}
 
-			h.Logger.Error("Failed to get ldap config", "user", email, "domain", "ldap", "error", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to get ldap config"})
+			json.NewEncoder(w).Encode(resp)
 			return
 		}
 

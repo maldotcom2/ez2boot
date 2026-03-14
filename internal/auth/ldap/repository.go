@@ -25,7 +25,7 @@ func (r *Repository) setLdapConfig(req LdapConfigStore) error {
 }
 
 func (r *Repository) deleteLdapConfig() error {
-	if _, err := r.Base.DB.Exec("DELETE from ldap_config"); err != nil {
+	if _, err := r.Base.DB.Exec("DELETE FROM ldap_config"); err != nil {
 		return err
 	}
 

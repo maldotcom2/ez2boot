@@ -4,7 +4,7 @@
       <p class="prompt">Create User</p>
       <div class="toggle">
         <button @click="mode = 'local', resetState()">Local</button>
-        <button @click="mode = 'ldap', resetState()">LDAP</button>
+        <button @click="mode = 'ldap', resetState()" :disabled="!ldapExists">LDAP</button>
       </div>
       <form v-if="mode === 'local'" @submit.prevent="createUser">
         <input v-model="email" placeholder="Email" />
@@ -26,7 +26,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import AdminUserMgmt from './AdminUserMgmt.vue'
 
@@ -51,6 +51,7 @@ const validationMessage = computed(() => {
 // LDAP
 const ldapQuery = ref('')
 const ldapResult = ref(null)
+const ldapExists = ref(false)
 
 function resetState() {
   message.value = ''
@@ -162,6 +163,35 @@ async function provisionLdapUser() {
     }
   }
 }
+
+
+// Check if an LDAP config exists for user provisioning
+async function checkLdap() {
+  message.value = ''
+  messageType.value = ''
+  try {
+    const response = await axios.get('/ui/auth/ldap')
+    if (response.data.success && response.data.data) {
+      ldapExists.value = true
+    } else {
+      ldapExists.value = false
+    }
+  } catch (err) {
+    messageType.value = 'error'
+    if (err.response) {
+      message.value = `Failed to check ldap existence: ${err.response.data.error || err.response.statusText}`
+    } else if (err.request) {
+      message.value = 'No response from server'
+    } else {
+      message.value = err.message
+    }
+  }
+}
+
+onMounted(async () => {
+  await checkLdap()
+})
+
 </script>
 
 <style scoped>
