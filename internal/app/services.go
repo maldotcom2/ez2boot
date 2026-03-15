@@ -52,7 +52,7 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 
 	// LDAP
 	ldapRepo := ldap.NewRepository(repo)
-	ldapService := ldap.NewService(ldapRepo, userService, encryptor, logger)
+	ldapService := ldap.NewService(ldapRepo, userService, auditService, encryptor, logger)
 	ldapHandler := ldap.NewHandler(ldapService, logger)
 
 	// Auth

@@ -5,6 +5,8 @@ import (
 	"crypto/tls"
 	"database/sql"
 	"errors"
+	"ez2boot/internal/audit"
+	"ez2boot/internal/ctxutil"
 	"ez2boot/internal/shared"
 	"fmt"
 
@@ -93,7 +95,25 @@ func (s *Service) getLdapConfigInternal() (LdapConfig, error) {
 	}, nil
 }
 
-func (s *Service) setLdapConfig(req LdapConfigRequest) error {
+func (s *Service) setLdapConfig(req LdapConfigRequest, ctx context.Context) (err error) {
+	actorUserID, actorEmail := ctxutil.GetActor(ctx)
+
+	defer func() {
+		var reason string
+		if err != nil {
+			reason = err.Error()
+		}
+
+		s.Audit.Log(audit.Event{
+			ActorUserID: actorUserID,
+			ActorEmail:  actorEmail,
+			Action:      "set",
+			Resource:    "ldap config",
+			Success:     err == nil,
+			Reason:      reason,
+		})
+	}()
+
 	// Encrypt password
 	encryptedBytes, err := s.Encryptor.Encrypt([]byte(req.BindPassword))
 	if err != nil {
@@ -117,12 +137,26 @@ func (s *Service) setLdapConfig(req LdapConfigRequest) error {
 	return nil
 }
 
-func (s *Service) deleteLdapConfig() error {
-	if err := s.Repo.deleteLdapConfig(); err != nil {
-		return err
-	}
+func (s *Service) deleteLdapConfig(ctx context.Context) (err error) {
+	actorUserID, actorEmail := ctxutil.GetActor(ctx)
 
-	return nil
+	defer func() {
+		var reason string
+		if err != nil {
+			reason = err.Error()
+		}
+
+		s.Audit.Log(audit.Event{
+			ActorUserID: actorUserID,
+			ActorEmail:  actorEmail,
+			Action:      "delete",
+			Resource:    "ldap config",
+			Success:     err == nil,
+			Reason:      reason,
+		})
+	}()
+
+	return s.Repo.deleteLdapConfig()
 }
 
 // Opens a connection to the LDAP server

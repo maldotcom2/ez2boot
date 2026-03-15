@@ -54,7 +54,7 @@ func (h *Handler) SetLdapConfig() http.HandlerFunc {
 			return
 		}
 
-		err := h.Service.setLdapConfig(req)
+		err := h.Service.setLdapConfig(req, ctx)
 		if err != nil {
 			h.Logger.Error("Failed to set ldap config", "user", email, "domain", "ldap", "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -73,7 +73,7 @@ func (h *Handler) DeleteLdapConfig() http.HandlerFunc {
 
 		// There's only one config to delete, no payload as selector
 
-		if err := h.Service.deleteLdapConfig(); err != nil {
+		if err := h.Service.deleteLdapConfig(ctx); err != nil {
 			h.Logger.Error("Failed to delete ldap config", "user", email, "domain", "ldap", "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to delete ldap config"})

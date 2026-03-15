@@ -1,6 +1,7 @@
 package ldap
 
 import (
+	"ez2boot/internal/audit"
 	"ez2boot/internal/db"
 	"ez2boot/internal/user"
 	"log/slog"
@@ -18,6 +19,7 @@ type Repository struct {
 type Service struct {
 	Repo        *Repository
 	UserService *user.Service
+	Audit       *audit.Service
 	Encryptor   Encryptor
 	Logger      *slog.Logger
 }
