@@ -325,6 +325,13 @@ func (h *Handler) ChangePassword() http.HandlerFunc {
 		err := h.Service.changePassword(req, ctx)
 		if err != nil {
 			switch {
+			case errors.Is(err, shared.ErrPasswordChangeNotSupported):
+				h.Logger.Warn("Failed to change password", "user", email, "domain", "user", "error", err)
+				w.WriteHeader(http.StatusBadRequest)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "Cannot change password for external auth user",
+				}
 			case errors.Is(err, shared.ErrCurrentOrNewPasswordMissing):
 				h.Logger.Error("Failed to change password", "user", email, "domain", "user", "error", err)
 				w.WriteHeader(http.StatusBadRequest)

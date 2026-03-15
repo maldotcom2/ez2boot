@@ -17,6 +17,7 @@ var (
 	ErrNoRowsUpdated                = errors.New("no rows were updated")
 	ErrPasswordLength               = errors.New("password must be 14 chars")
 	ErrPasswordContainsEmail        = errors.New("password contains email address")
+	ErrPasswordChangeNotSupported   = errors.New("change password not supported for external auth users")
 	ErrEmailContainsPassword        = errors.New("email contains password")
 	ErrEmailPattern                 = errors.New("email does not match required pattern")
 	ErrEmailOrPasswordMissing       = errors.New("email and password field required")

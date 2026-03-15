@@ -1,12 +1,15 @@
 <template>
   <aside class="menu">
     <button @click="showUserNotifications">Notifications</button>
-    <button @click="showChangePassword">Change Password</button>
+    <button @click="showChangePassword" :disabled="user.identityProvider !== 'local'">Change Password</button>
     <button @click="showMFA">MFA</button>
   </aside>
 </template>
 
 <script setup>
+import { useUserStore } from '@/stores/user'
+
+const user = useUserStore()
 
 // Props
 const props = defineProps({

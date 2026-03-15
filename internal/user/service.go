@@ -229,6 +229,16 @@ func (s *Service) changePassword(req ChangePasswordRequest, ctx context.Context)
 		})
 	}()
 
+	user, err := s.GetUserInfoByEmail(actorEmail)
+	if err != nil {
+		return err
+	}
+
+	// Only local users can change password
+	if user.IdentityProvider != "local" {
+		return shared.ErrPasswordChangeNotSupported
+	}
+
 	if req.CurrentPassword == "" || req.NewPassword == "" {
 		return shared.ErrCurrentOrNewPasswordMissing
 	}
