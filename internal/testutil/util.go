@@ -8,6 +8,7 @@ import (
 	"ez2boot/internal/auth"
 	"ez2boot/internal/config"
 	"ez2boot/internal/db"
+	"ez2boot/internal/encryption"
 	"ez2boot/internal/worker"
 	"io"
 	"log/slog"
@@ -19,13 +20,19 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+type Encryptor interface {
+	Encrypt([]byte) ([]byte, error)
+	Decrypt([]byte) ([]byte, error)
+}
+
 type TestEnv struct {
-	DB     *sql.DB
-	Logger *slog.Logger
-	Base   *db.Repository
-	Cfg    *config.Config
-	Router http.Handler
-	Worker *worker.Worker
+	DB        *sql.DB
+	Logger    *slog.Logger
+	Base      *db.Repository
+	Cfg       *config.Config
+	Router    http.Handler
+	Worker    *worker.Worker
+	Encryptor Encryptor
 }
 
 // Build test environment - in memory only
@@ -69,6 +76,7 @@ func NewTestEnv(t *testing.T) *TestEnv {
 		AWSRegion:           "ap-southeast-2",
 		RateLimit:           100,
 		UserSessionDuration: 1 * time.Hour, // Prevent intermittent 401s during test
+		EncryptionPhrase:    "newphrase",
 	}
 
 	router, _, wkr, err := app.NewApp("dev", "unknown", cfg, baseRepo, logger)
@@ -76,13 +84,19 @@ func NewTestEnv(t *testing.T) *TestEnv {
 		t.Fatalf("failed to initialize app: %v", err)
 	}
 
+	encryptor, err := encryption.NewAESGCMEncryptor(cfg.EncryptionPhrase)
+	if err != nil {
+		t.Fatalf("failed to create encryptor: %v", err)
+	}
+
 	return &TestEnv{
-		DB:     testDB,
-		Logger: logger,
-		Base:   baseRepo,
-		Cfg:    cfg,
-		Router: router,
-		Worker: wkr,
+		DB:        testDB,
+		Logger:    logger,
+		Base:      baseRepo,
+		Cfg:       cfg,
+		Router:    router,
+		Worker:    wkr,
+		Encryptor: encryptor,
 	}
 }
 
@@ -147,4 +161,19 @@ func InsertServerSession(t *testing.T, db *sql.DB, userID int64, serverGroup str
 	if _, err := db.Exec("INSERT INTO server_sessions (user_id, server_group, expiry, warning_notified, on_notified) VALUES ($1, $2, $3, $4, $5)", userID, serverGroup, expiry, 0, 0); err != nil {
 		t.Fatal("failed to insert new server session")
 	}
+}
+
+func InsertLdapConfig(t *testing.T, db *sql.DB, encryptor Encryptor, host string, port int64, baseDN string, bindDN string, bindPassword string, useSSL bool, skipTLSVerify bool) {
+	t.Helper()
+
+	// Encrypt password
+	encryptedBytes, err := encryptor.Encrypt([]byte(bindPassword))
+	if err != nil {
+		t.Fatal("failed to encrypt password")
+	}
+
+	if _, err := db.Exec("INSERT INTO ldap_config (id, host, port, base_dn, bind_dn, bind_password, use_ssl, skip_tls_verify) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", 1, host, port, baseDN, bindDN, encryptedBytes, useSSL, skipTLSVerify); err != nil {
+		t.Fatal("failed to insert ldap config")
+	}
+
 }
