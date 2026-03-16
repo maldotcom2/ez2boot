@@ -14,6 +14,6 @@ type AuthResult struct {
 
 type UserInfo struct {
 	UserID           int64
-	PasswordHash     string
+	PasswordHash     *string // Can be null
 	IdentityProvider string
 }

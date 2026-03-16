@@ -10,8 +10,9 @@ import (
 
 func NewHandler(ldapService *Service, logger *slog.Logger) *Handler {
 	return &Handler{
-		Service: ldapService,
-		Logger:  logger,
+		Service:  ldapService,
+		Searcher: ldapService, // for testing
+		Logger:   logger,
 	}
 }
 

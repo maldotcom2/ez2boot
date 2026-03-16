@@ -17,6 +17,7 @@ import (
 )
 
 type Services struct {
+	AuthService         *auth.Service
 	UserService         *user.Service
 	LdapService         *ldap.Service
 	ServerService       *server.Service
@@ -30,9 +31,9 @@ type Services struct {
 
 type Handlers struct {
 	AuthHandler         *auth.Handler
+	UserHandler         *user.Handler
 	LdapHandler         *ldap.Handler
 	AuditHandler        *audit.Handler
-	UserHandler         *user.Handler
 	ServerHandler       *server.Handler
 	SessionHandler      *session.Handler
 	NotificationHandler *notification.Handler

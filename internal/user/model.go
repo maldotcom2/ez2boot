@@ -81,7 +81,7 @@ type CreateUserRequest struct {
 // Intermediate stuct used after password hashing
 type CreateUser struct {
 	Email            string
-	PasswordHash     string
+	PasswordHash     *string
 	IsActive         bool
 	IsAdmin          bool
 	APIEnabled       bool

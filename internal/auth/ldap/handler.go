@@ -98,7 +98,7 @@ func (h *Handler) SearchUser() http.HandlerFunc {
 		}
 
 		var resp shared.ApiResponse[any]
-		user, err := h.Service.searchUser(req)
+		user, err := h.Searcher.SearchUser(req)
 		if err != nil {
 			switch {
 			case errors.Is(err, shared.ErrUserNotFound):
@@ -140,7 +140,7 @@ func (h *Handler) CreateLdapUser() http.HandlerFunc {
 		}
 
 		var resp shared.ApiResponse[any]
-		if err := h.Service.createLdapUser(req.Email, ctx); err != nil {
+		if err := h.Service.createLdapUser(req.Email, ctx, h.Searcher); err != nil {
 			switch {
 			case errors.Is(err, shared.ErrUserAlreadyExists):
 				h.Logger.Error("Failed to create user", "user", email, "domain", "ldap", "target_user", req.Email, "error", err)

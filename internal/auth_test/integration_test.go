@@ -18,7 +18,7 @@ func TestLogin_Success(t *testing.T) {
 	email := "example@example.com"
 	password := "testpassword123"
 	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, email, hash, true, false, true, true, "local")
+	testutil.InsertUser(t, env.DB, email, &hash, true, false, true, true, "local")
 
 	// Helper confirms login
 	_ = testutil.LoginAndGetCookies(t, env.Router, email, password)
@@ -32,7 +32,7 @@ func TestLogin_WrongPassword_ReturnsUnauth(t *testing.T) {
 	email := "example@example.com"
 
 	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, email, hash, true, false, true, true, "local")
+	testutil.InsertUser(t, env.DB, email, &hash, true, false, true, true, "local")
 
 	// Attempt login with wrong password
 	loginPayload := auth.UserLogin{
@@ -67,7 +67,7 @@ func TestLogin_Inactive_ReturnsForbidden(t *testing.T) {
 	email := "example@example.com"
 
 	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, email, hash, false, false, true, true, "local")
+	testutil.InsertUser(t, env.DB, email, &hash, false, false, true, true, "local")
 
 	// Attempt login
 	loginPayload := auth.UserLogin{
@@ -102,7 +102,7 @@ func TestLogin_UIblocked_ReturnsForbidden(t *testing.T) {
 	email := "example@example.com"
 
 	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, email, hash, true, false, true, false, "local")
+	testutil.InsertUser(t, env.DB, email, &hash, true, false, true, false, "local")
 
 	// Attempt login
 	loginPayload := auth.UserLogin{
@@ -137,7 +137,7 @@ func TestLogout_Success(t *testing.T) {
 	email := "example@example.com"
 	password := "testpassword123"
 	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, email, hash, true, false, true, true, "local")
+	testutil.InsertUser(t, env.DB, email, &hash, true, false, true, true, "local")
 
 	// Helper confirms login
 	cookies := testutil.LoginAndGetCookies(t, env.Router, email, password)

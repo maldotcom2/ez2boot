@@ -173,7 +173,7 @@ func (s *Service) connect(ldapCFG LdapConfig) (*goldap.Conn, error) {
 	return goldap.DialURL(addr)
 }
 
-func (s *Service) searchUser(req LdapSearchRequest) (LdapSearchResponse, error) {
+func (s *Service) SearchUser(req LdapSearchRequest) (LdapSearchResponse, error) {
 	ldapCFG, err := s.getLdapConfigInternal()
 	if err != nil {
 		return LdapSearchResponse{}, err
@@ -220,13 +220,13 @@ func (s *Service) searchUser(req LdapSearchRequest) (LdapSearchResponse, error) 
 	}, nil
 }
 
-func (s *Service) createLdapUser(email string, ctx context.Context) error {
+func (s *Service) createLdapUser(email string, ctx context.Context, searcher UserSearcher) error {
 	req := LdapSearchRequest{
 		Query: email,
 	}
 
 	// Check user exists - no user returns an err
-	if _, err := s.searchUser(req); err != nil {
+	if _, err := searcher.SearchUser(req); err != nil {
 		return err
 	}
 

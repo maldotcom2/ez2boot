@@ -117,7 +117,7 @@ func (s *Service) createUser(req CreateUserRequest, ctx context.Context) error {
 	// Don't transport password
 	user := CreateUser{
 		Email:            req.Email,
-		PasswordHash:     passwordHash,
+		PasswordHash:     &passwordHash,
 		IsActive:         req.IsActive,
 		IsAdmin:          req.IsAdmin,
 		APIEnabled:       req.APIEnabled,
@@ -154,7 +154,7 @@ func (s *Service) CreateLdapUser(email string, ctx context.Context) error {
 
 	user := CreateUser{
 		Email:            email,
-		PasswordHash:     "",
+		PasswordHash:     nil,
 		IsActive:         true,
 		IsAdmin:          false,
 		APIEnabled:       false,
@@ -270,7 +270,7 @@ func (s *Service) changePassword(req ChangePasswordRequest, ctx context.Context)
 }
 
 // Authenticate user with even time, returns userID, IDP, match
-const dummyHash = "$argon2id$v=19$m=131072,t=4,p=1$fCSLCAorTbr9UeFcmUW3Jg$q8wabA06xx+zN8j80pwmxTMk0b/T88R+M3ycbFWZPlc"
+var dummyHash = "$argon2id$v=19$m=131072,t=4,p=1$fCSLCAorTbr9UeFcmUW3Jg$q8wabA06xx+zN8j80pwmxTMk0b/T88R+M3ycbFWZPlc"
 
 func (s *Service) AuthenticateUser(email string, password string) (shared.AuthResult, error) {
 	user, err := s.Repo.getUserInfoByEmail(email)
@@ -280,7 +280,7 @@ func (s *Service) AuthenticateUser(email string, password string) (shared.AuthRe
 
 	// User not found
 	if errors.Is(err, sql.ErrNoRows) {
-		user.PasswordHash = dummyHash // dummy
+		user.PasswordHash = &dummyHash // dummy
 		user.IdentityProvider = "local"
 		user.UserID = 0
 	}
@@ -292,11 +292,11 @@ func (s *Service) AuthenticateUser(email string, password string) (shared.AuthRe
 	}
 
 	// User exists and is local, but no password - defensive
-	if user.PasswordHash == "" {
+	if user.PasswordHash == nil || *user.PasswordHash == "" {
 		return shared.AuthResult{UserID: user.UserID, IdentityProvider: user.IdentityProvider, Authenticated: false}, shared.ErrNoLocalPassword
 	}
 
-	match, err := argon2id.ComparePasswordAndHash(password, user.PasswordHash)
+	match, err := argon2id.ComparePasswordAndHash(password, *user.PasswordHash)
 	if err != nil {
 		return shared.AuthResult{UserID: user.UserID, IdentityProvider: user.IdentityProvider, Authenticated: false}, err
 	}

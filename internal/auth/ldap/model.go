@@ -12,6 +12,10 @@ type Encryptor interface {
 	Decrypt([]byte) ([]byte, error)
 }
 
+type UserSearcher interface {
+	SearchUser(req LdapSearchRequest) (LdapSearchResponse, error)
+}
+
 type Repository struct {
 	Base *db.Repository
 }
@@ -21,12 +25,14 @@ type Service struct {
 	UserService *user.Service
 	Audit       *audit.Service
 	Encryptor   Encryptor
+	Searcher    UserSearcher
 	Logger      *slog.Logger
 }
 
 type Handler struct {
-	Service *Service
-	Logger  *slog.Logger
+	Service  *Service
+	Searcher UserSearcher // For testing
+	Logger   *slog.Logger
 }
 
 // For read/write - contains encrypted password

@@ -6,14 +6,15 @@ import (
 	"encoding/json"
 	"ez2boot/internal/app"
 	"ez2boot/internal/auth"
+	"ez2boot/internal/auth/ldap"
 	"ez2boot/internal/config"
 	"ez2boot/internal/db"
 	"ez2boot/internal/encryption"
 	"ez2boot/internal/worker"
-	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -26,13 +27,15 @@ type Encryptor interface {
 }
 
 type TestEnv struct {
-	DB        *sql.DB
-	Logger    *slog.Logger
-	Base      *db.Repository
-	Cfg       *config.Config
-	Router    http.Handler
-	Worker    *worker.Worker
-	Encryptor Encryptor
+	DB          *sql.DB
+	Logger      *slog.Logger
+	Base        *db.Repository
+	Cfg         *config.Config
+	Router      http.Handler
+	Worker      *worker.Worker
+	Encryptor   Encryptor
+	AuthService *auth.Service
+	LdapHandler *ldap.Handler
 }
 
 // Build test environment - in memory only
@@ -61,7 +64,8 @@ func NewTestEnv(t *testing.T) *TestEnv {
 	   		t.Fatal(err)
 	   	} */
 
-	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	//logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	// DB base Constructor
 	baseRepo := db.NewRepository(testDB, logger)
@@ -79,7 +83,7 @@ func NewTestEnv(t *testing.T) *TestEnv {
 		EncryptionPhrase:    "newphrase",
 	}
 
-	router, _, wkr, err := app.NewApp("dev", "unknown", cfg, baseRepo, logger)
+	router, handlers, services, wkr, err := app.NewApp("dev", "unknown", cfg, baseRepo, logger)
 	if err != nil {
 		t.Fatalf("failed to initialize app: %v", err)
 	}
@@ -90,18 +94,20 @@ func NewTestEnv(t *testing.T) *TestEnv {
 	}
 
 	return &TestEnv{
-		DB:        testDB,
-		Logger:    logger,
-		Base:      baseRepo,
-		Cfg:       cfg,
-		Router:    router,
-		Worker:    wkr,
-		Encryptor: encryptor,
+		DB:          testDB,
+		Logger:      logger,
+		Base:        baseRepo,
+		Cfg:         cfg,
+		Router:      router,
+		Worker:      wkr,
+		Encryptor:   encryptor,
+		AuthService: services.AuthService,
+		LdapHandler: handlers.LdapHandler,
 	}
 }
 
 // Insert a dummy user into test database
-func InsertUser(t *testing.T, db *sql.DB, email string, passwordHash string, isActive bool, isAdmin bool, apiEnabled bool, uiEnabled bool, identityProvider string) {
+func InsertUser(t *testing.T, db *sql.DB, email string, passwordHash *string, isActive bool, isAdmin bool, apiEnabled bool, uiEnabled bool, identityProvider string) {
 	t.Helper()
 
 	_, err := db.Exec(`INSERT INTO users (email, password_hash, is_active, is_admin, api_enabled, ui_enabled, identity_provider)
@@ -122,7 +128,7 @@ func InsertServer(t *testing.T, db *sql.DB, uniqueID string, name string, state 
 	}
 }
 
-// Logs in a UI user and returns cookie
+// Logs in a UI user and returns cookie - use in tests other than login flow
 func LoginAndGetCookies(t *testing.T, router http.Handler, email, password string) []*http.Cookie {
 	t.Helper()
 
