@@ -35,7 +35,7 @@ type TestEnv struct {
 	Worker      *worker.Worker
 	Encryptor   Encryptor
 	AuthService *auth.Service
-	LdapHandler *ldap.Handler
+	LdapService *ldap.Service
 }
 
 // Build test environment - in memory only
@@ -83,7 +83,7 @@ func NewTestEnv(t *testing.T) *TestEnv {
 		EncryptionPhrase:    "newphrase",
 	}
 
-	router, handlers, services, wkr, err := app.NewApp("dev", "unknown", cfg, baseRepo, logger)
+	router, services, wkr, err := app.NewApp("dev", "unknown", cfg, baseRepo, logger)
 	if err != nil {
 		t.Fatalf("failed to initialize app: %v", err)
 	}
@@ -102,7 +102,7 @@ func NewTestEnv(t *testing.T) *TestEnv {
 		Worker:      wkr,
 		Encryptor:   encryptor,
 		AuthService: services.AuthService,
-		LdapHandler: handlers.LdapHandler,
+		LdapService: services.LdapService,
 	}
 }
 

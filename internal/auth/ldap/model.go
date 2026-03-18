@@ -25,14 +25,13 @@ type Service struct {
 	UserService *user.Service
 	Audit       *audit.Service
 	Encryptor   Encryptor
-	Searcher    UserSearcher
+	Searcher    UserSearcher // For testing
 	Logger      *slog.Logger
 }
 
 type Handler struct {
-	Service  *Service
-	Searcher UserSearcher // For testing
-	Logger   *slog.Logger
+	Service *Service
+	Logger  *slog.Logger
 }
 
 // For read/write - contains encrypted password

@@ -220,13 +220,13 @@ func (s *Service) SearchUser(req LdapSearchRequest) (LdapSearchResponse, error) 
 	}, nil
 }
 
-func (s *Service) createLdapUser(email string, ctx context.Context, searcher UserSearcher) error {
+func (s *Service) createLdapUser(email string, ctx context.Context) error {
 	req := LdapSearchRequest{
 		Query: email,
 	}
 
 	// Check user exists - no user returns an err
-	if _, err := searcher.SearchUser(req); err != nil {
+	if _, err := s.Searcher.SearchUser(req); err != nil {
 		return err
 	}
 

@@ -3,7 +3,6 @@ package notification
 import (
 	"ez2boot/internal/audit"
 	"ez2boot/internal/db"
-	"ez2boot/internal/encryption"
 	"log/slog"
 )
 
@@ -14,7 +13,7 @@ func NewHandler(notificationService *Service, logger *slog.Logger) *Handler {
 	}
 }
 
-func NewService(notificationRepo *Repository, audit *audit.Service, encryptor *encryption.AESGCMEncryptor, logger *slog.Logger) *Service {
+func NewService(notificationRepo *Repository, audit *audit.Service, encryptor Encryptor, logger *slog.Logger) *Service {
 	return &Service{
 		Repo:      notificationRepo,
 		Audit:     audit,
