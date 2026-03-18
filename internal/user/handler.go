@@ -8,6 +8,7 @@ import (
 	"ez2boot/internal/shared"
 	"fmt"
 	"net/http"
+	"time"
 )
 
 func (h *Handler) GetUsers() http.HandlerFunc {
@@ -168,7 +169,7 @@ func (h *Handler) CreateUser() http.HandlerFunc {
 				w.WriteHeader(http.StatusInternalServerError)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   fmt.Sprintf("Failed to create user %s", err),
+					Error:   "Failed to create user",
 				}
 			}
 
@@ -324,6 +325,13 @@ func (h *Handler) ChangePassword() http.HandlerFunc {
 		err := h.Service.changePassword(req, ctx)
 		if err != nil {
 			switch {
+			case errors.Is(err, shared.ErrPasswordChangeNotSupported):
+				h.Logger.Warn("Failed to change password", "user", email, "domain", "user", "error", err)
+				w.WriteHeader(http.StatusBadRequest)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "Cannot change password for external auth user",
+				}
 			case errors.Is(err, shared.ErrCurrentOrNewPasswordMissing):
 				h.Logger.Error("Failed to change password", "user", email, "domain", "user", "error", err)
 				w.WriteHeader(http.StatusBadRequest)

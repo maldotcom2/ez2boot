@@ -1,9 +1,12 @@
 package ldap
 
 import (
+	"context"
 	"crypto/tls"
 	"database/sql"
 	"errors"
+	"ez2boot/internal/audit"
+	"ez2boot/internal/ctxutil"
 	"ez2boot/internal/shared"
 	"fmt"
 
@@ -11,37 +14,35 @@ import (
 )
 
 // Authenticate user from upn and password, returning AD group membership or err on auth fail
-func (s *Service) Authenticate(upn string, password string) ([]string, error) {
+func (s *Service) Authenticate(email string, password string) error {
 	ldapCFG, err := s.getLdapConfigInternal()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	conn, err := s.connect(ldapCFG)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("%w: %v", shared.ErrLDAPConnection, err)
 	}
 	defer conn.Close()
 
 	// Authenticate user
-	err = conn.Bind(upn, password)
+	err = conn.Bind(email, password)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// Re-bind as service account to search
-	err = conn.Bind(ldapCFG.BindDN, ldapCFG.BindPassword)
+	user, err := s.UserService.GetUserInfoByEmail(email)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// Search group memberships
-	groups, err := s.getADGroupMembership(conn, ldapCFG.BaseDN, upn)
-	if err != nil {
-		return nil, err
+	// Update last login
+	if err := s.UserService.UpdateLastLogin(user.UserID); err != nil {
+		return err
 	}
 
-	return groups, nil
+	return nil
 }
 
 // UI calls, nulls password value
@@ -94,7 +95,25 @@ func (s *Service) getLdapConfigInternal() (LdapConfig, error) {
 	}, nil
 }
 
-func (s *Service) setLdapConfig(req LdapConfigRequest) error {
+func (s *Service) setLdapConfig(req LdapConfigRequest, ctx context.Context) (err error) {
+	actorUserID, actorEmail := ctxutil.GetActor(ctx)
+
+	defer func() {
+		var reason string
+		if err != nil {
+			reason = err.Error()
+		}
+
+		s.Audit.Log(audit.Event{
+			ActorUserID: actorUserID,
+			ActorEmail:  actorEmail,
+			Action:      "set",
+			Resource:    "ldap config",
+			Success:     err == nil,
+			Reason:      reason,
+		})
+	}()
+
 	// Encrypt password
 	encryptedBytes, err := s.Encryptor.Encrypt([]byte(req.BindPassword))
 	if err != nil {
@@ -118,12 +137,26 @@ func (s *Service) setLdapConfig(req LdapConfigRequest) error {
 	return nil
 }
 
-func (s *Service) deleteLdapConfig() error {
-	if err := s.Repo.deleteLdapConfig(); err != nil {
-		return err
-	}
+func (s *Service) deleteLdapConfig(ctx context.Context) (err error) {
+	actorUserID, actorEmail := ctxutil.GetActor(ctx)
 
-	return nil
+	defer func() {
+		var reason string
+		if err != nil {
+			reason = err.Error()
+		}
+
+		s.Audit.Log(audit.Event{
+			ActorUserID: actorUserID,
+			ActorEmail:  actorEmail,
+			Action:      "delete",
+			Resource:    "ldap config",
+			Success:     err == nil,
+			Reason:      reason,
+		})
+	}()
+
+	return s.Repo.deleteLdapConfig()
 }
 
 // Opens a connection to the LDAP server
@@ -140,54 +173,67 @@ func (s *Service) connect(ldapCFG LdapConfig) (*goldap.Conn, error) {
 	return goldap.DialURL(addr)
 }
 
-func (s *Service) getADGroupMembership(conn *goldap.Conn, baseDN string, upn string) ([]string, error) {
+func (s *Service) SearchUser(req LdapSearchRequest) (LdapSearchResponse, error) {
+	ldapCFG, err := s.getLdapConfigInternal()
+	if err != nil {
+		return LdapSearchResponse{}, err
+	}
+
+	conn, err := s.connect(ldapCFG)
+	if err != nil {
+		return LdapSearchResponse{}, fmt.Errorf("%w: %v", shared.ErrLDAPConnection, err)
+	}
+
+	defer conn.Close()
+
+	// Bind as service account to search
+	if err = conn.Bind(ldapCFG.BindDN, ldapCFG.BindPassword); err != nil {
+		return LdapSearchResponse{}, err
+	}
+
 	searchRequest := goldap.NewSearchRequest(
-		baseDN,
+		ldapCFG.BaseDN,
 		goldap.ScopeWholeSubtree,
 		goldap.NeverDerefAliases,
 		0, 0, false,
-		fmt.Sprintf("(userPrincipalName=%s)", goldap.EscapeFilter(upn)),
-		[]string{"memberOf"},
+		fmt.Sprintf("(mail=%s*)", // Target user requires a mail field
+			goldap.EscapeFilter(req.Query),
+		),
+		[]string{"cn", "mail"},
 		nil,
 	)
 
 	result, err := conn.Search(searchRequest)
 	if err != nil {
-		return nil, err
+		return LdapSearchResponse{}, err
 	}
 
 	if len(result.Entries) == 0 {
-		return nil, fmt.Errorf("user not found in directory: %s", upn)
+		return LdapSearchResponse{}, shared.ErrUserNotFound
 	}
 
-	return result.Entries[0].GetAttributeValues("memberOf"), nil
+	// Singular return - possibly expand to a collection
+	entry := result.Entries[0]
+	return LdapSearchResponse{
+		DisplayName: entry.GetAttributeValue("cn"),
+		Email:       entry.GetAttributeValue("mail"),
+	}, nil
 }
 
-// Returns an auth struct for ez2boot permissions based on AD group mapping
-func (s *Service) ResolvePermissions(groups []string) (ResolvedPermissions, error) {
-	// Get configured mapping of AD group names to roles
-	mappings, err := s.Repo.getGroupMappings()
-	if err != nil {
-		return ResolvedPermissions{}, err
+func (s *Service) createLdapUser(email string, ctx context.Context, searcher UserSearcher) error {
+	req := LdapSearchRequest{
+		Query: email,
 	}
 
-	// Iterate mapping and identify which roles user should have
-	var resolved ResolvedPermissions
-	for _, group := range groups {
-		for _, mapping := range mappings {
-			if mapping.ADGroup == group {
-				if mapping.Permissions.IsAdmin {
-					resolved.IsAdmin = true
-				}
-				if mapping.Permissions.UIEnabled {
-					resolved.UIEnabled = true
-				}
-				if mapping.Permissions.APIEnabled {
-					resolved.APIEnabled = true
-				}
-			}
-		}
+	// Check user exists - no user returns an err
+	if _, err := searcher.SearchUser(req); err != nil {
+		return err
 	}
 
-	return resolved, nil
+	// Create user
+	if err := s.UserService.CreateLdapUser(email, ctx); err != nil {
+		return err
+	}
+
+	return nil
 }

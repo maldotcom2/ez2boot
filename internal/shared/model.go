@@ -5,3 +5,15 @@ type ApiResponse[T any] struct {
 	Data    T      `json:"data"`
 	Error   string `json:"error"`
 }
+
+type AuthResult struct {
+	UserID           int64
+	IdentityProvider string
+	Authenticated    bool
+}
+
+type UserInfo struct {
+	UserID           int64
+	PasswordHash     *string // Can be null
+	IdentityProvider string
+}

@@ -8,26 +8,26 @@ import (
 	"net/http"
 )
 
-func NewApp(version string, buildDate string, cfg *config.Config, repo *db.Repository, logger *slog.Logger) (http.Handler, *Services, *worker.Worker, error) {
+func NewApp(version string, buildDate string, cfg *config.Config, repo *db.Repository, logger *slog.Logger) (http.Handler, *Handlers, *Services, *worker.Worker, error) {
 	// Fail fast if config is invalid
 	if err := validateProviderConfig(cfg); err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	mw, wkr, handlers, services, err := InitServices(version, buildDate, cfg, repo, logger)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	// Check if there are existing users and set runtime mode
 	hasUsers, err := hasUsers(repo)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	cfg.SetupMode = !hasUsers
 
 	router := BuildRouter(cfg, mw, handlers)
 
-	return router, services, wkr, nil
+	return router, handlers, services, wkr, nil
 }

@@ -37,7 +37,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	router, services, wkr, err := app.NewApp(version, buildDate, cfg, repo, logger)
+	router, _, services, wkr, err := app.NewApp(version, buildDate, cfg, repo, logger)
 	if err != nil {
 		logger.Error("Startup error", "error", err)
 		os.Exit(1)

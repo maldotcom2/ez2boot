@@ -1,7 +1,9 @@
 package ldap
 
 import (
+	"ez2boot/internal/audit"
 	"ez2boot/internal/db"
+	"ez2boot/internal/user"
 	"log/slog"
 )
 
@@ -10,19 +12,27 @@ type Encryptor interface {
 	Decrypt([]byte) ([]byte, error)
 }
 
+type UserSearcher interface {
+	SearchUser(req LdapSearchRequest) (LdapSearchResponse, error)
+}
+
 type Repository struct {
 	Base *db.Repository
 }
 
 type Service struct {
-	Repo      *Repository
-	Encryptor Encryptor
-	Logger    *slog.Logger
+	Repo        *Repository
+	UserService *user.Service
+	Audit       *audit.Service
+	Encryptor   Encryptor
+	Searcher    UserSearcher
+	Logger      *slog.Logger
 }
 
 type Handler struct {
-	Service *Service
-	Logger  *slog.Logger
+	Service  *Service
+	Searcher UserSearcher // For testing
+	Logger   *slog.Logger
 }
 
 // For read/write - contains encrypted password
@@ -73,13 +83,15 @@ type LdapClient struct {
 	LdapConfig LdapConfig
 }
 
-type ResolvedPermissions struct {
-	IsAdmin    bool
-	UIEnabled  bool
-	APIEnabled bool
+type LdapSearchRequest struct {
+	Query string `json:"query"`
 }
 
-type LdapGroupMapping struct {
-	ADGroup     string
-	Permissions ResolvedPermissions
+type LdapSearchResponse struct {
+	DisplayName string
+	Email       string
+}
+
+type CreateLdapUserRequest struct {
+	Email string `json:"email"`
 }

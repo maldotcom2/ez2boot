@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"ez2boot/internal/audit"
 	"ez2boot/internal/ctxutil"
 	"ez2boot/internal/shared"
@@ -9,10 +10,15 @@ import (
 	"time"
 )
 
-func (s *Service) login(u UserLogin) (token string, err error) {
+func (s *Service) login(u UserLogin) (token string, mfaRequired bool, err error) {
 	var userID int64
 
 	defer func() {
+		// MFA succcess still pending
+		if mfaRequired {
+			return
+		}
+
 		var reason string
 		if err != nil {
 			reason = err.Error()
@@ -30,55 +36,76 @@ func (s *Service) login(u UserLogin) (token string, err error) {
 
 	// Input validation
 	if u.Email == "" || u.Password == "" {
-		return "", shared.ErrEmailOrPasswordMissing
+		return "", false, shared.ErrEmailOrPasswordMissing
 	}
-
-	// Generate session token
-	token, err = util.GenerateRandomString(32)
-	if err != nil {
-		return "", err
-	}
-
-	hash := util.HashToken(token)
-	sessionExpiry := time.Now().Add(s.Config.UserSessionDuration).Unix()
 
 	// Authenticate user
-	userID, authenticated, authErr := s.UserService.AuthenticateUser(u.Email, u.Password)
-	if authErr != nil && authErr != shared.ErrUserNotFound {
-		return "", authErr
-	}
+	auth, authErr := s.UserService.AuthenticateUser(u.Email, u.Password)
 
-	// User not found
-	if authErr == shared.ErrUserNotFound {
-		return "", shared.ErrUserNotFound
-	}
+	userID = auth.UserID // For deferred audit logging
 
-	// Found but not authenticated
-	if !authenticated {
-		return "", shared.ErrAuthenticationFailed
+	switch auth.IdentityProvider {
+	case "local":
+		if errors.Is(authErr, shared.ErrUserNotFound) {
+			return "", false, shared.ErrUserNotFound
+		}
+
+		if authErr != nil {
+			return "", false, authErr
+		}
+
+		if !auth.Authenticated {
+			return "", false, shared.ErrAuthenticationFailed
+		}
+
+	case "ldap":
+		ldapErr := s.LdapService.Authenticate(u.Email, u.Password)
+		if ldapErr != nil {
+			if errors.Is(ldapErr, shared.ErrLDAPConnection) {
+				return "", false, ldapErr
+			}
+
+			return "", false, shared.ErrAuthenticationFailed
+		}
+
+	case "oidc":
+		// SSO redirect
+	default:
+		return "", false, shared.ErrUserNotFound
 	}
 
 	// User exists and is authenticated
-
-	user, err := s.UserService.GetUserAuthorisation(userID)
+	user, err := s.UserService.GetUserAuthorisation(auth.UserID)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 
 	if !user.IsActive {
-		return "", shared.ErrUserInactive
+		return "", false, shared.ErrUserInactive
 	}
 
 	if !user.UIEnabled {
-		return "", shared.ErrUserNotAuthorised
+		return "", false, shared.ErrUserNotAuthorised
 	}
 
-	// Store session hash
-	if err = s.UserService.CreateUserSession(hash, sessionExpiry, userID); err != nil {
-		return "", err
+	// Check if MFA is required
+	if user.MFAConfirmed {
+		token, err = util.GenerateRandomString(32)
+		if err != nil {
+			return "", false, err
+		}
+		hash := util.HashToken(token)
+		expiry := time.Now().Add(3 * time.Minute).Unix()
+		if err = s.UserService.CreateMFAPendingSession(hash, expiry, userID); err != nil {
+			return "", false, err
+		}
+		return token, true, nil
 	}
 
-	return token, nil
+	// Create user session
+	token, err = s.UserService.CreateSession(userID)
+
+	return token, false, nil
 }
 
 func (s *Service) logout(token string, ctx context.Context) error {

@@ -1,14 +1,17 @@
 <p align="center">
-  <img src="web/app/src/assets/branding/ez2boot_logo.svg" width=300>
+  <picture>
+    <source media="(prefers-color-scheme: light)" srcset="web/app/src/assets/branding/ez2boot_logo_light.svg">
+    <img src="web/app/src/assets/branding/ez2boot_logo.svg" width="300">
+  </picture>
 </p>
 
 ## Intro
-Welcome to ez2boot. This is a self hosted web application designed to provide a simple interface for your colleagues to start and stop your public cloud servers, on demand. Cloud based servers are billed hourly. This is an expected cost for 24/7 production use cases but what about non-production? Often, non-production servers are used in an ad-hoc manner by those who may not have permissions or knowledge to access the native cloud console and start the required servers as needed. Perhaps this means developers, QA teams, sales reps etc. What if they forget to turn them off afterwards, leading to unexpected cloud costs? This project aims to solve this challenge in a secure, user-friendly and compliant way.
+Welcome to ez2boot. This is a self hosted web application designed to provide a simple interface for your colleagues to start and stop your public cloud servers, on demand. Cloud based servers are billed by the minute. This is an expected cost for 24/7 production use cases but what about non-production? Often, non-production servers are used in an ad-hoc manner by those who may not have permissions or knowledge to access the native cloud console and start the required servers as needed. Perhaps this means developers, QA teams, sales reps etc. What if they forget to turn them off afterwards, leading to unexpected cloud costs? This project aims to solve this challenge in a secure, user-friendly and compliant way.
 Currently, AWS and Azure is supported, with a plan to support Google Cloud in the future.
 
 ## Features
 - Simple setup, intended to run as a docker container within your cloud environment.
-- User accounts to enforce authenticated access only.
+- User accounts to enforce authenticated access only, with optional MFA.
 - RBAC to give administrators control over user capabilities.
 - Tag-based server selection, allowing Operations teams full control over server availability, and grouping presentation.
 - Time-based server sessions. Users choose for how long they want a server group online, and extend or reduce the sesson on demand.
