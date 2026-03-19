@@ -137,6 +137,16 @@ func (s *Service) setLdapConfig(req LdapConfigRequest, ctx context.Context) (err
 	return nil
 }
 
+// Return encrypted data for re-encryption
+func (s *Service) GetLdapPassword() ([]byte, error) {
+	return s.Repo.getLdapPassword()
+}
+
+// Write re-encrypted data
+func (s *Service) SetLdapPasswordTx(tx *sql.Tx, encPassword []byte) error {
+	return s.Repo.setLdapPasswordTx(tx, encPassword)
+}
+
 func (s *Service) deleteLdapConfig(ctx context.Context) (err error) {
 	actorUserID, actorEmail := ctxutil.GetActor(ctx)
 

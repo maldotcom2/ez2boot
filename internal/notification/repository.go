@@ -87,11 +87,8 @@ func (r *Repository) setUserNotificationSettings(n NotificationSetting) error {
 	return nil
 }
 
-// Update notification settings as part of a trn
-func (r *Repository) setUserNotificationSettingsTx(tx *sql.Tx, n NotificationSetting) error {
-	query := `INSERT INTO user_notifications (user_id, type, config) VALUES ($1, $2, $3)
-			ON CONFLICT (user_id) DO UPDATE SET type = EXCLUDED.type, config = EXCLUDED.config`
-	if _, err := tx.Exec(query, n.UserID, n.Type, n.EncConfig); err != nil {
+func (r *Repository) setUserNotificationSettingsTx(tx *sql.Tx, userID int64, encConfig []byte) error {
+	if _, err := tx.Exec("UPDATE user_notifications SET config = $1 WHERE user_id = $2", encConfig, userID); err != nil {
 		return err
 	}
 

@@ -69,6 +69,11 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 	sessionService := session.NewService(sessionRepo, notificationService, userService, auditService, logger)
 	sessionHandler := session.NewHandler(sessionService, logger)
 
+	// Encryption
+	encryptionRepo := encryption.NewRepository(repo)
+	encryptionService := encryption.NewService(encryptionRepo, notificationService, ldapService, auditService, encryptor, logger)
+	encryptionHandler := encryption.NewHandler(encryptionService, logger)
+
 	// Util
 	utilRepo := util.NewRepository(repo)
 	utilService := util.NewService(utilRepo, cfg, buildInfo, logger)
@@ -118,6 +123,7 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 		SessionHandler:      sessionHandler,
 		NotificationHandler: notificationHandler,
 		UtilHandler:         utilHandler,
+		EncryptionHandler:   encryptionHandler,
 		TeamsHandler:        teamsHandler,
 		EmailHandler:        emailHandler,
 		TelegramHandler:     telegramHandler,

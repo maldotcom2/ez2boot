@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"ez2boot/internal/encryption"
 	"ez2boot/internal/shared"
 	"sort"
 )
@@ -123,54 +122,12 @@ func (s *Service) deleteUserNotificationSettings(userID int64) error {
 	return nil
 }
 
-// Decrypt all existing notification configs and re-encrypt using supplied phrase
-func (s *Service) rotateEncryptionPhrase(req RotateEncryptionPhraseRequest) error {
-	if req.Phrase == "" {
-		return shared.ErrFieldMissing
-	}
-	// Get settings encrypted with old key
-	settings, err := s.Repo.getAllUserNotificationSettings()
-	if err != nil {
-		return err
-	}
+// Return encrypted data for re-encryption
+func (s *Service) GetAllUserNotificationSettings() ([]NotificationSetting, error) {
+	return s.Repo.getAllUserNotificationSettings()
+}
 
-	// Create new encryptor
-	encryptor, err := encryption.NewAESGCMEncryptor(req.Phrase)
-	if err != nil {
-		return err
-	}
-
-	// all or nothing
-	tx, err := s.Repo.Base.DB.Begin()
-	if err != nil {
-		return err
-	}
-
-	defer tx.Rollback()
-
-	for _, setting := range settings {
-		// Use app decryptor to decrypt
-		cfgBytes, err := s.Encryptor.Decrypt(setting.EncConfig)
-		if err != nil {
-			return err
-		}
-
-		// Encrypt using new encryptor
-		encryptedBytes, err := encryptor.Encrypt(cfgBytes)
-		if err != nil {
-			return err
-		}
-
-		setting.EncConfig = encryptedBytes
-
-		// Write
-		if err := s.Repo.setUserNotificationSettingsTx(tx, setting); err != nil {
-			return err
-		}
-	}
-
-	tx.Commit()
-
-	// User now replaces env var with new phrase and restarts app
-	return nil
+// Write re-encrypted data
+func (s *Service) SetUserNotificationSettingsTx(tx *sql.Tx, n NotificationSetting) error {
+	return s.Repo.setUserNotificationSettingsTx(tx, n.UserID, n.EncConfig)
 }

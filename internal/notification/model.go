@@ -77,7 +77,3 @@ type Notification struct {
 	Time      int64
 	EncConfig []byte
 }
-
-type RotateEncryptionPhraseRequest struct {
-	Phrase string `json:"phrase"`
-}

@@ -1,10 +1,10 @@
 <template>
   <div class="rotate-phrase-container">
       <form class="rotate-phrase-form" @submit.prevent="rotatePhrase">
-        <p class="warning">Warning! This feature will re-encrypt all user notification settings using the passphrase entered below.
-            The environment variable must then be updated to this new passphrase and ez2boot restarted before notifications will work.
-            If the new passphrase is lost before updating the environment variable, user notification settings cannot be recovered
-            and users must re-apply their configurations.
+        <p class="warning">Warning! This feature will re-encrypt all currently encrypted settings using the passphrase entered below.
+            The environment variable must then be updated to this new passphrase and ez2boot restarted. Until that is done, 
+            numerous features may not operate correctly. If the new passphrase is lost before updating the environment variable, 
+            user notification settings, and external auth settings will need to be re-applied.
             This is a one-shot. The passphrase can only be changed once before the environment variable must be updated. 
         </p>
         <div class="checkbox-row">
@@ -32,7 +32,7 @@ async function rotatePhrase() {
   messageType.value = ''
 
   try {
-    const response = await axios.put('ui/notifications/passphrase',
+    const response = await axios.put('ui/encryption/passphrase',
       {
         phrase: phrase.value,
       },

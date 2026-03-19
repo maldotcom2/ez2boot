@@ -48,8 +48,8 @@ func SetupBackendRoutes(
 	adminUIRouter.HandleFunc("/user/ldap", handlers.LdapHandler.CreateLdapUser()).Methods("POST")
 	adminUIRouter.HandleFunc("/user", handlers.UserHandler.DeleteUser()).Methods("DELETE")
 	adminUIRouter.HandleFunc("/user/auth", handlers.UserHandler.UpdateUserAuthorisation()).Methods("PUT")
-	// Notification
-	adminUIRouter.HandleFunc("/notifications/passphrase", handlers.NotificationHandler.RotateEncryptionPhrase()).Methods("PUT")
+	// Encryption
+	adminUIRouter.HandleFunc("/encryption/passphrase", handlers.EncryptionHandler.RotateEncryptionPhrase()).Methods("PUT")
 	// Audit
 	adminUIRouter.HandleFunc("/audit/events", handlers.AuditHandler.GetAuditEvents()).Methods("GET")
 	/// Auth
@@ -99,12 +99,18 @@ func SetupBackendRoutes(
 	// User
 	adminAPIRouter.HandleFunc("/users", handlers.UserHandler.GetUsers()).Methods("GET")
 	adminAPIRouter.HandleFunc("/user", handlers.UserHandler.CreateUser()).Methods("POST")
+	adminAPIRouter.HandleFunc("/user/ldap", handlers.LdapHandler.CreateLdapUser()).Methods("POST")
 	adminAPIRouter.HandleFunc("/user", handlers.UserHandler.DeleteUser()).Methods("DELETE")
 	adminAPIRouter.HandleFunc("/user/auth", handlers.UserHandler.UpdateUserAuthorisation()).Methods("PUT")
-	// Notification
-	adminAPIRouter.HandleFunc("/notifications/passphrase", handlers.NotificationHandler.RotateEncryptionPhrase()).Methods("PUT")
+	// Encryption
+	adminUIRouter.HandleFunc("/encryption/passphrase", handlers.EncryptionHandler.RotateEncryptionPhrase()).Methods("PUT")
 	// Audit
 	adminAPIRouter.HandleFunc("/audit/events", handlers.AuditHandler.GetAuditEvents()).Methods("GET")
+	/// Auth
+	adminAPIRouter.HandleFunc("/auth/ldap", handlers.LdapHandler.GetLdapConfig()).Methods("GET")
+	adminAPIRouter.HandleFunc("/auth/ldap", handlers.LdapHandler.SetLdapConfig()).Methods("POST")
+	adminAPIRouter.HandleFunc("/auth/ldap", handlers.LdapHandler.DeleteLdapConfig()).Methods("DELETE")
+	adminAPIRouter.HandleFunc("/auth/ldap/users/search", handlers.LdapHandler.SearchUser()).Methods("POST")
 
 	/////////////////////////// API subrouter and routes /////////////////////////////////
 
