@@ -18,38 +18,20 @@ import (
 )
 
 func (s *Service) CreateUserSession(hash string, expiry int64, userID int64) error {
-	if err := s.Repo.createUserSession(hash, expiry, userID); err != nil {
-		return err
-	}
-
-	return nil
+	return s.Repo.createUserSession(hash, expiry, userID)
 }
 
 func (s *Service) DeleteUserSession(hash string) error {
-	if err := s.Repo.deleteUserSession(hash); err != nil {
-		return err
-	}
-
-	return nil
+	return s.Repo.deleteUserSession(hash)
 }
 
 func (s *Service) getUsers() ([]GetUsersResponse, error) {
-	users, err := s.Repo.getUsers()
-	if err != nil {
-		return nil, err
-	}
-
-	return users, nil
+	return s.Repo.getUsers()
 }
 
 // Get a user's authorisation, eg admin, API access, etc
 func (s *Service) GetUserAuthorisation(userID int64) (UserAuthResponse, error) {
-	user, err := s.Repo.getUserAuthorisation(userID)
-	if err != nil {
-		return UserAuthResponse{}, nil
-	}
-
-	return user, nil
+	return s.Repo.getUserAuthorisation(userID)
 }
 
 func (s *Service) updateUserAuthorisation(users []UpdateUserRequest, ctx context.Context) error {
@@ -69,18 +51,27 @@ func (s *Service) updateUserAuthorisation(users []UpdateUserRequest, ctx context
 			return shared.ErrCannotModifyOwnAuth
 		}
 
+		user, err := s.GetCredentialsByUserID(u.UserID)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		if user.IdentityProvider != "local" && u.APIEnabled {
+			tx.Rollback()
+			return shared.ErrAPIAccessNotSupported
+		}
+
 		if err := s.Repo.updateUserAuthorisation(tx, u); err != nil {
 			tx.Rollback()
 			return err
 		}
 
-		targetEmail, _ := s.GetEmailFromUserID(u.UserID)
-
 		s.Audit.LogTx(tx, audit.Event{
 			ActorUserID:  currentUserID,
 			ActorEmail:   currentUserEmail,
 			TargetUserID: u.UserID,
-			TargetEmail:  targetEmail,
+			TargetEmail:  user.Email,
 			Action:       "update authorisation",
 			Resource:     "user",
 			Success:      true,
@@ -229,7 +220,7 @@ func (s *Service) changePassword(req ChangePasswordRequest, ctx context.Context)
 		})
 	}()
 
-	user, err := s.GetUserInfoByEmail(actorEmail)
+	user, err := s.GetCredentialsByEmail(actorEmail)
 	if err != nil {
 		return err
 	}
@@ -273,7 +264,7 @@ func (s *Service) changePassword(req ChangePasswordRequest, ctx context.Context)
 var dummyHash = "$argon2id$v=19$m=131072,t=4,p=1$fCSLCAorTbr9UeFcmUW3Jg$q8wabA06xx+zN8j80pwmxTMk0b/T88R+M3ycbFWZPlc"
 
 func (s *Service) AuthenticateUser(email string, password string) (shared.AuthResult, error) {
-	user, err := s.Repo.getUserInfoByEmail(email)
+	user, err := s.Repo.getCredentialsByEmail(email)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return shared.AuthResult{}, err // generic error other than no user
 	}
@@ -314,21 +305,16 @@ func (s *Service) AuthenticateUser(email string, password string) (shared.AuthRe
 	return shared.AuthResult{UserID: user.UserID, IdentityProvider: user.IdentityProvider, Authenticated: match}, nil
 }
 
-func (s *Service) GetUserInfoByEmail(email string) (shared.UserInfo, error) {
-	user, err := s.Repo.getUserInfoByEmail(email)
-	if err != nil {
-		return shared.UserInfo{}, err
-	}
+func (s *Service) GetCredentialsByEmail(email string) (shared.UserCredentials, error) {
+	return s.Repo.getCredentialsByEmail(email)
+}
 
-	return user, nil
+func (s *Service) GetCredentialsByUserID(userID int64) (shared.UserCredentials, error) {
+	return s.Repo.getCredentialsByUserID(userID)
 }
 
 func (s *Service) UpdateLastLogin(userID int64) error {
-	if err := s.Repo.updateLastLogin(userID); err != nil {
-		return err
-	}
-
-	return nil
+	return s.Repo.updateLastLogin(userID)
 }
 
 func (s *Service) GetSessionStatus(token string) (UserSessionResponse, error) {
@@ -369,12 +355,7 @@ func (s *Service) ProcessUserSessions() error {
 }
 
 func (s *Service) GetEmailFromUserID(userID int64) (string, error) {
-	email, err := s.Repo.getEmailFromUserID(userID)
-	if err != nil {
-		return "", err
-	}
-
-	return email, nil
+	return s.Repo.getEmailFromUserID(userID)
 }
 
 func (s *Service) enrolMFA(userID int64, email string) (_ []byte, err error) {
@@ -610,11 +591,7 @@ func (s *Service) verifyMFA(req MFARequest, pendingToken string) (_ string, _ st
 }
 
 func (s *Service) CreateMFAPendingSession(tokenHash string, expiry int64, userID int64) error {
-	if err := s.Repo.createMFAPendingSession(tokenHash, expiry, userID); err != nil {
-		return err
-	}
-
-	return nil
+	return s.Repo.createMFAPendingSession(tokenHash, expiry, userID)
 }
 
 // Create user session

@@ -32,7 +32,7 @@ func (s *Service) Authenticate(email string, password string) error {
 		return err
 	}
 
-	user, err := s.UserService.GetUserInfoByEmail(email)
+	user, err := s.UserService.GetCredentialsByEmail(email)
 	if err != nil {
 		return err
 	}

@@ -37,6 +37,14 @@ func (m *Middleware) BasicAuthMiddleware() mux.MiddlewareFunc {
 				return
 			}
 
+			// External auth users are not supported
+			if auth.IdentityProvider != "local" {
+				m.Logger.Warn("Basic auth is only supported for local users", "user", email, "domain", "middleware", "path", r.URL.Path, "source_ip", r.RemoteAddr)
+				w.WriteHeader(http.StatusForbidden)
+				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Basic auth is only supported for local users"})
+				return
+			}
+
 			if !auth.Authenticated {
 				m.Logger.Warn("Basic auth login attempt failed", "user", email, "domain", "middleware", "path", r.URL.Path, "source_ip", r.RemoteAddr)
 				w.WriteHeader(http.StatusUnauthorized)

@@ -43,7 +43,7 @@ func NewTestEnv(t *testing.T) *TestEnv {
 	t.Helper()
 
 	// Create in-memory sqlite
-	testDB, err := sql.Open("sqlite3", ":memory:")
+	testDB, err := sql.Open("sqlite3", "file:"+t.Name()+"?mode=memory&cache=shared")
 	if err != nil {
 		t.Fatal(err)
 	}
