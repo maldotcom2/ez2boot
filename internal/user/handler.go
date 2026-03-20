@@ -213,14 +213,22 @@ func (h *Handler) DeleteUser() http.HandlerFunc {
 
 		var resp shared.ApiResponse[any]
 		if err := h.Service.deleteUser(req.UserID, ctx); err != nil {
-			if errors.Is(err, shared.ErrCannotDeleteOwnUser) {
+			switch {
+			case errors.Is(err, shared.ErrCannotDeleteOwnUser):
 				h.Logger.Error("Failed to delete user", "user", email, "domain", "user", "target_user", targetEmail, "error", err)
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
 					Error:   "Failed to delete user",
 				}
-			} else {
+			case errors.Is(err, shared.ErrUserHasActiveSessions):
+				h.Logger.Warn("Failed to delete user", "user", email, "domain", "user", "target_user", targetEmail, "error", err)
+				w.WriteHeader(http.StatusConflict)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "User has active server sessions",
+				}
+			default:
 				h.Logger.Error("Failed to delete user", "user", email, "domain", "user", "target_user", targetEmail, "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				resp = shared.ApiResponse[any]{

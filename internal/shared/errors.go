@@ -11,6 +11,7 @@ var (
 	ErrUserInactive                 = errors.New("user is inactive")
 	ErrUserNotAuthorised            = errors.New("user is not authorised for this mode of login")
 	ErrUserAlreadyExists            = errors.New("user already exists")
+	ErrUserHasActiveSessions        = errors.New("user has active server sessions")
 	ErrAuthTypeDenied               = errors.New("user not allowed to use this auth type")
 	ErrUserNotActive                = errors.New("user is not active")
 	ErrNoRowsDeleted                = errors.New("no rows were deleted")
