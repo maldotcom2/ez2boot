@@ -43,7 +43,7 @@ func NewTestEnv(t *testing.T) *TestEnv {
 	t.Helper()
 
 	// Create in-memory sqlite
-	testDB, err := sql.Open("sqlite3", "file:"+t.Name()+"?mode=memory&cache=shared")
+	testDB, err := sql.Open("sqlite3", "file:"+t.Name()+"?mode=memory&cache=shared&_foreign_keys=on")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,18 +51,6 @@ func NewTestEnv(t *testing.T) *TestEnv {
 	t.Cleanup(func() {
 		_ = testDB.Close()
 	})
-
-	// Enable foreign keys
-	_, err = testDB.Exec("PRAGMA foreign_keys = ON;")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	/* 	// Enable WAL
-	   	_, err = testDB.Exec("PRAGMA journal_mode = WAL;")
-	   	if err != nil {
-	   		t.Fatal(err)
-	   	} */
 
 	//logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))

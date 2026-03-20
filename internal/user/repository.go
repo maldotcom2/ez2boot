@@ -93,6 +93,10 @@ func (r *Repository) createUser(u CreateUser) (int64, error) {
 
 func (r *Repository) deleteUser(userID int64) error {
 	if _, err := r.Base.DB.Exec("DELETE FROM users WHERE id = $1", userID); err != nil {
+		if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.Code == sqlite3.ErrConstraint {
+			return shared.ErrUserHasActiveSessions
+		}
+
 		return err
 	}
 

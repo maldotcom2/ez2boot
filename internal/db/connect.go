@@ -18,7 +18,7 @@ func Connect() (*sql.DB, error) {
 		return nil, err
 	}
 
-	dsn := dbPath + "?_busy_timeout=5000"
+	dsn := dbPath + "?_busy_timeout=5000&_foreign_keys=on&_journal_mode=WAL"
 
 	db, err := sql.Open("sqlite3", dsn)
 	if err != nil {
@@ -27,18 +27,6 @@ func Connect() (*sql.DB, error) {
 
 	// Test the connection
 	err = db.Ping()
-	if err != nil {
-		return nil, err
-	}
-
-	// Enable foreign keys
-	_, err = db.Exec("PRAGMA foreign_keys = ON;")
-	if err != nil {
-		return nil, err
-	}
-
-	// Enable WAL
-	_, err = db.Exec("PRAGMA journal_mode = WAL;")
 	if err != nil {
 		return nil, err
 	}
