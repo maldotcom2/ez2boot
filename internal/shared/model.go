@@ -12,8 +12,9 @@ type AuthResult struct {
 	Authenticated    bool
 }
 
-type UserInfo struct {
+type UserCredentials struct {
 	UserID           int64
+	Email            string
 	PasswordHash     *string // Can be null
 	IdentityProvider string
 }

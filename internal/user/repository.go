@@ -100,11 +100,20 @@ func (r *Repository) deleteUser(userID int64) error {
 }
 
 // Find info by email
-func (r *Repository) getUserInfoByEmail(email string) (shared.UserInfo, error) {
-	var u shared.UserInfo
+func (r *Repository) getCredentialsByEmail(email string) (shared.UserCredentials, error) {
+	var u shared.UserCredentials
 	err := r.Base.DB.QueryRow("SELECT id, password_hash, identity_provider FROM users WHERE email = $1", email).Scan(&u.UserID, &u.PasswordHash, &u.IdentityProvider)
 	if err != nil {
-		return shared.UserInfo{}, err
+		return shared.UserCredentials{}, err
+	}
+	return u, nil
+}
+
+func (r *Repository) getCredentialsByUserID(userID int64) (shared.UserCredentials, error) {
+	var u shared.UserCredentials
+	err := r.Base.DB.QueryRow("SELECT email, password_hash, identity_provider FROM users WHERE id = $1", userID).Scan(&u.Email, &u.PasswordHash, &u.IdentityProvider)
+	if err != nil {
+		return shared.UserCredentials{}, err
 	}
 	return u, nil
 }

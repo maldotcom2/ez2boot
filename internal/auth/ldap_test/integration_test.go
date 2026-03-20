@@ -374,7 +374,7 @@ func TestSearchLdapUser_Success(t *testing.T) {
 	env := testutil.NewTestEnv(t)
 
 	// Inject stub searcher
-	env.LdapHandler.Searcher = &testutil.StubLdapSearcher{
+	env.LdapService.Searcher = &testutil.StubLdapSearcher{
 		SearchUserFunc: func(req ldap.LdapSearchRequest) (ldap.LdapSearchResponse, error) {
 			return ldap.LdapSearchResponse{
 				DisplayName: "example",
@@ -450,7 +450,7 @@ func TestCreateLdapUser_Success(t *testing.T) {
 	env := testutil.NewTestEnv(t)
 
 	// Inject stub searcher
-	env.LdapHandler.Searcher = &testutil.StubLdapSearcher{
+	env.LdapService.Searcher = &testutil.StubLdapSearcher{
 		SearchUserFunc: func(req ldap.LdapSearchRequest) (ldap.LdapSearchResponse, error) {
 			return ldap.LdapSearchResponse{
 				DisplayName: "example",
@@ -506,7 +506,7 @@ func TestCreateLdapUser_Duplicate(t *testing.T) {
 	env := testutil.NewTestEnv(t)
 
 	// Inject stub searcher
-	env.LdapHandler.Searcher = &testutil.StubLdapSearcher{
+	env.LdapService.Searcher = &testutil.StubLdapSearcher{
 		SearchUserFunc: func(req ldap.LdapSearchRequest) (ldap.LdapSearchResponse, error) {
 			return ldap.LdapSearchResponse{
 				DisplayName: "example",
@@ -541,7 +541,7 @@ func TestCreateLdapUser_NotFoundInDirectory(t *testing.T) {
 	env := testutil.NewTestEnv(t)
 
 	// Inject stub searcher
-	env.LdapHandler.Searcher = &testutil.StubLdapSearcher{
+	env.LdapService.Searcher = &testutil.StubLdapSearcher{
 		SearchUserFunc: func(req ldap.LdapSearchRequest) (ldap.LdapSearchResponse, error) {
 			return ldap.LdapSearchResponse{}, shared.ErrUserNotFound
 		},

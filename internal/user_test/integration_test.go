@@ -208,6 +208,51 @@ func TestUpdateUserAuthorisation_Success(t *testing.T) {
 	}
 }
 
+func TestUpdateUserAuthorisation_ExternalUserAPIAccess_ReturnsBad(t *testing.T) {
+	env := testutil.NewTestEnv(t)
+
+	adminEmail := "admin@example.com"
+	adminPassword := "testpassword123"
+	adminHash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
+	testutil.InsertUser(t, env.DB, adminEmail, &adminHash, true, true, true, true, "local")
+	testutil.InsertUser(t, env.DB, "ldapuser@example.com", nil, true, false, false, true, "ldap")
+
+	cookies := testutil.LoginAndGetCookies(t, env.Router, adminEmail, adminPassword)
+
+	reqPayload := []user.UpdateUserRequest{
+		{
+			UserID:     2,
+			IsActive:   true,
+			IsAdmin:    false,
+			APIEnabled: true,
+			UIEnabled:  true,
+		},
+	}
+
+	body, _ := json.Marshal(reqPayload)
+	req := httptest.NewRequest("PUT", "/ui/user/auth", bytes.NewReader(body))
+	for _, c := range cookies {
+		req.AddCookie(c)
+	}
+
+	w := httptest.NewRecorder()
+	env.Router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("want 400, got %d, body=%s", w.Code, w.Body.String())
+	}
+
+	// Verify DB unchanged
+	var apiEnabled int64
+	err := env.DB.QueryRow("SELECT api_enabled FROM users WHERE email = $1", "ldapuser@example.com").Scan(&apiEnabled)
+	if err != nil {
+		t.Fatalf("Failed to select value: %v", err)
+	}
+	if apiEnabled != 0 {
+		t.Fatalf("API access was granted to external user, want 0, got %d", apiEnabled)
+	}
+}
+
 func TestCreateUser_Success(t *testing.T) {
 	// Create a test env
 	env := testutil.NewTestEnv(t)

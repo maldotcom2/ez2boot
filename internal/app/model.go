@@ -4,6 +4,7 @@ import (
 	"ez2boot/internal/audit"
 	"ez2boot/internal/auth"
 	"ez2boot/internal/auth/ldap"
+	"ez2boot/internal/encryption"
 	"ez2boot/internal/notification"
 	"ez2boot/internal/notification/email"
 	"ez2boot/internal/notification/teams"
@@ -38,6 +39,7 @@ type Handlers struct {
 	SessionHandler      *session.Handler
 	NotificationHandler *notification.Handler
 	UtilHandler         *util.Handler
+	EncryptionHandler   *encryption.Handler
 	EmailHandler        *email.Handler
 	TeamsHandler        *teams.Handler
 	TelegramHandler     *telegram.Handler

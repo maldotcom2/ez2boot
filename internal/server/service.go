@@ -25,10 +25,5 @@ func (s *Service) UpdateServers(servers []Server) {
 
 // Get server IDs which are pending a state change
 func (s *Service) GetPending(currentState string, nextState string) ([]string, error) {
-	serverIDs, err := s.Repo.getPending(currentState, nextState)
-	if err != nil {
-		return nil, err
-	}
-
-	return serverIDs, nil
+	return s.Repo.getPending(currentState, nextState)
 }

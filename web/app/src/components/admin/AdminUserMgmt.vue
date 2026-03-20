@@ -23,7 +23,7 @@
           <td>{{ user.email }}</td>
           <td><input class="checkbox" type="checkbox" v-model="user.is_active" @change="markChanged(user.user_id)" :disabled="user.user_id === currentUserId"/></td>
           <td><input class="checkbox" type="checkbox" v-model="user.is_admin" @change="markChanged(user.user_id)" :disabled="user.user_id === currentUserId"/></td>
-          <td><input class="checkbox" type="checkbox" v-model="user.api_enabled" @change="markChanged(user.user_id)" :disabled="user.user_id === currentUserId"/></td>
+          <td><input class="checkbox" type="checkbox" v-model="user.api_enabled" @change="markChanged(user.user_id)" :disabled="user.user_id === currentUserId || user.identity_provider != 'local'"/></td>
           <td><input class="checkbox" type="checkbox" v-model="user.ui_enabled" @change="markChanged(user.user_id)" :disabled="user.user_id === currentUserId"/></td>
           <td>{{ user.identity_provider }}</td>
           <td>{{ user.last_login ? new Date(user.last_login * 1000).toLocaleString() : '-' }}</td>

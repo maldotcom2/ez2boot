@@ -1,5 +1,7 @@
 package ldap
 
+import "database/sql"
+
 func (r *Repository) getLdapConfig() (LdapConfigStore, error) {
 	var c LdapConfigStore
 
@@ -22,6 +24,17 @@ func (r *Repository) setLdapConfig(req LdapConfigStore) error {
 	}
 
 	return nil
+}
+
+func (r *Repository) getLdapPassword() ([]byte, error) {
+	var encPassword []byte
+	err := r.Base.DB.QueryRow(`SELECT bind_password FROM ldap_config WHERE id = 1`).Scan(&encPassword)
+	return encPassword, err
+}
+
+func (r *Repository) setLdapPasswordTx(tx *sql.Tx, encPassword []byte) error {
+	_, err := tx.Exec("UPDATE ldap_config SET bind_password = $1 WHERE id = 1", encPassword)
+	return err
 }
 
 func (r *Repository) deleteLdapConfig() error {

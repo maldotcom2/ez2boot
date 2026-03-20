@@ -32,7 +32,7 @@ func (s *Service) Authenticate(email string, password string) error {
 		return err
 	}
 
-	user, err := s.UserService.GetUserInfoByEmail(email)
+	user, err := s.UserService.GetCredentialsByEmail(email)
 	if err != nil {
 		return err
 	}
@@ -137,6 +137,16 @@ func (s *Service) setLdapConfig(req LdapConfigRequest, ctx context.Context) (err
 	return nil
 }
 
+// Return encrypted data for re-encryption
+func (s *Service) GetLdapPassword() ([]byte, error) {
+	return s.Repo.getLdapPassword()
+}
+
+// Write re-encrypted data
+func (s *Service) SetLdapPasswordTx(tx *sql.Tx, encPassword []byte) error {
+	return s.Repo.setLdapPasswordTx(tx, encPassword)
+}
+
 func (s *Service) deleteLdapConfig(ctx context.Context) (err error) {
 	actorUserID, actorEmail := ctxutil.GetActor(ctx)
 
@@ -220,13 +230,13 @@ func (s *Service) SearchUser(req LdapSearchRequest) (LdapSearchResponse, error) 
 	}, nil
 }
 
-func (s *Service) createLdapUser(email string, ctx context.Context, searcher UserSearcher) error {
+func (s *Service) createLdapUser(email string, ctx context.Context) error {
 	req := LdapSearchRequest{
 		Query: email,
 	}
 
 	// Check user exists - no user returns an err
-	if _, err := searcher.SearchUser(req); err != nil {
+	if _, err := s.Searcher.SearchUser(req); err != nil {
 		return err
 	}
 

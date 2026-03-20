@@ -63,11 +63,18 @@ func (h *Handler) UpdateUserAuthorisation() http.HandlerFunc {
 			var resp shared.ApiResponse[any]
 			switch {
 			case errors.Is(err, shared.ErrCannotModifyOwnAuth):
-				h.Logger.Error("Failed", "user", email, "domain", "user", "error", err)
+				h.Logger.Error("Failed to update user authorisation", "user", email, "domain", "user", "error", err)
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   "Failed to update user authorisation",
+					Error:   "Cannot modify own auth",
+				}
+			case errors.Is(err, shared.ErrAPIAccessNotSupported):
+				h.Logger.Error("Failed to update user authorisation", "user", email, "domain", "user", "error", err)
+				w.WriteHeader(http.StatusBadRequest)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "API access is not supported for external auth users",
 				}
 			default:
 				h.Logger.Error("Failed to update user authorisation", "user", email, "domain", "user", "error", err)

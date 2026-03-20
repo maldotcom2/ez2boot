@@ -35,7 +35,7 @@ type TestEnv struct {
 	Worker      *worker.Worker
 	Encryptor   Encryptor
 	AuthService *auth.Service
-	LdapHandler *ldap.Handler
+	LdapService *ldap.Service
 }
 
 // Build test environment - in memory only
@@ -43,7 +43,7 @@ func NewTestEnv(t *testing.T) *TestEnv {
 	t.Helper()
 
 	// Create in-memory sqlite
-	testDB, err := sql.Open("sqlite3", ":memory:")
+	testDB, err := sql.Open("sqlite3", "file:"+t.Name()+"?mode=memory&cache=shared")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,7 +83,7 @@ func NewTestEnv(t *testing.T) *TestEnv {
 		EncryptionPhrase:    "newphrase",
 	}
 
-	router, handlers, services, wkr, err := app.NewApp("dev", "unknown", cfg, baseRepo, logger)
+	router, services, wkr, err := app.NewApp("dev", "unknown", cfg, baseRepo, logger)
 	if err != nil {
 		t.Fatalf("failed to initialize app: %v", err)
 	}
@@ -102,7 +102,7 @@ func NewTestEnv(t *testing.T) *TestEnv {
 		Worker:      wkr,
 		Encryptor:   encryptor,
 		AuthService: services.AuthService,
-		LdapHandler: handlers.LdapHandler,
+		LdapService: services.LdapService,
 	}
 }
 
