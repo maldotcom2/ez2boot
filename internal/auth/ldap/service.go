@@ -79,7 +79,7 @@ func (s *Service) getLdapConfigInternal() (LdapConfig, error) {
 	}
 
 	// Decrypt password
-	password, err := s.Encryptor.Decrypt([]byte(ldapCFG.EncBindPassword))
+	passwordBytes, err := s.Encryptor.Decrypt([]byte(ldapCFG.EncBindPassword))
 	if err != nil {
 		return LdapConfig{}, err
 	}
@@ -89,7 +89,7 @@ func (s *Service) getLdapConfigInternal() (LdapConfig, error) {
 		Port:          ldapCFG.Port,
 		BaseDN:        ldapCFG.BaseDN,
 		BindDN:        ldapCFG.BindDN,
-		BindPassword:  string(password),
+		BindPassword:  string(passwordBytes),
 		UseSSL:        ldapCFG.UseSSL,
 		SkipTLSVerify: ldapCFG.SkipTLSVerify,
 	}, nil

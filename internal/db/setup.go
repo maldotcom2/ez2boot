@@ -36,6 +36,11 @@ func (r *Repository) SetupDB() error {
 		return err
 	}
 
+	// create table for oidc config
+	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS oidc_config (id INTEGER PRIMARY KEY CHECK (id = 1), issuer_url TEXT NOT NULL, client_id TEXT NOT NULL, client_secret BLOB NOT NULL, redirect_uri TEXT NOT NULL)"); err != nil {
+		return err
+	}
+
 	// create table for low-priv MFA interval session
 	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS mfa_pending_sessions (token_hash TEXT PRIMARY KEY, session_expiry INTEGER NOT NULL, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE)"); err != nil {
 		return err

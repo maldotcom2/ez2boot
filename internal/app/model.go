@@ -4,6 +4,7 @@ import (
 	"ez2boot/internal/audit"
 	"ez2boot/internal/auth"
 	"ez2boot/internal/auth/ldap"
+	"ez2boot/internal/auth/oidc"
 	"ez2boot/internal/encryption"
 	"ez2boot/internal/notification"
 	"ez2boot/internal/notification/email"
@@ -21,6 +22,7 @@ type Services struct {
 	AuthService         *auth.Service
 	UserService         *user.Service
 	LdapService         *ldap.Service
+	OidcService         *oidc.Service
 	ServerService       *server.Service
 	SessionService      *session.Service
 	NotificationService *notification.Service
@@ -34,6 +36,7 @@ type Handlers struct {
 	AuthHandler         *auth.Handler
 	UserHandler         *user.Handler
 	LdapHandler         *ldap.Handler
+	OidcHandler         *oidc.Handler
 	AuditHandler        *audit.Handler
 	ServerHandler       *server.Handler
 	SessionHandler      *session.Handler

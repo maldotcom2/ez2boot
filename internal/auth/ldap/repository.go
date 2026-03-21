@@ -28,7 +28,7 @@ func (r *Repository) setLdapConfig(req LdapConfigStore) error {
 
 func (r *Repository) getLdapPassword() ([]byte, error) {
 	var encPassword []byte
-	err := r.Base.DB.QueryRow(`SELECT bind_password FROM ldap_config WHERE id = 1`).Scan(&encPassword)
+	err := r.Base.DB.QueryRow("SELECT bind_password FROM ldap_config WHERE id = 1").Scan(&encPassword)
 	return encPassword, err
 }
 
