@@ -151,13 +151,12 @@ func (s *Service) testOidcConnection(ctx context.Context) error {
 	return err
 }
 
-func (s *Service) loginOidcUser(email string, ctx context.Context) (string, error) {
-	actorUserID, actorEmail := ctxutil.GetActor(ctx)
+func (s *Service) loginOidcUser(email string) (string, error) {
 	// Check if user exists, create if not
-	_, err := s.UserService.GetCredentialsByEmail(actorEmail)
+	_, err := s.UserService.GetCredentialsByEmail(email)
 	if err != nil {
 		if errors.Is(err, shared.ErrUserNotFound) {
-			if err := s.UserService.CreateExternalUser(email, shared.IdentityProviderOIDC, ctx); err != nil {
+			if err := s.UserService.CreateExternalUser(email, shared.IdentityProviderOIDC, context.TODO()); err != nil {
 				return "", err
 			}
 		} else {
@@ -165,17 +164,20 @@ func (s *Service) loginOidcUser(email string, ctx context.Context) (string, erro
 		}
 	}
 
+	// Get ID
+	user, err := s.UserService.GetCredentialsByEmail(email)
+
 	// Get user authorisation
-	user, err := s.UserService.GetUserAuthorisation(actorUserID)
+	userAuth, err := s.UserService.GetUserAuthorisation(user.UserID)
 	if err != nil {
 		return "", err
 	}
 
-	if !user.IsActive {
+	if !userAuth.IsActive {
 		return "", shared.ErrUserInactive
 	}
 
-	if !user.UIEnabled {
+	if !userAuth.UIEnabled {
 		return "", shared.ErrUserNotAuthorised
 	}
 

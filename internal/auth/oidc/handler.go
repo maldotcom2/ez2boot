@@ -78,25 +78,44 @@ func (h *Handler) Callback() http.HandlerFunc {
 		// Extract email from claims
 		email, ok := claims["email"].(string)
 		if !ok || email == "" {
-			h.Logger.Error("No email claim in token", "domain", "oidc")
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "No email in token"})
-			return
+			email, ok = claims["preferred_username"].(string)
+			if !ok || email == "" {
+				h.Logger.Error("No email claim in token", "domain", "oidc")
+				w.WriteHeader(http.StatusBadRequest)
+				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "No email in token"})
+				return
+			}
 		}
 
 		// Provision or login user
-		sessionToken, err := h.Service.loginOidcUser(email, ctx)
+		var resp shared.ApiResponse[any]
+		sessionToken, err := h.Service.loginOidcUser(email)
 		if err != nil {
 			switch {
 			case errors.Is(err, shared.ErrUserInactive):
-				h.Logger.Warn("Inactive OIDC user attempted login", "user", email, "domain", "oidc")
+				h.Logger.Warn("Login failed", "user", email, "domain", "oidc", "error", err)
 				w.WriteHeader(http.StatusForbidden)
-				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User is not active"})
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "User not authorised",
+				}
+			case errors.Is(err, shared.ErrUserNotAuthorised):
+				h.Logger.Warn("Login failed", "user", email, "domain", "oidc", "error", err)
+				w.WriteHeader(http.StatusForbidden)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "User not authorised",
+				}
 			default:
-				h.Logger.Error("Failed to login OIDC user", "user", email, "domain", "oidc", "error", err)
+				h.Logger.Error("Login failed", "user", email, "domain", "oidc", "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
-				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to login"})
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "Failed to login",
+				}
 			}
+
+			json.NewEncoder(w).Encode(resp)
 			return
 		}
 
@@ -105,7 +124,7 @@ func (h *Handler) Callback() http.HandlerFunc {
 			Name:     "session",
 			Value:    sessionToken,
 			HttpOnly: true,
-			Secure:   true,
+			Secure:   false,
 			SameSite: http.SameSiteLaxMode,
 		})
 
