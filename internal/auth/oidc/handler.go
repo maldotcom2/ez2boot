@@ -5,8 +5,114 @@ import (
 	"errors"
 	"ez2boot/internal/ctxutil"
 	"ez2boot/internal/shared"
+	"ez2boot/internal/util"
 	"net/http"
+	"time"
 )
+
+func (h *Handler) Login() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// User context not available yet
+
+		if h.Service.Provider == nil {
+			h.Logger.Warn("OIDC login attempted but provider not configured", "domain", "oidc")
+			w.WriteHeader(http.StatusServiceUnavailable)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "SSO is not configured"})
+			return
+		}
+
+		// Generate state parameter to prevent CSRF
+		state, err := util.GenerateRandomString(32)
+		if err != nil {
+			h.Logger.Error("Failed to generate state", "domain", "oidc", "error", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to initiate SSO login"})
+			return
+		}
+
+		// Store state in cookie for verification in callback
+		http.SetCookie(w, &http.Cookie{
+			Name:     "oidc_state",
+			Value:    state,
+			MaxAge:   int((5 * time.Minute).Seconds()),
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+		})
+
+		http.Redirect(w, r, h.Service.Provider.AuthCodeURL(state), http.StatusFound)
+	}
+}
+
+func (h *Handler) Callback() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		// Verify state to prevent CSRF
+		stateCookie, err := r.Cookie("oidc_state")
+		if err != nil || stateCookie.Value != r.URL.Query().Get("state") {
+			h.Logger.Warn("OIDC state mismatch", "domain", "oidc")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Invalid state"})
+			return
+		}
+
+		// Exchange code for tokens
+		token, err := h.Service.Provider.Exchange(ctx, r.URL.Query().Get("code"))
+		if err != nil {
+			h.Logger.Error("Failed to exchange code", "domain", "oidc", "error", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to exchange code"})
+			return
+		}
+
+		// Verify ID token and extract claims
+		claims, err := h.Service.Provider.VerifyIDToken(ctx, token)
+		if err != nil {
+			h.Logger.Error("Failed to verify ID token", "domain", "oidc", "error", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to verify token"})
+			return
+		}
+
+		// Extract email from claims
+		email, ok := claims["email"].(string)
+		if !ok || email == "" {
+			h.Logger.Error("No email claim in token", "domain", "oidc")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "No email in token"})
+			return
+		}
+
+		// Provision or login user
+		sessionToken, err := h.Service.loginOidcUser(email, ctx)
+		if err != nil {
+			switch {
+			case errors.Is(err, shared.ErrUserInactive):
+				h.Logger.Warn("Inactive OIDC user attempted login", "user", email, "domain", "oidc")
+				w.WriteHeader(http.StatusForbidden)
+				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "User is not active"})
+			default:
+				h.Logger.Error("Failed to login OIDC user", "user", email, "domain", "oidc", "error", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to login"})
+			}
+			return
+		}
+
+		// Set session cookie
+		http.SetCookie(w, &http.Cookie{
+			Name:     "session",
+			Value:    sessionToken,
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+		})
+
+		// Redirect to app
+		http.Redirect(w, r, "/", http.StatusFound)
+	}
+}
 
 func (h *Handler) GetOidcConfig() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

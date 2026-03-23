@@ -241,7 +241,7 @@ func (s *Service) createLdapUser(email string, ctx context.Context) error {
 	}
 
 	// Create user
-	if err := s.UserService.CreateLdapUser(email, ctx); err != nil {
+	if err := s.UserService.CreateExternalUser(email, shared.IdentityProviderLDAP, ctx); err != nil {
 		return err
 	}
 

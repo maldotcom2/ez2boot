@@ -21,10 +21,9 @@ func (s *Service) getOidcConfig() (OidcConfigResponse, error) {
 	}
 
 	return OidcConfigResponse{
-		IssuerURL:    oidcCFG.IssuerURL,
-		ClientID:     oidcCFG.ClientID,
-		ClientSecret: "",
-		RedirectURI:  oidcCFG.RedirectURI,
+		IssuerURL:   oidcCFG.IssuerURL,
+		ClientID:    oidcCFG.ClientID,
+		RedirectURI: oidcCFG.RedirectURI,
 	}, nil
 }
 
@@ -33,7 +32,7 @@ func (s *Service) getOidcConfigInternal() (OidcConfig, error) {
 	oidcCFG, err := s.Repo.getOidcConfig()
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return OidcConfig{}, nil
+			return OidcConfig{}, shared.ErrOIDCConfigNotFound
 		}
 
 		return OidcConfig{}, err
@@ -122,4 +121,63 @@ func (s *Service) deleteOidcConfig(ctx context.Context) (err error) {
 	}()
 
 	return s.Repo.deleteOidcConfig()
+}
+
+func (s *Service) InitProvider(ctx context.Context) error {
+	oidcCFG, err := s.getOidcConfigInternal()
+	if err != nil {
+		return err
+	}
+
+	provider, err := NewOidcProvider(ctx, oidcCFG)
+	if err != nil {
+		return err
+	}
+
+	// Provider is nil until InitProvider is called at startup.
+	// If OIDC is not configured, Provider remains nil and SSO login is unavailable.
+	s.Provider = provider
+
+	return nil
+}
+
+func (s *Service) testOidcConnection(ctx context.Context) error {
+	cfg, err := s.getOidcConfigInternal()
+	if err != nil {
+		return err
+	}
+
+	_, err = NewOidcProvider(ctx, cfg)
+	return err
+}
+
+func (s *Service) loginOidcUser(email string, ctx context.Context) (string, error) {
+	actorUserID, actorEmail := ctxutil.GetActor(ctx)
+	// Check if user exists, create if not
+	_, err := s.UserService.GetCredentialsByEmail(actorEmail)
+	if err != nil {
+		if errors.Is(err, shared.ErrUserNotFound) {
+			if err := s.UserService.CreateExternalUser(email, shared.IdentityProviderOIDC, ctx); err != nil {
+				return "", err
+			}
+		} else {
+			return "", err
+		}
+	}
+
+	// Get user authorisation
+	user, err := s.UserService.GetUserAuthorisation(actorUserID)
+	if err != nil {
+		return "", err
+	}
+
+	if !user.IsActive {
+		return "", shared.ErrUserInactive
+	}
+
+	if !user.UIEnabled {
+		return "", shared.ErrUserNotAuthorised
+	}
+
+	return s.UserService.CreateSession(user.UserID)
 }
