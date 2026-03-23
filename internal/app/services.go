@@ -77,7 +77,7 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 
 	// Encryption
 	encryptionRepo := encryption.NewRepository(repo)
-	encryptionService := encryption.NewService(encryptionRepo, notificationService, ldapService, auditService, encryptor, logger)
+	encryptionService := encryption.NewService(encryptionRepo, notificationService, ldapService, oidcService, auditService, encryptor, logger)
 	encryptionHandler := encryption.NewHandler(encryptionService, logger)
 
 	// Util

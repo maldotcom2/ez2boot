@@ -46,16 +46,21 @@ func (s *Service) rotateEncryptionPhrase(req RotateEncryptionPhraseRequest, ctx 
 	defer tx.Rollback()
 
 	// User notification settings
-	if err = s.reEncryptNotificationSettings(tx, newEncryptor); err != nil {
+	if err := s.reEncryptNotificationSettings(tx, newEncryptor); err != nil {
 		return err
 	}
 
 	// Ldap password
-	if err = s.reEncryptLdapPassword(tx, newEncryptor); err != nil {
+	if err := s.reEncryptLdapPassword(tx, newEncryptor); err != nil {
 		return err
 	}
 
-	if err = tx.Commit(); err != nil {
+	// Oidc secret
+	if err := s.reEncryptOidcSecret(tx, newEncryptor); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
 		return err
 	}
 
@@ -115,6 +120,33 @@ func (s *Service) reEncryptLdapPassword(tx *sql.Tx, newEncryptor Encryptor) erro
 
 	// Write
 	if err := s.LdapService.SetLdapPasswordTx(tx, encryptedBytes); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Service) reEncryptOidcSecret(tx *sql.Tx, newEncryptor Encryptor) error {
+	// Get settings encrypted with old key
+	encSecret, err := s.OidcService.GetOidcSecret()
+	if err != nil {
+		return err
+	}
+
+	// Use app decryptor to decrypt
+	secret, err := s.Encryptor.Decrypt(encSecret)
+	if err != nil {
+		return err
+	}
+
+	// Encrypt using new encryptor
+	encryptedBytes, err := newEncryptor.Encrypt(secret)
+	if err != nil {
+		return err
+	}
+
+	// Write
+	if err := s.OidcService.SetOidcSecretTx(tx, encryptedBytes); err != nil {
 		return err
 	}
 
