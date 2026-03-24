@@ -151,7 +151,25 @@ func (s *Service) testOidcConnection(ctx context.Context) error {
 	return err
 }
 
-func (s *Service) loginOidcUser(email string, ctx context.Context) (string, error) {
+func (s *Service) loginOidcUser(email string, ctx context.Context) (token string, err error) {
+	var actorUserID int64
+
+	defer func() {
+		var reason string
+		if err != nil {
+			reason = err.Error()
+		}
+
+		s.Audit.Log(audit.Event{
+			ActorUserID: actorUserID,
+			ActorEmail:  email,
+			Action:      "login",
+			Resource:    "user",
+			Success:     err == nil,
+			Reason:      reason,
+		})
+	}()
+
 	// Check if user exists, create if not
 	user, err := s.UserService.GetCredentialsByEmail(email)
 	if err != nil {
@@ -165,6 +183,9 @@ func (s *Service) loginOidcUser(email string, ctx context.Context) (string, erro
 			return "", err
 		}
 	}
+
+	// Populate for audit log
+	actorUserID = user.UserID
 
 	// Get user authorisation
 	userAuth, err := s.UserService.GetUserAuthorisation(user.UserID)

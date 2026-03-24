@@ -69,7 +69,7 @@ func (s *Service) login(u UserLogin) (token string, mfaRequired bool, err error)
 		}
 
 	case "oidc":
-		// SSO redirect
+		return "", false, shared.ErrAuthenticationFailed
 	default:
 		return "", false, shared.ErrUserNotFound
 	}
