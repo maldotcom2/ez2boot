@@ -6,6 +6,7 @@ import (
 	"ez2boot/internal/ctxutil"
 	"ez2boot/internal/shared"
 	"ez2boot/internal/util"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -136,6 +137,39 @@ func (h *Handler) Callback() http.HandlerFunc {
 		} else {
 			http.Redirect(w, r, "/dashboard", http.StatusFound)
 		}
+	}
+}
+
+func (h *Handler) TestOidcConnection() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		_, email := ctxutil.GetActor(ctx)
+
+		var resp shared.ApiResponse[any]
+		if err := h.Service.testOidcConnection(ctx); err != nil {
+			switch {
+			case errors.Is(err, shared.ErrOIDCConfigNotFound):
+				h.Logger.Warn("OIDC test failed", "user", email, "domain", "oidc", "error", err)
+				w.WriteHeader(http.StatusNotFound)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "OIDC is not configured",
+				}
+			default:
+				h.Logger.Error("OIDC test failed", "user", email, "domain", "oidc", "error", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   fmt.Sprintf("OIDC connection test failed %s", err),
+				}
+			}
+
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
+
+		h.Logger.Info("OIDC connection test succeeded", "user", email, "domain", "oidc")
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
 

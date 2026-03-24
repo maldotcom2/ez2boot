@@ -63,6 +63,7 @@ func SetupBackendRoutes(
 	adminUIRouter.HandleFunc("/auth/oidc", handlers.OidcHandler.GetOidcConfig()).Methods("GET")
 	adminUIRouter.HandleFunc("/auth/oidc", handlers.OidcHandler.SetOidcConfig()).Methods("POST")
 	adminUIRouter.HandleFunc("/auth/oidc", handlers.OidcHandler.DeleteOidcConfig()).Methods("DELETE")
+	adminUIRouter.HandleFunc("/auth/oidc/test", handlers.OidcHandler.TestOidcConnection()).Methods("POST")
 
 	/////////////////////////// UI subrouter and routes //////////////////////////////////
 

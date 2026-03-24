@@ -142,12 +142,12 @@ func (s *Service) InitProvider(ctx context.Context) error {
 }
 
 func (s *Service) testOidcConnection(ctx context.Context) error {
-	cfg, err := s.getOidcConfigInternal()
+	oidcCFG, err := s.getOidcConfigInternal()
 	if err != nil {
 		return err
 	}
 
-	_, err = NewOidcProvider(ctx, cfg)
+	_, err = NewOidcProvider(ctx, oidcCFG)
 	return err
 }
 
