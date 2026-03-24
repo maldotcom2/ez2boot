@@ -1057,7 +1057,7 @@ func TestVerifyMFA_Success(t *testing.T) {
 	}
 
 	body, _ = json.Marshal(loginPayload)
-	req = httptest.NewRequest("POST", "/ui/user/login", bytes.NewReader(body))
+	req = httptest.NewRequest("POST", "/ui/auth/login", bytes.NewReader(body))
 	w = httptest.NewRecorder()
 	env.Router.ServeHTTP(w, req)
 
@@ -1210,7 +1210,7 @@ func TestVerifyMFA_IncorrectCode(t *testing.T) {
 	}
 
 	body, _ = json.Marshal(loginPayload)
-	req = httptest.NewRequest("POST", "/ui/user/login", bytes.NewReader(body))
+	req = httptest.NewRequest("POST", "/ui/auth/login", bytes.NewReader(body))
 	w = httptest.NewRecorder()
 	env.Router.ServeHTTP(w, req)
 

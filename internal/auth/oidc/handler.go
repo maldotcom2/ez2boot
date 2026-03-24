@@ -7,6 +7,7 @@ import (
 	"ez2boot/internal/shared"
 	"ez2boot/internal/util"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -89,7 +90,7 @@ func (h *Handler) Callback() http.HandlerFunc {
 
 		// Provision or login user
 		var resp shared.ApiResponse[any]
-		sessionToken, err := h.Service.loginOidcUser(email)
+		sessionToken, err := h.Service.loginOidcUser(email, ctx)
 		if err != nil {
 			switch {
 			case errors.Is(err, shared.ErrUserInactive):
@@ -119,17 +120,22 @@ func (h *Handler) Callback() http.HandlerFunc {
 			return
 		}
 
-		// Set session cookie
 		http.SetCookie(w, &http.Cookie{
 			Name:     "session",
 			Value:    sessionToken,
+			Path:     "/",
+			Expires:  time.Now().Add(h.Config.UserSessionDuration),
+			SameSite: h.Config.SameSiteMode,
 			HttpOnly: true,
-			Secure:   false,
-			SameSite: http.SameSiteLaxMode,
+			Secure:   h.Config.SecureCookie,
 		})
 
 		// Redirect to app
-		http.Redirect(w, r, "/", http.StatusFound)
+		if strings.Contains(h.Version, "dev") {
+			http.Redirect(w, r, "http://localhost:5173/dashboard", http.StatusFound)
+		} else {
+			http.Redirect(w, r, "/dashboard", http.StatusFound)
+		}
 	}
 }
 

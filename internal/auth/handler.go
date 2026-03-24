@@ -111,7 +111,7 @@ func (h *Handler) Login() http.HandlerFunc {
 			Name:     "session",
 			Value:    token,
 			Path:     "/",
-			Expires:  time.Now().Add(h.Service.Config.UserSessionDuration),
+			Expires:  time.Now().Add(h.Config.UserSessionDuration),
 			SameSite: h.Config.SameSiteMode,
 			HttpOnly: true,
 			Secure:   h.Config.SecureCookie,

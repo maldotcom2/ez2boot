@@ -151,21 +151,20 @@ func (s *Service) testOidcConnection(ctx context.Context) error {
 	return err
 }
 
-func (s *Service) loginOidcUser(email string) (string, error) {
+func (s *Service) loginOidcUser(email string, ctx context.Context) (string, error) {
 	// Check if user exists, create if not
-	_, err := s.UserService.GetCredentialsByEmail(email)
+	user, err := s.UserService.GetCredentialsByEmail(email)
 	if err != nil {
 		if errors.Is(err, shared.ErrUserNotFound) {
-			if err := s.UserService.CreateExternalUser(email, shared.IdentityProviderOIDC, context.TODO()); err != nil {
+			userID, err := s.UserService.CreateExternalUser(email, shared.IdentityProviderOIDC, ctx)
+			if err != nil {
 				return "", err
 			}
+			user.UserID = userID
 		} else {
 			return "", err
 		}
 	}
-
-	// Get ID
-	user, err := s.UserService.GetCredentialsByEmail(email)
 
 	// Get user authorisation
 	userAuth, err := s.UserService.GetUserAuthorisation(user.UserID)
@@ -179,6 +178,10 @@ func (s *Service) loginOidcUser(email string) (string, error) {
 
 	if !userAuth.UIEnabled {
 		return "", shared.ErrUserNotAuthorised
+	}
+
+	if err := s.UserService.UpdateLastLogin(user.UserID); err != nil {
+		return "", err
 	}
 
 	return s.UserService.CreateSession(user.UserID)

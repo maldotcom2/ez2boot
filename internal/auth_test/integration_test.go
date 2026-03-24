@@ -41,7 +41,7 @@ func TestLogin_WrongPassword_ReturnsUnauth(t *testing.T) {
 	}
 
 	loginBody, _ := json.Marshal(loginPayload)
-	req := httptest.NewRequest("POST", "/ui/user/login", bytes.NewReader(loginBody))
+	req := httptest.NewRequest("POST", "/ui/auth/login", bytes.NewReader(loginBody))
 
 	// Record the response
 	w := httptest.NewRecorder()
@@ -76,7 +76,7 @@ func TestLogin_Inactive_ReturnsForbidden(t *testing.T) {
 	}
 
 	loginBody, _ := json.Marshal(loginPayload)
-	req := httptest.NewRequest("POST", "/ui/user/login", bytes.NewReader(loginBody))
+	req := httptest.NewRequest("POST", "/ui/auth/login", bytes.NewReader(loginBody))
 
 	// Record the response
 	w := httptest.NewRecorder()
@@ -111,7 +111,7 @@ func TestLogin_UIblocked_ReturnsForbidden(t *testing.T) {
 	}
 
 	loginBody, _ := json.Marshal(loginPayload)
-	req := httptest.NewRequest("POST", "/ui/user/login", bytes.NewReader(loginBody))
+	req := httptest.NewRequest("POST", "/ui/auth/login", bytes.NewReader(loginBody))
 
 	// Record the response
 	w := httptest.NewRecorder()

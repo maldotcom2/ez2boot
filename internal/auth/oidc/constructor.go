@@ -3,6 +3,7 @@ package oidc
 import (
 	"context"
 	"ez2boot/internal/audit"
+	"ez2boot/internal/config"
 	"ez2boot/internal/db"
 	"ez2boot/internal/user"
 	"fmt"
@@ -12,9 +13,11 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func NewHandler(oidcService *Service, logger *slog.Logger) *Handler {
+func NewHandler(oidcService *Service, config *config.Config, version string, logger *slog.Logger) *Handler {
 	return &Handler{
 		Service: oidcService,
+		Config:  config,
+		Version: version,
 		Logger:  logger,
 	}
 }

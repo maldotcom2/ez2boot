@@ -138,9 +138,10 @@ func (s *Service) createUser(req CreateUserRequest, ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) CreateExternalUser(email string, identityProvider string, ctx context.Context) error {
+// Returns userID of created user
+func (s *Service) CreateExternalUser(email string, identityProvider string, ctx context.Context) (int64, error) {
 	if err := s.validateEmail(email); err != nil {
-		return err
+		return 0, err
 	}
 
 	user := CreateUser{
@@ -155,13 +156,13 @@ func (s *Service) CreateExternalUser(email string, identityProvider string, ctx 
 
 	targetUserID, err := s.Repo.createUser(user)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	actorUserID, actorEmail := ctxutil.GetActor(ctx)
 	s.Audit.Log(audit.Event{
 		ActorUserID:  actorUserID,
-		ActorEmail:   actorEmail,
+		ActorEmail:   actorEmail, // Users are created on first time login
 		TargetUserID: targetUserID,
 		TargetEmail:  email,
 		Action:       "create",
@@ -172,7 +173,7 @@ func (s *Service) CreateExternalUser(email string, identityProvider string, ctx 
 		},
 	})
 
-	return nil
+	return targetUserID, nil
 }
 
 func (s *Service) deleteUser(targetUserID int64, ctx context.Context) error {

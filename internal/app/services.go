@@ -59,7 +59,7 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 	// OIDC
 	oidcRepo := oidc.NewRepository(repo)
 	oidcService := oidc.NewService(oidcRepo, userService, auditService, encryptor, logger)
-	oidcHandler := oidc.NewHandler(oidcService, logger)
+	oidcHandler := oidc.NewHandler(oidcService, cfg, version, logger)
 
 	// Auth
 	authService := auth.NewService(userService, ldapService, cfg, auditService, logger)

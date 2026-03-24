@@ -126,7 +126,7 @@ func LoginAndGetCookies(t *testing.T, router http.Handler, email, password strin
 	}
 	body, _ := json.Marshal(payload)
 
-	req := httptest.NewRequest("POST", "/ui/user/login", bytes.NewReader(body))
+	req := httptest.NewRequest("POST", "/ui/auth/login", bytes.NewReader(body))
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 

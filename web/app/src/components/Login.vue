@@ -53,7 +53,7 @@ async function login() {
   messageType.value = ''
 
   try {
-    const response = await axios.post('ui/user/login',
+    const response = await axios.post('ui/auth/login',
       {
         email: email.value,
         password: password.value

@@ -3,6 +3,7 @@ package oidc
 import (
 	"context"
 	"ez2boot/internal/audit"
+	"ez2boot/internal/config"
 	"ez2boot/internal/db"
 	"ez2boot/internal/user"
 	"log/slog"
@@ -37,6 +38,8 @@ type Service struct {
 
 type Handler struct {
 	Service *Service
+	Config  *config.Config
+	Version string
 	Logger  *slog.Logger
 }
 

@@ -330,7 +330,7 @@ func TestLogin_LDAPSuccess(t *testing.T) {
 		Password: "anypassword",
 	})
 
-	req := httptest.NewRequest("POST", "/ui/user/login", bytes.NewReader(body))
+	req := httptest.NewRequest("POST", "/ui/auth/login", bytes.NewReader(body))
 	w := httptest.NewRecorder()
 	env.Router.ServeHTTP(w, req)
 
@@ -361,7 +361,7 @@ func TestLogin_LDAPConnectionFailure(t *testing.T) {
 		Password: "anypassword",
 	})
 
-	req := httptest.NewRequest("POST", "/ui/user/login", bytes.NewReader(body))
+	req := httptest.NewRequest("POST", "/ui/auth/login", bytes.NewReader(body))
 	w := httptest.NewRecorder()
 	env.Router.ServeHTTP(w, req)
 
