@@ -37,7 +37,7 @@ func (r *Repository) SetupDB() error {
 	}
 
 	// create table for oidc config
-	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS oidc_config (id INTEGER PRIMARY KEY CHECK (id = 1), issuer_url TEXT NOT NULL, client_id TEXT NOT NULL, client_secret BLOB NOT NULL, redirect_uri TEXT NOT NULL)"); err != nil {
+	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS oidc_config (id INTEGER PRIMARY KEY CHECK (id = 1), issuer_url TEXT NOT NULL, client_id TEXT NOT NULL, client_secret BLOB NOT NULL, app_url TEXT NOT NULL)"); err != nil {
 		return err
 	}
 

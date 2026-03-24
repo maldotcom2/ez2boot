@@ -48,7 +48,7 @@ type OidcConfigStore struct {
 	IssuerURL    string
 	ClientID     string
 	ClientSecret []byte
-	RedirectURI  string
+	AppURL       string
 }
 
 // For internal OIDC operations
@@ -59,19 +59,19 @@ type OidcConfig struct {
 	RedirectURI  string
 }
 
-// Set Oidc config
+// Set Oidc config - contains plain text secret
 type OidcConfigRequest struct {
 	IssuerURL    string `json:"issuer_url"`
 	ClientID     string `json:"client_id"`
 	ClientSecret string `json:"client_secret"`
-	RedirectURI  string `json:"redirect_uri"`
+	AppURL       string `json:"app_url"`
 }
 
 // Get current Oidc config for UI
 type OidcConfigResponse struct {
-	IssuerURL   string `json:"issuer_url"`
-	ClientID    string `json:"client_id"`
-	RedirectURI string `json:"redirect_uri"`
+	IssuerURL string `json:"issuer_url"`
+	ClientID  string `json:"client_id"`
+	AppURL    string `json:"app_url"`
 }
 
 type OidcProviderImpl struct {

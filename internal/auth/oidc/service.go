@@ -21,9 +21,9 @@ func (s *Service) getOidcConfig() (OidcConfigResponse, error) {
 	}
 
 	return OidcConfigResponse{
-		IssuerURL:   oidcCFG.IssuerURL,
-		ClientID:    oidcCFG.ClientID,
-		RedirectURI: oidcCFG.RedirectURI,
+		IssuerURL: oidcCFG.IssuerURL,
+		ClientID:  oidcCFG.ClientID,
+		AppURL:    oidcCFG.AppURL,
 	}, nil
 }
 
@@ -48,7 +48,7 @@ func (s *Service) getOidcConfigInternal() (OidcConfig, error) {
 		IssuerURL:    oidcCFG.IssuerURL,
 		ClientID:     oidcCFG.ClientID,
 		ClientSecret: string(secretBytes),
-		RedirectURI:  oidcCFG.RedirectURI,
+		RedirectURI:  oidcCFG.AppURL + "/ui/auth/oidc/callback", // See routes.go
 	}, nil
 }
 
@@ -81,7 +81,7 @@ func (s *Service) setOidcConfig(req OidcConfigRequest, ctx context.Context) (err
 		IssuerURL:    req.IssuerURL,
 		ClientID:     req.ClientID,
 		ClientSecret: encryptedBytes,
-		RedirectURI:  req.RedirectURI,
+		AppURL:       req.AppURL,
 	}
 
 	if err = s.Repo.setOidcConfig(c); err != nil {
