@@ -1,8 +1,8 @@
 <template>
   <aside class="menu">
     <button @click="showUserNotifications">Notifications</button>
-    <button @click="showChangePassword" :disabled="user.identityProvider !== 'local'">Change Password</button>
-    <button @click="showMFA">MFA</button>
+    <button v-if="user.identityProvider === 'local'" @click="showChangePassword">Change Password</button>
+    <button v-if="user.identityProvider !== 'oidc'" @click="showMFA">MFA</button>
   </aside>
 </template>
 
