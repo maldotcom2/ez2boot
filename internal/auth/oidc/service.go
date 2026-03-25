@@ -120,7 +120,13 @@ func (s *Service) deleteOidcConfig(ctx context.Context) (err error) {
 		})
 	}()
 
-	return s.Repo.deleteOidcConfig()
+	if err = s.Repo.deleteOidcConfig(); err != nil {
+		return err
+	}
+
+	s.Provider = nil
+
+	return nil
 }
 
 func (s *Service) InitProvider(ctx context.Context) error {
@@ -206,4 +212,10 @@ func (s *Service) loginOidcUser(email string, ctx context.Context) (token string
 	}
 
 	return s.UserService.CreateSession(user.UserID)
+}
+
+// Check whether the service is on the struct
+// Returns true when a config is populated and app restarted
+func (s *Service) hasOidc() bool {
+	return s.Provider != nil
 }

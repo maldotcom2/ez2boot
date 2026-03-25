@@ -248,3 +248,12 @@ func (h *Handler) DeleteOidcConfig() http.HandlerFunc {
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
+
+func (h *Handler) HasOidc() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		hasOidc := h.Service.hasOidc()
+
+		response := HasOidcRespose{HasOidc: hasOidc}
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: response})
+	}
+}

@@ -28,6 +28,7 @@ func SetupBackendRoutes(
 	publicRouter.HandleFunc("/auth/login", handlers.AuthHandler.Login()).Methods("POST")
 	publicRouter.HandleFunc("/auth/oidc/login", handlers.OidcHandler.Login()).Methods("GET")
 	publicRouter.HandleFunc("/auth/oidc/callback", handlers.OidcHandler.Callback()).Methods("GET")
+	publicRouter.HandleFunc("/auth/oidc/status", handlers.OidcHandler.HasOidc()).Methods("GET")
 	publicRouter.HandleFunc("/user/mfa/verify", handlers.UserHandler.VerifyMFA()).Methods("POST")
 	publicRouter.HandleFunc("/mode", handlers.UserHandler.GetMode()).Methods("GET")
 

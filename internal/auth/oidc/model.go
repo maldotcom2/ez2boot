@@ -79,3 +79,7 @@ type OidcProviderImpl struct {
 	oauth2Cfg oauth2.Config
 	verifier  *coreos.IDTokenVerifier
 }
+
+type HasOidcRespose struct {
+	HasOidc bool `json:"has_oidc"`
+}

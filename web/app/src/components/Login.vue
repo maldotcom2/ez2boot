@@ -12,6 +12,10 @@
           <input v-model="password" type="password" />
         </label>
         <button type="submit" :disabled="!email || !password">Login</button>
+        <div v-if="oidcStatus" class="sso-divider">
+          <span>or</span>
+        </div>
+        <button type="button" v-if="oidcStatus" @click="oidcLogin">Login with SSO</button>
       </template>
       <template v-else>
         <p>MFA required: Open your authenticator app and enter the 6-digit code</p>
@@ -24,7 +28,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { useRouter, useRoute } from 'vue-router'
 
@@ -34,6 +38,7 @@ const email = ref('')
 const password = ref('')
 const mfaCode = ref('')
 const mfaRequired = ref(false)
+const oidcStatus = ref(false)
 const message = ref('')
 const messageType = ref('')
 
@@ -124,6 +129,39 @@ async function verifyMFA() {
     }
   }
 }
+
+async function getOidcStatus() {
+  message.value = ''
+  messageType.value = ''
+
+  try {
+    const response = await axios.get('ui/auth/oidc/status')
+    if (response.data.success) {
+      if (response.data.data.has_oidc) {
+        return true
+      }
+    }
+    return false
+  } catch (err) {
+    messageType.value = 'error'
+    if (err.response) {
+      message.value = err.response.data.error || err.response.statusText
+    } else if (err.request) {
+      message.value = 'No response from server'
+    } else {
+      message.value = err.message
+    }
+  }
+}
+
+function oidcLogin() {
+  window.location.href = '/ui/auth/oidc/login'
+}
+
+onMounted(async () => {
+  oidcStatus.value = await getOidcStatus()
+})
+
 </script>
 
 <style scoped>
@@ -142,10 +180,34 @@ async function verifyMFA() {
   justify-content: center;
   align-items: center;
   padding: 3rem;
+  min-height: 400px;
   width: 300px;
   gap: 1rem;
   border-radius: var(--big-radius);
   outline: auto;
+}
+
+button[type="submit"] {
+  margin-top: 1rem;
+}
+
+.sso-divider {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 0.5rem;
+}
+
+.sso-divider::before,
+.sso-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background-color: var(--low-glare);
+}
+
+.sso-divider span {
+  font-size: 0.8rem;
 }
 
 h1 {
