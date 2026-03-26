@@ -37,9 +37,9 @@ func (h *Handler) Login() http.HandlerFunc {
 			Name:     "oidc_state",
 			Value:    state,
 			MaxAge:   int((5 * time.Minute).Seconds()),
+			SameSite: h.Config.SameSiteMode,
 			HttpOnly: true,
-			Secure:   true,
-			SameSite: http.SameSiteLaxMode,
+			Secure:   h.Config.SecureCookie,
 		})
 
 		h.Logger.Info("Oidc login initiated", "domain", "oidc")
@@ -103,6 +103,13 @@ func (h *Handler) Callback() http.HandlerFunc {
 					Error:   "User not authorised",
 				}
 			case errors.Is(err, shared.ErrUserNotAuthorised):
+				h.Logger.Warn("Login failed", "user", email, "domain", "oidc", "error", err)
+				w.WriteHeader(http.StatusForbidden)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "User not authorised",
+				}
+			case errors.Is(err, shared.ErrWrongIdentityProvider):
 				h.Logger.Warn("Login failed", "user", email, "domain", "oidc", "error", err)
 				w.WriteHeader(http.StatusForbidden)
 				resp = shared.ApiResponse[any]{

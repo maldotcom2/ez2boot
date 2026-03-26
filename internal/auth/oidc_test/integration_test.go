@@ -182,6 +182,45 @@ func TestOidcCallback_ExistingUser_Success(t *testing.T) {
 	}
 }
 
+func TestOidcCallback_WrongIdentityProvider(t *testing.T) {
+	env := testutil.NewTestEnv(t)
+
+	// Insert a local user with the same email
+	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
+	testutil.InsertUser(t, env.DB, "example@example.com", &hash, true, false, false, true, "local")
+
+	env.OidcService.Provider = &testutil.StubOidcProvider{
+		ExchangeFunc: func(ctx context.Context, code string) (*oauth2.Token, error) {
+			return &oauth2.Token{}, nil
+		},
+		VerifyIDTokenFunc: func(ctx context.Context, token *oauth2.Token) (map[string]any, error) {
+			return map[string]any{
+				"preferred_username": "example@example.com",
+			}, nil
+		},
+	}
+
+	req := httptest.NewRequest("GET", "/ui/auth/oidc/callback?code=testcode&state=teststate", nil)
+	req.AddCookie(&http.Cookie{Name: "oidc_state", Value: "teststate"})
+
+	w := httptest.NewRecorder()
+	env.Router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("want 403, got %d, body=%s", w.Code, w.Body.String())
+	}
+
+	// Verify the local user was not given a session
+	var count int
+	err := env.DB.QueryRow("SELECT COUNT(*) FROM user_sessions WHERE user_id = (SELECT id FROM users WHERE email = $1)", "example@example.com").Scan(&count)
+	if err != nil {
+		t.Fatalf("failed to query sessions: %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("want 0 sessions, got %d", count)
+	}
+}
+
 func TestOidcCallback_StateMismatch(t *testing.T) {
 	env := testutil.NewTestEnv(t)
 

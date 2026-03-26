@@ -188,6 +188,9 @@ func (s *Service) loginOidcUser(email string, ctx context.Context) (token string
 		} else {
 			return "", err
 		}
+		// Prevent non-oidc user logging in via oidc
+	} else if user.IdentityProvider != shared.IdentityProviderOIDC {
+		return "", shared.ErrWrongIdentityProvider
 	}
 
 	// Populate for audit log
