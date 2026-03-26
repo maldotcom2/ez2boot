@@ -42,6 +42,7 @@ func (h *Handler) Login() http.HandlerFunc {
 			SameSite: http.SameSiteLaxMode,
 		})
 
+		h.Logger.Info("Oidc login initiated", "domain", "oidc")
 		http.Redirect(w, r, h.Service.Provider.AuthCodeURL(state), http.StatusFound)
 	}
 }
@@ -131,8 +132,9 @@ func (h *Handler) Callback() http.HandlerFunc {
 			Secure:   h.Config.SecureCookie,
 		})
 
+		h.Logger.Info("User logged in", "user", email, "domain", "oidc")
 		// Redirect to app
-		if strings.Contains(h.Version, "dev") {
+		if strings.Contains(h.Version, "dev") { // For local dev with Vite
 			http.Redirect(w, r, "http://localhost:5173/dashboard", http.StatusFound)
 		} else {
 			http.Redirect(w, r, "/dashboard", http.StatusFound)
@@ -227,6 +229,7 @@ func (h *Handler) SetOidcConfig() http.HandlerFunc {
 			return
 		}
 
+		h.Logger.Info("Oidc config set", "user", email, "domain", "oidc")
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
@@ -245,6 +248,7 @@ func (h *Handler) DeleteOidcConfig() http.HandlerFunc {
 			return
 		}
 
+		h.Logger.Info("Oidc config deleted", "user", email, "domain", "oidc")
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
