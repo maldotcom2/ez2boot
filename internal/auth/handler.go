@@ -13,76 +13,76 @@ func (h *Handler) Login() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var u UserLogin
 		if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
-			h.Logger.Error("Malformed request", "user", u.Email, "domain", "user", "error", err)
+			h.Logger.Error("Malformed request", "user", u.Email, "domain", "auth", "error", err)
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Malformed request"})
 			return
 		}
 
-		h.Logger.Debug("Login attempted", "user", u.Email, "domain", "user")
+		h.Logger.Debug("Login attempted", "user", u.Email, "domain", "auth")
 
 		var resp shared.ApiResponse[any]
 		token, mfaRequired, err := h.Service.login(u)
 		if err != nil {
 			switch {
 			case errors.Is(err, shared.ErrEmailOrPasswordMissing):
-				h.Logger.Warn("Login failed", "user", u.Email, "domain", "user", "error", err)
+				h.Logger.Warn("Login failed", "user", u.Email, "domain", "auth", "error", err)
 				w.WriteHeader(http.StatusBadRequest)
 				resp = shared.ApiResponse[any]{
 					Success: false,
 					Error:   "Missing email or password for login",
 				}
 			case errors.Is(err, shared.ErrUserNotFound):
-				h.Logger.Warn("Login failed", "user", u.Email, "domain", "user", "error", err)
+				h.Logger.Warn("Login failed", "user", u.Email, "domain", "auth", "error", err)
 				w.WriteHeader(http.StatusUnauthorized)
 				resp = shared.ApiResponse[any]{
 					Success: false,
 					Error:   "Invalid email or password", // Make sure this stays the same as for auth fail
 				}
 			case errors.Is(err, shared.ErrNoLocalPassword):
-				h.Logger.Warn("Login failed", "user", u.Email, "domain", "user", "error", err)
+				h.Logger.Warn("Login failed", "user", u.Email, "domain", "auth", "error", err)
 				w.WriteHeader(http.StatusUnauthorized)
 				resp = shared.ApiResponse[any]{
 					Success: false,
 					Error:   "Invalid email or password",
 				}
 			case errors.Is(err, shared.ErrAuthenticationFailed):
-				h.Logger.Warn("Login failed", "user", u.Email, "domain", "user", "error", err)
+				h.Logger.Warn("Login failed", "user", u.Email, "domain", "auth", "error", err)
 				w.WriteHeader(http.StatusUnauthorized)
 				resp = shared.ApiResponse[any]{
 					Success: false,
 					Error:   "Invalid email or password", // Make sure this stays the same as for user not found
 				}
 			case errors.Is(err, shared.ErrUserInactive):
-				h.Logger.Warn("Login failed", "user", u.Email, "domain", "user", "error", err)
+				h.Logger.Warn("Login failed", "user", u.Email, "domain", "auth", "error", err)
 				w.WriteHeader(http.StatusForbidden)
 				resp = shared.ApiResponse[any]{
 					Success: false,
 					Error:   "User not authorised",
 				}
 			case errors.Is(err, shared.ErrUserNotAuthorised):
-				h.Logger.Warn("Login failed", "user", u.Email, "domain", "user", "error", err)
+				h.Logger.Warn("Login failed", "user", u.Email, "domain", "auth", "error", err)
 				w.WriteHeader(http.StatusForbidden)
 				resp = shared.ApiResponse[any]{
 					Success: false,
 					Error:   "User not authorised",
 				}
 			case errors.Is(err, shared.ErrLDAPConnection):
-				h.Logger.Warn("Login failed", "user", u.Email, "domain", "user", "error", err)
+				h.Logger.Warn("Login failed", "user", u.Email, "domain", "auth", "error", err)
 				w.WriteHeader(http.StatusServiceUnavailable)
 				resp = shared.ApiResponse[any]{
 					Success: false,
 					Error:   "Failed to login",
 				}
 			case errors.Is(err, shared.ErrLDAPConfigNotFound):
-				h.Logger.Warn("Login failed", "user", u.Email, "domain", "user", "error", err)
+				h.Logger.Warn("Login failed", "user", u.Email, "domain", "auth", "error", err)
 				w.WriteHeader(http.StatusServiceUnavailable)
 				resp = shared.ApiResponse[any]{
 					Success: false,
 					Error:   "Failed to login",
 				}
 			default:
-				h.Logger.Error("Login failed", "user", u.Email, "domain", "user", "error", err)
+				h.Logger.Error("Login failed", "user", u.Email, "domain", "auth", "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				resp = shared.ApiResponse[any]{
 					Success: false,
@@ -109,7 +109,7 @@ func (h *Handler) Login() http.HandlerFunc {
 			var m MFARequiredResponse
 			m.MFARequired = true // Used to direct UI behaviour
 
-			h.Logger.Debug("MFA required", "user", u.Email, "domain", "user")
+			h.Logger.Debug("MFA required", "user", u.Email, "domain", "auth")
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true, Data: m})
 			return
 		}
@@ -124,7 +124,7 @@ func (h *Handler) Login() http.HandlerFunc {
 			Secure:   h.Config.SecureCookie,
 		})
 
-		h.Logger.Info("User logged in", "user", u.Email, "domain", "user")
+		h.Logger.Info("User logged in", "user", u.Email, "domain", "auth")
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
