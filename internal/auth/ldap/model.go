@@ -73,7 +73,6 @@ type LdapConfigResponse struct {
 	Port          int64  `json:"port"`
 	BaseDN        string `json:"base_dn"`
 	BindDN        string `json:"bind_dn"`
-	BindPassword  string `json:"bind_password"`
 	UseSSL        bool   `json:"use_ssl"`
 	SkipTLSVerify bool   `json:"skip_tls_verify"`
 }

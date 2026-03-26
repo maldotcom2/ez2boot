@@ -140,6 +140,8 @@ func (s *Service) createUser(req CreateUserRequest, ctx context.Context) error {
 
 // Returns userID of created user
 func (s *Service) CreateExternalUser(email string, identityProvider string, ctx context.Context) (int64, error) {
+	actorUserID, actorEmail := ctxutil.GetActor(ctx)
+
 	if err := s.validateEmail(email); err != nil {
 		return 0, err
 	}
@@ -159,7 +161,6 @@ func (s *Service) CreateExternalUser(email string, identityProvider string, ctx 
 		return 0, err
 	}
 
-	actorUserID, actorEmail := ctxutil.GetActor(ctx)
 	s.Audit.Log(audit.Event{
 		ActorUserID:  actorUserID,
 		ActorEmail:   actorEmail, // Users are created on first time login
@@ -173,6 +174,8 @@ func (s *Service) CreateExternalUser(email string, identityProvider string, ctx 
 		},
 	})
 
+	// Log here - this is a service called from internally only
+	s.Logger.Info("New user created", "user", actorEmail, "domain", "user", "target_user", email)
 	return targetUserID, nil
 }
 

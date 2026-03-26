@@ -54,7 +54,6 @@ func TestGetLdapConfig_Success(t *testing.T) {
 			Port:          389,
 			BaseDN:        "dc=ez2boot,dc=org",
 			BindDN:        "CN=ldap.svc,CN=Users,DC=ez2boot,DC=org",
-			BindPassword:  "", // Password is nulled in response
 			UseSSL:        false,
 			SkipTLSVerify: false,
 		},

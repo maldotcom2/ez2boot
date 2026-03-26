@@ -61,7 +61,6 @@ func (s *Service) getLdapConfig() (LdapConfigResponse, error) {
 		Port:          ldapCFG.Port,
 		BaseDN:        ldapCFG.BaseDN,
 		BindDN:        ldapCFG.BindDN,
-		BindPassword:  "",
 		UseSSL:        ldapCFG.UseSSL,
 		SkipTLSVerify: ldapCFG.SkipTLSVerify,
 	}, nil
