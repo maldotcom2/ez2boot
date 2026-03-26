@@ -8,8 +8,8 @@
       </select>
       <div class="actions">
         <button type="button" @click="saveConfig" :disabled="!isDirty">Save</button>
-        <button type="button" @click="testConfig" :disabled="!canDelete || isDirty">Test</button>
         <button type="button" @click="deleteConfig" :disabled="!canDelete">Delete</button>
+        <button type="button" @click="testConfig" :disabled="!canDelete || isDirty">Test</button>
       </div>
       <p class="result" :class="messageType">{{ message || '\u00A0' }}</p>
     </aside>
@@ -23,6 +23,7 @@
 import { computed, ref, reactive, onMounted, watch } from 'vue'
 import axios from 'axios'
 import LdapForm from './auth/Ldap.vue'
+import OidcForm from './auth/Oidc.vue'
 
 const selectedType = ref('')
 const authConfig = reactive({})
@@ -33,10 +34,12 @@ const loadedTypes = reactive(new Set()) // Track auth types with configs
 
 const authTypes = [
   { type: 'ldap', label: 'LDAP' },
+  { type: 'oidc', label: 'OIDC'},
 ]
 
 const formComponents = {
-  ldap: LdapForm
+  ldap: LdapForm,
+  oidc: OidcForm
 }
 
 // For enabling delete button
@@ -64,6 +67,11 @@ watch(selectedType, async (newType) => {
 
 const apiRoutes = {
   ldap: '/ui/auth/ldap',
+  oidc: '/ui/auth/oidc',
+  test: {
+    ldap: '/ui/auth/ldap/users/search',
+    oidc: '/ui/auth/oidc/test',
+  }
 }
 
 async function loadConfig() {
@@ -132,6 +140,11 @@ async function deleteConfig() {
 }
 
 async function testConfig() {
+  if (selectedType.value === 'ldap') return testLdap()
+  if (selectedType.value === 'oidc') return testOidc()
+}
+
+async function testLdap() {
   message.value = ''
   messageType.value = ''
   try {
@@ -143,15 +156,36 @@ async function testConfig() {
       withCredentials: true 
     })
 
-    message.value = 'Connection successful'
+    message.value = 'LDAP Connection successful'
     messageType.value = 'success'
   } catch (err) {
     if (err.response?.status === 404) {
       // Not found means connected successfully, just no results
-      message.value = 'Connection successful'
+      message.value = 'LDAP Connection successful'
       messageType.value = 'success'
     } else if (err.response) {
-      message.value = `Connection failed: ${err.response.data.error || err.response.statusText}`
+      message.value = `LDAP Connection failed: ${err.response.data.error || err.response.statusText}`
+      messageType.value = 'error'
+    } else if (err.request) {
+      message.value = 'No response from server'
+      messageType.value = 'error'
+    } else {
+      message.value = err.message
+      messageType.value = 'error'
+    }
+  }
+}
+
+async function testOidc() {
+  message.value = ''
+  messageType.value = ''
+  try {
+    await axios.post('/ui/auth/oidc/test')
+    message.value = 'Issuer URL reachable'
+    messageType.value = 'success'
+  } catch (err) {
+    if (err.response) {
+      message.value = `OIDC check failed: ${err.response.data.error || err.response.statusText}`
       messageType.value = 'error'
     } else if (err.request) {
       message.value = 'No response from server'

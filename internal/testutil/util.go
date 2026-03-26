@@ -7,6 +7,7 @@ import (
 	"ez2boot/internal/app"
 	"ez2boot/internal/auth"
 	"ez2boot/internal/auth/ldap"
+	"ez2boot/internal/auth/oidc"
 	"ez2boot/internal/config"
 	"ez2boot/internal/db"
 	"ez2boot/internal/encryption"
@@ -36,6 +37,7 @@ type TestEnv struct {
 	Encryptor   Encryptor
 	AuthService *auth.Service
 	LdapService *ldap.Service
+	OidcService *oidc.Service
 }
 
 // Build test environment - in memory only
@@ -91,6 +93,7 @@ func NewTestEnv(t *testing.T) *TestEnv {
 		Encryptor:   encryptor,
 		AuthService: services.AuthService,
 		LdapService: services.LdapService,
+		OidcService: services.OidcService,
 	}
 }
 
@@ -126,7 +129,7 @@ func LoginAndGetCookies(t *testing.T, router http.Handler, email, password strin
 	}
 	body, _ := json.Marshal(payload)
 
-	req := httptest.NewRequest("POST", "/ui/user/login", bytes.NewReader(body))
+	req := httptest.NewRequest("POST", "/ui/auth/login", bytes.NewReader(body))
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
@@ -168,6 +171,21 @@ func InsertLdapConfig(t *testing.T, db *sql.DB, encryptor Encryptor, host string
 
 	if _, err := db.Exec("INSERT INTO ldap_config (id, host, port, base_dn, bind_dn, bind_password, use_ssl, skip_tls_verify) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", 1, host, port, baseDN, bindDN, encryptedBytes, useSSL, skipTLSVerify); err != nil {
 		t.Fatal("failed to insert ldap config")
+	}
+
+}
+
+func InsertOidcConfig(t *testing.T, db *sql.DB, encryptor Encryptor, issuerURL string, clientID string, clientSecret string, appURL string) {
+	t.Helper()
+
+	// Encrypt password
+	encryptedBytes, err := encryptor.Encrypt([]byte(clientSecret))
+	if err != nil {
+		t.Fatal("failed to encrypt password")
+	}
+
+	if _, err := db.Exec("INSERT INTO oidc_config (id, issuer_url, client_id, client_secret, app_url) VALUES ($1, $2, $3, $4, $5)", 1, issuerURL, clientID, encryptedBytes, appURL); err != nil {
+		t.Fatal("failed to insert oidc config")
 	}
 
 }

@@ -1,8 +1,11 @@
 package app
 
 import (
+	"context"
+	"errors"
 	"ez2boot/internal/config"
 	"ez2boot/internal/db"
+	"ez2boot/internal/shared"
 	"ez2boot/internal/worker"
 	"log/slog"
 	"net/http"
@@ -26,6 +29,13 @@ func NewApp(version string, buildDate string, cfg *config.Config, repo *db.Repos
 	}
 
 	cfg.SetupMode = !hasUsers
+
+	// Initialise OIDC provider if configured
+	if err := services.OidcService.InitProvider(context.Background()); err != nil {
+		if !errors.Is(err, shared.ErrOIDCConfigNotFound) {
+			logger.Warn("OIDC provider initialisation failed, SSO login will be unavailable", "domain", "app", "error", err)
+		}
+	}
 
 	router := BuildRouter(cfg, mw, handlers)
 

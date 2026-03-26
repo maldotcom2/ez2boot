@@ -4,6 +4,7 @@ import (
 	"ez2boot/internal/audit"
 	"ez2boot/internal/auth"
 	"ez2boot/internal/auth/ldap"
+	"ez2boot/internal/auth/oidc"
 	"ez2boot/internal/config"
 	"ez2boot/internal/db"
 	"ez2boot/internal/encryption"
@@ -55,6 +56,11 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 	ldapService := ldap.NewService(ldapRepo, userService, auditService, encryptor, logger)
 	ldapHandler := ldap.NewHandler(ldapService, logger)
 
+	// OIDC
+	oidcRepo := oidc.NewRepository(repo)
+	oidcService := oidc.NewService(oidcRepo, userService, auditService, encryptor, logger)
+	oidcHandler := oidc.NewHandler(oidcService, cfg, version, logger)
+
 	// Auth
 	authService := auth.NewService(userService, ldapService, cfg, auditService, logger)
 	authHandler := auth.NewHandler(authService, cfg, logger)
@@ -71,7 +77,7 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 
 	// Encryption
 	encryptionRepo := encryption.NewRepository(repo)
-	encryptionService := encryption.NewService(encryptionRepo, notificationService, ldapService, auditService, encryptor, logger)
+	encryptionService := encryption.NewService(encryptionRepo, notificationService, ldapService, oidcService, auditService, encryptor, logger)
 	encryptionHandler := encryption.NewHandler(encryptionService, logger)
 
 	// Util
@@ -118,6 +124,7 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 		AuthHandler:         authHandler,
 		UserHandler:         userHandler,
 		LdapHandler:         ldapHandler,
+		OidcHandler:         oidcHandler,
 		AuditHandler:        auditHandler,
 		ServerHandler:       serverHandler,
 		SessionHandler:      sessionHandler,
@@ -133,6 +140,7 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 		AuthService:         authService,
 		UserService:         userService,
 		LdapService:         ldapService,
+		OidcService:         oidcService,
 		ServerService:       serverService,
 		SessionService:      sessionService,
 		NotificationService: notificationService,

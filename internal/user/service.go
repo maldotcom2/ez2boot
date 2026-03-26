@@ -138,9 +138,10 @@ func (s *Service) createUser(req CreateUserRequest, ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) CreateLdapUser(email string, ctx context.Context) error {
+// Returns userID of created user
+func (s *Service) CreateExternalUser(email string, identityProvider string, ctx context.Context) (int64, error) {
 	if err := s.validateEmail(email); err != nil {
-		return err
+		return 0, err
 	}
 
 	user := CreateUser{
@@ -150,29 +151,29 @@ func (s *Service) CreateLdapUser(email string, ctx context.Context) error {
 		IsAdmin:          false,
 		APIEnabled:       false,
 		UIEnabled:        true,
-		IdentityProvider: "ldap",
+		IdentityProvider: identityProvider,
 	}
 
 	targetUserID, err := s.Repo.createUser(user)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	actorUserID, actorEmail := ctxutil.GetActor(ctx)
 	s.Audit.Log(audit.Event{
 		ActorUserID:  actorUserID,
-		ActorEmail:   actorEmail,
+		ActorEmail:   actorEmail, // Users are created on first time login
 		TargetUserID: targetUserID,
 		TargetEmail:  email,
 		Action:       "create",
 		Resource:     "user",
 		Success:      true,
 		Metadata: map[string]any{
-			"user type": "ldap",
+			"user type": identityProvider,
 		},
 	})
 
-	return nil
+	return targetUserID, nil
 }
 
 func (s *Service) deleteUser(targetUserID int64, ctx context.Context) error {
@@ -265,12 +266,12 @@ var dummyHash = "$argon2id$v=19$m=131072,t=4,p=1$fCSLCAorTbr9UeFcmUW3Jg$q8wabA06
 
 func (s *Service) AuthenticateUser(email string, password string) (shared.AuthResult, error) {
 	user, err := s.Repo.getCredentialsByEmail(email)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+	if err != nil && !errors.Is(err, shared.ErrUserNotFound) {
 		return shared.AuthResult{}, err // generic error other than no user
 	}
 
 	// User not found
-	if errors.Is(err, sql.ErrNoRows) {
+	if errors.Is(err, shared.ErrUserNotFound) {
 		user.PasswordHash = &dummyHash // dummy
 		user.IdentityProvider = "local"
 		user.UserID = 0

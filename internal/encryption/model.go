@@ -4,6 +4,7 @@ import (
 	"crypto/cipher"
 	"ez2boot/internal/audit"
 	"ez2boot/internal/auth/ldap"
+	"ez2boot/internal/auth/oidc"
 	"ez2boot/internal/db"
 	"ez2boot/internal/notification"
 	"log/slog"
@@ -22,6 +23,7 @@ type Service struct {
 	Repo                *Repository
 	NotificationService *notification.Service
 	LdapService         *ldap.Service
+	OidcService         *oidc.Service
 	Audit               *audit.Service
 	Encryptor           Encryptor
 	Logger              *slog.Logger

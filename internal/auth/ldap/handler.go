@@ -80,6 +80,7 @@ func (h *Handler) DeleteLdapConfig() http.HandlerFunc {
 			return
 		}
 
+		h.Logger.Info("Ldap config deleted", "user", email, "domain", "ldap")
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }

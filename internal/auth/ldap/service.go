@@ -13,7 +13,7 @@ import (
 	goldap "github.com/go-ldap/ldap/v3"
 )
 
-// Authenticate user from upn and password, returning AD group membership or err on auth fail
+// Authenticate user from email and password or err on auth fail
 func (s *Service) Authenticate(email string, password string) error {
 	ldapCFG, err := s.getLdapConfigInternal()
 	if err != nil {
@@ -79,7 +79,7 @@ func (s *Service) getLdapConfigInternal() (LdapConfig, error) {
 	}
 
 	// Decrypt password
-	password, err := s.Encryptor.Decrypt([]byte(ldapCFG.EncBindPassword))
+	passwordBytes, err := s.Encryptor.Decrypt([]byte(ldapCFG.EncBindPassword))
 	if err != nil {
 		return LdapConfig{}, err
 	}
@@ -89,7 +89,7 @@ func (s *Service) getLdapConfigInternal() (LdapConfig, error) {
 		Port:          ldapCFG.Port,
 		BaseDN:        ldapCFG.BaseDN,
 		BindDN:        ldapCFG.BindDN,
-		BindPassword:  string(password),
+		BindPassword:  string(passwordBytes),
 		UseSSL:        ldapCFG.UseSSL,
 		SkipTLSVerify: ldapCFG.SkipTLSVerify,
 	}, nil
@@ -241,7 +241,7 @@ func (s *Service) createLdapUser(email string, ctx context.Context) error {
 	}
 
 	// Create user
-	if err := s.UserService.CreateLdapUser(email, ctx); err != nil {
+	if _, err := s.UserService.CreateExternalUser(email, shared.IdentityProviderLDAP, ctx); err != nil {
 		return err
 	}
 

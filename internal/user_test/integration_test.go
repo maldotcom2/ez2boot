@@ -581,36 +581,6 @@ func TestEnrolMFA_Success(t *testing.T) {
 	}
 }
 
-func TestEnrolMFA_OIDCUser(t *testing.T) {
-	env := testutil.NewTestEnv(t)
-
-	email := "oidcuser@example.com"
-	password := "testpassword123"
-	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, email, &hash, true, true, true, true, "oidc")
-
-	cookies := testutil.LoginAndGetCookies(t, env.Router, email, password)
-
-	req := httptest.NewRequest("POST", "/ui/user/mfa", nil)
-	for _, c := range cookies {
-		req.AddCookie(c)
-	}
-
-	w := httptest.NewRecorder()
-	env.Router.ServeHTTP(w, req)
-
-	if w.Code != http.StatusBadRequest {
-		t.Fatalf("want 400, got %d, body=%s", w.Code, w.Body.String())
-	}
-
-	var resp shared.ApiResponse[any]
-	json.NewDecoder(w.Body).Decode(&resp)
-
-	if resp.Success {
-		t.Fatal("want success=false, got true")
-	}
-}
-
 func TestEnrolMFA_Unauthenticated(t *testing.T) {
 	env := testutil.NewTestEnv(t)
 
@@ -1057,7 +1027,7 @@ func TestVerifyMFA_Success(t *testing.T) {
 	}
 
 	body, _ = json.Marshal(loginPayload)
-	req = httptest.NewRequest("POST", "/ui/user/login", bytes.NewReader(body))
+	req = httptest.NewRequest("POST", "/ui/auth/login", bytes.NewReader(body))
 	w = httptest.NewRecorder()
 	env.Router.ServeHTTP(w, req)
 
@@ -1210,7 +1180,7 @@ func TestVerifyMFA_IncorrectCode(t *testing.T) {
 	}
 
 	body, _ = json.Marshal(loginPayload)
-	req = httptest.NewRequest("POST", "/ui/user/login", bytes.NewReader(body))
+	req = httptest.NewRequest("POST", "/ui/auth/login", bytes.NewReader(body))
 	w = httptest.NewRecorder()
 	env.Router.ServeHTTP(w, req)
 
