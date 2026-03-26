@@ -109,6 +109,13 @@ func (h *Handler) SearchUser() http.HandlerFunc {
 					Success: false,
 					Error:   "Ldap User not found",
 				}
+			case errors.Is(err, shared.ErrLDAPConfigNotFound):
+				h.Logger.Warn("Search failed", "user", email, "domain", "ldap", "error", err)
+				w.WriteHeader(http.StatusServiceUnavailable)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "Ldap is not configured",
+				}
 			default:
 				h.Logger.Error("Failed to search ldap", "user", email, "domain", "ldap", "error", err)
 				w.WriteHeader(http.StatusInternalServerError)

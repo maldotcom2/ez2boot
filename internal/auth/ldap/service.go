@@ -61,7 +61,6 @@ func (s *Service) getLdapConfig() (LdapConfigResponse, error) {
 		Port:          ldapCFG.Port,
 		BaseDN:        ldapCFG.BaseDN,
 		BindDN:        ldapCFG.BindDN,
-		BindPassword:  "",
 		UseSSL:        ldapCFG.UseSSL,
 		SkipTLSVerify: ldapCFG.SkipTLSVerify,
 	}, nil
@@ -72,7 +71,7 @@ func (s *Service) getLdapConfigInternal() (LdapConfig, error) {
 	ldapCFG, err := s.Repo.getLdapConfig()
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return LdapConfig{}, nil
+			return LdapConfig{}, shared.ErrLDAPConfigNotFound
 		}
 
 		return LdapConfig{}, err
