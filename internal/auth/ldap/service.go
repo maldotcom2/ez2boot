@@ -72,7 +72,7 @@ func (s *Service) getLdapConfigInternal() (LdapConfig, error) {
 	ldapCFG, err := s.Repo.getLdapConfig()
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return LdapConfig{}, nil
+			return LdapConfig{}, shared.ErrLDAPConfigNotFound
 		}
 
 		return LdapConfig{}, err

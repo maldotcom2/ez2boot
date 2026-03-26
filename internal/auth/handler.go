@@ -74,6 +74,13 @@ func (h *Handler) Login() http.HandlerFunc {
 					Success: false,
 					Error:   "Failed to login",
 				}
+			case errors.Is(err, shared.ErrLDAPConfigNotFound):
+				h.Logger.Warn("Login failed", "user", u.Email, "domain", "user", "error", err)
+				w.WriteHeader(http.StatusServiceUnavailable)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "Failed to login",
+				}
 			default:
 				h.Logger.Error("Login failed", "user", u.Email, "domain", "user", "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
