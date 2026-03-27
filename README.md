@@ -20,6 +20,7 @@ Currently, AWS and Azure is supported, with a plan to support Google Cloud in th
 - Comprehensive, immutable audit logging, showing who did what, and when.
 - Customisable user notifications channels, allowing users to opt into automated notifications about their session states.
 - Dual-auth. Session-based UI for interactive use, and basic auth API for programmatic control.
+- Choice of local user accounts, LDAP/LDAPS for local AD, or OIDC for SSO with Microsoft Entra ID.
 - Operations teams can tweak the app's behaviour through environment variables.
 
 <br></br>
