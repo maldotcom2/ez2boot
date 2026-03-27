@@ -17,123 +17,21 @@ import (
 	"github.com/pquerna/otp/totp"
 )
 
-// User login
-func (s *Service) login(u UserLogin) (token string, mfaRequired bool, err error) {
-	var userID int64
-
-	defer func() {
-		// MFA succcess still pending
-		if mfaRequired {
-			return
-		}
-
-		var reason string
-		if err != nil {
-			reason = err.Error()
-		}
-
-		s.Audit.Log(audit.Event{
-			ActorUserID: userID,
-			ActorEmail:  u.Email,
-			Action:      "login",
-			Resource:    "user",
-			Success:     err == nil,
-			Reason:      reason,
-		})
-	}()
-
-	// Input validation
-	if u.Email == "" || u.Password == "" {
-		return "", false, shared.ErrEmailOrPasswordMissing
-	}
-
-	// Authenticate user
-	userID, authenticated, authErr := s.AuthenticateUser(u.Email, u.Password)
-	if authErr != nil && authErr != shared.ErrUserNotFound {
-		return "", false, authErr
-	}
-
-	// User not found
-	if authErr == shared.ErrUserNotFound {
-		return "", false, shared.ErrUserNotFound
-	}
-
-	// Found but not authenticated
-	if !authenticated {
-		return "", false, shared.ErrAuthenticationFailed
-	}
-
-	// User exists and is authenticated
-	user, err := s.GetUserAuthorisation(userID)
-	if err != nil {
-		return "", false, err
-	}
-
-	if !user.IsActive {
-		return "", false, shared.ErrUserInactive
-	}
-
-	if !user.UIEnabled {
-		return "", false, shared.ErrUserNotAuthorised
-	}
-
-	// Check if MFA is required
-	if user.MFAConfirmed {
-		token, err = util.GenerateRandomString(32)
-		if err != nil {
-			return "", false, err
-		}
-		hash := util.HashToken(token)
-		expiry := time.Now().Add(3 * time.Minute).Unix()
-		if err = s.Repo.createMFAPendingSession(hash, expiry, userID); err != nil {
-			return "", false, err
-		}
-		return token, true, nil
-	}
-
-	// Create user session
-	token, err = s.createSession(userID)
-
-	return token, false, nil
+func (s *Service) CreateUserSession(hash string, expiry int64, userID int64) error {
+	return s.Repo.createUserSession(hash, expiry, userID)
 }
 
-func (s *Service) logout(token string, ctx context.Context) error {
-	// Hash supplied session token
-	hash := util.HashToken(token)
-
-	if err := s.Repo.deleteUserSession(hash); err != nil {
-		return err
-	}
-
-	userID, email := ctxutil.GetActor(ctx)
-	s.Audit.Log(audit.Event{
-		ActorUserID: userID,
-		ActorEmail:  email,
-		Action:      "logout",
-		Resource:    "user",
-		Success:     true,
-	})
-
-	return nil
+func (s *Service) DeleteUserSession(hash string) error {
+	return s.Repo.deleteUserSession(hash)
 }
 
-func (s *Service) getUsers() ([]User, error) {
-	users, err := s.Repo.getUsers()
-	if err != nil {
-		return nil, err
-	}
-
-	return users, nil
+func (s *Service) getUsers() ([]GetUsersResponse, error) {
+	return s.Repo.getUsers()
 }
 
 // Get a user's authorisation, eg admin, API access, etc
 func (s *Service) GetUserAuthorisation(userID int64) (UserAuthResponse, error) {
-	user, err := s.Repo.getUserAuthorisation(userID)
-	if err != nil {
-		return UserAuthResponse{}, nil
-	}
-
-	return user, nil
+	return s.Repo.getUserAuthorisation(userID)
 }
 
 func (s *Service) updateUserAuthorisation(users []UpdateUserRequest, ctx context.Context) error {
@@ -153,18 +51,27 @@ func (s *Service) updateUserAuthorisation(users []UpdateUserRequest, ctx context
 			return shared.ErrCannotModifyOwnAuth
 		}
 
+		user, err := s.GetCredentialsByUserID(u.UserID)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		if user.IdentityProvider != "local" && u.APIEnabled {
+			tx.Rollback()
+			return shared.ErrAPIAccessNotSupported
+		}
+
 		if err := s.Repo.updateUserAuthorisation(tx, u); err != nil {
 			tx.Rollback()
 			return err
 		}
 
-		targetEmail, _ := s.GetEmailFromUserID(u.UserID)
-
 		s.Audit.LogTx(tx, audit.Event{
 			ActorUserID:  currentUserID,
 			ActorEmail:   currentUserEmail,
 			TargetUserID: u.UserID,
-			TargetEmail:  targetEmail,
+			TargetEmail:  user.Email,
 			Action:       "update authorisation",
 			Resource:     "user",
 			Success:      true,
@@ -200,13 +107,13 @@ func (s *Service) createUser(req CreateUserRequest, ctx context.Context) error {
 
 	// Don't transport password
 	user := CreateUser{
-		UserID:       req.UserID,
-		Email:        req.Email,
-		PasswordHash: passwordHash,
-		IsActive:     req.IsActive,
-		IsAdmin:      req.IsAdmin,
-		APIEnabled:   req.APIEnabled,
-		UIEnabled:    req.UIEnabled,
+		Email:            req.Email,
+		PasswordHash:     &passwordHash,
+		IsActive:         req.IsActive,
+		IsAdmin:          req.IsAdmin,
+		APIEnabled:       req.APIEnabled,
+		UIEnabled:        req.UIEnabled,
+		IdentityProvider: "local",
 	}
 
 	targetUserID, err := s.Repo.createUser(user)
@@ -223,9 +130,53 @@ func (s *Service) createUser(req CreateUserRequest, ctx context.Context) error {
 		Action:       "create",
 		Resource:     "user",
 		Success:      true,
+		Metadata: map[string]any{
+			"user type": "local",
+		},
 	})
 
 	return nil
+}
+
+// Returns userID of created user
+func (s *Service) CreateExternalUser(email string, identityProvider string, ctx context.Context) (int64, error) {
+	actorUserID, actorEmail := ctxutil.GetActor(ctx)
+
+	if err := s.validateEmail(email); err != nil {
+		return 0, err
+	}
+
+	user := CreateUser{
+		Email:            email,
+		PasswordHash:     nil,
+		IsActive:         true,
+		IsAdmin:          false,
+		APIEnabled:       false,
+		UIEnabled:        true,
+		IdentityProvider: identityProvider,
+	}
+
+	targetUserID, err := s.Repo.createUser(user)
+	if err != nil {
+		return 0, err
+	}
+
+	s.Audit.Log(audit.Event{
+		ActorUserID:  actorUserID,
+		ActorEmail:   actorEmail, // Users are created on first time login
+		TargetUserID: targetUserID,
+		TargetEmail:  email,
+		Action:       "create",
+		Resource:     "user",
+		Success:      true,
+		Metadata: map[string]any{
+			"user type": identityProvider,
+		},
+	})
+
+	// Log here - this is a service called from internally only
+	s.Logger.Info("New user created", "user", actorEmail, "domain", "user", "target_user", email)
+	return targetUserID, nil
 }
 
 func (s *Service) deleteUser(targetUserID int64, ctx context.Context) error {
@@ -273,17 +224,27 @@ func (s *Service) changePassword(req ChangePasswordRequest, ctx context.Context)
 		})
 	}()
 
+	user, err := s.GetCredentialsByEmail(actorEmail)
+	if err != nil {
+		return err
+	}
+
+	// Only local users can change password
+	if user.IdentityProvider != "local" {
+		return shared.ErrPasswordChangeNotSupported
+	}
+
 	if req.CurrentPassword == "" || req.NewPassword == "" {
 		return shared.ErrCurrentOrNewPasswordMissing
 	}
 
 	// Check current password
-	_, isCurrentPassword, err := s.AuthenticateUser(actorEmail, req.CurrentPassword)
+	auth, err := s.AuthenticateUser(actorEmail, req.CurrentPassword)
 	if err != nil {
 		return err
 	}
 
-	if !isCurrentPassword {
+	if !auth.Authenticated {
 		return shared.ErrAuthenticationFailed
 	}
 
@@ -303,34 +264,61 @@ func (s *Service) changePassword(req ChangePasswordRequest, ctx context.Context)
 	return nil
 }
 
-// Authenticate user with even time
-func (s *Service) AuthenticateUser(email string, password string) (int64, bool, error) {
-	id, hash, err := s.Repo.getUserIDHashByEmail(email)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return 0, false, err // generic error other than no user
+// Authenticate user with even time, returns userID, IDP, match
+var dummyHash = "$argon2id$v=19$m=131072,t=4,p=1$fCSLCAorTbr9UeFcmUW3Jg$q8wabA06xx+zN8j80pwmxTMk0b/T88R+M3ycbFWZPlc"
+
+func (s *Service) AuthenticateUser(email string, password string) (shared.AuthResult, error) {
+	user, err := s.Repo.getCredentialsByEmail(email)
+	if err != nil && !errors.Is(err, shared.ErrUserNotFound) {
+		return shared.AuthResult{}, err // generic error other than no user
 	}
 
-	if errors.Is(err, sql.ErrNoRows) {
-		hash = "$argon2id$v=19$m=131072,t=4,p=1$fCSLCAorTbr9UeFcmUW3Jg$q8wabA06xx+zN8j80pwmxTMk0b/T88R+M3ycbFWZPlc" // dummy
-		id = 0
+	// User not found
+	if errors.Is(err, shared.ErrUserNotFound) {
+		user.PasswordHash = &dummyHash // dummy
+		user.IdentityProvider = "local"
+		user.UserID = 0
 	}
 
-	match, err := argon2id.ComparePasswordAndHash(password, hash)
+	// User found, has external IDP
+	if user.IdentityProvider != "local" {
+		argon2id.ComparePasswordAndHash(password, dummyHash)
+		return shared.AuthResult{UserID: user.UserID, IdentityProvider: user.IdentityProvider, Authenticated: false}, nil
+	}
+
+	// User exists and is local, but no password - defensive
+	if user.PasswordHash == nil || *user.PasswordHash == "" {
+		return shared.AuthResult{UserID: user.UserID, IdentityProvider: user.IdentityProvider, Authenticated: false}, shared.ErrNoLocalPassword
+	}
+
+	match, err := argon2id.ComparePasswordAndHash(password, *user.PasswordHash)
 	if err != nil {
-		return 0, false, err
+		return shared.AuthResult{UserID: user.UserID, IdentityProvider: user.IdentityProvider, Authenticated: false}, err
 	}
 
-	if id == 0 { // User doesn't exist
-		return 0, false, shared.ErrUserNotFound
+	if user.UserID == 0 { // User doesn't exist
+		return shared.AuthResult{UserID: user.UserID, IdentityProvider: user.IdentityProvider, Authenticated: false}, shared.ErrUserNotFound
 	}
 
 	if match {
-		if err = s.Repo.updateLastLogin(id); err != nil {
-			return 0, false, err
+		if err = s.Repo.updateLastLogin(user.UserID); err != nil {
+			return shared.AuthResult{UserID: user.UserID, IdentityProvider: user.IdentityProvider, Authenticated: false}, err
 		}
 	}
 
-	return id, match, nil
+	return shared.AuthResult{UserID: user.UserID, IdentityProvider: user.IdentityProvider, Authenticated: match}, nil
+}
+
+func (s *Service) GetCredentialsByEmail(email string) (shared.UserCredentials, error) {
+	return s.Repo.getCredentialsByEmail(email)
+}
+
+func (s *Service) GetCredentialsByUserID(userID int64) (shared.UserCredentials, error) {
+	return s.Repo.getCredentialsByUserID(userID)
+}
+
+func (s *Service) UpdateLastLogin(userID int64) error {
+	return s.Repo.updateLastLogin(userID)
 }
 
 func (s *Service) GetSessionStatus(token string) (UserSessionResponse, error) {
@@ -371,12 +359,7 @@ func (s *Service) ProcessUserSessions() error {
 }
 
 func (s *Service) GetEmailFromUserID(userID int64) (string, error) {
-	email, err := s.Repo.getEmailFromUserID(userID)
-	if err != nil {
-		return "", err
-	}
-
-	return email, nil
+	return s.Repo.getEmailFromUserID(userID)
 }
 
 func (s *Service) enrolMFA(userID int64, email string) (_ []byte, err error) {
@@ -606,13 +589,17 @@ func (s *Service) verifyMFA(req MFARequest, pendingToken string) (_ string, _ st
 	}
 
 	// Create user session
-	token, err := s.createSession(m.UserID)
+	token, err := s.CreateSession(m.UserID)
 
 	return token, m.Email, nil
 }
 
+func (s *Service) CreateMFAPendingSession(tokenHash string, expiry int64, userID int64) error {
+	return s.Repo.createMFAPendingSession(tokenHash, expiry, userID)
+}
+
 // Create user session
-func (s *Service) createSession(userID int64) (string, error) {
+func (s *Service) CreateSession(userID int64) (string, error) {
 	token, err := util.GenerateRandomString(32)
 	if err != nil {
 		return "", err

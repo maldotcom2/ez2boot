@@ -2,6 +2,9 @@ package app
 
 import (
 	"ez2boot/internal/audit"
+	"ez2boot/internal/auth"
+	"ez2boot/internal/auth/ldap"
+	"ez2boot/internal/auth/oidc"
 	"ez2boot/internal/config"
 	"ez2boot/internal/db"
 	"ez2boot/internal/encryption"
@@ -48,6 +51,20 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 	userService := user.NewService(userRepo, cfg, auditService, logger)
 	userHandler := user.NewHandler(userService, cfg, logger)
 
+	// LDAP
+	ldapRepo := ldap.NewRepository(repo)
+	ldapService := ldap.NewService(ldapRepo, userService, auditService, encryptor, logger)
+	ldapHandler := ldap.NewHandler(ldapService, logger)
+
+	// OIDC
+	oidcRepo := oidc.NewRepository(repo)
+	oidcService := oidc.NewService(oidcRepo, userService, auditService, encryptor, logger)
+	oidcHandler := oidc.NewHandler(oidcService, cfg, version, logger)
+
+	// Auth
+	authService := auth.NewService(userService, ldapService, cfg, auditService, logger)
+	authHandler := auth.NewHandler(authService, cfg, logger)
+
 	// Notification
 	notificationRepo := notification.NewRepository(repo)
 	notificationService := notification.NewService(notificationRepo, auditService, encryptor, logger)
@@ -57,6 +74,11 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 	sessionRepo := session.NewRepository(repo)
 	sessionService := session.NewService(sessionRepo, notificationService, userService, auditService, logger)
 	sessionHandler := session.NewHandler(sessionService, logger)
+
+	// Encryption
+	encryptionRepo := encryption.NewRepository(repo)
+	encryptionService := encryption.NewService(encryptionRepo, notificationService, ldapService, oidcService, auditService, encryptor, logger)
+	encryptionHandler := encryption.NewHandler(encryptionService, logger)
 
 	// Util
 	utilRepo := util.NewRepository(repo)
@@ -99,19 +121,26 @@ func InitServices(version string, buildDate string, cfg *config.Config, repo *db
 	wkr := worker.NewWorker(serverService, sessionService, userService, notificationService, utilService, cfg, logger)
 
 	handlers := &Handlers{
-		AuditHandler:        auditHandler,
+		AuthHandler:         authHandler,
 		UserHandler:         userHandler,
+		LdapHandler:         ldapHandler,
+		OidcHandler:         oidcHandler,
+		AuditHandler:        auditHandler,
 		ServerHandler:       serverHandler,
 		SessionHandler:      sessionHandler,
 		NotificationHandler: notificationHandler,
 		UtilHandler:         utilHandler,
+		EncryptionHandler:   encryptionHandler,
 		TeamsHandler:        teamsHandler,
 		EmailHandler:        emailHandler,
 		TelegramHandler:     telegramHandler,
 	}
 
 	services := &Services{
+		AuthService:         authService,
 		UserService:         userService,
+		LdapService:         ldapService,
+		OidcService:         oidcService,
 		ServerService:       serverService,
 		SessionService:      sessionService,
 		NotificationService: notificationService,

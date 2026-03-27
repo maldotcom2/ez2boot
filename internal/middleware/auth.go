@@ -23,7 +23,7 @@ func (m *Middleware) BasicAuthMiddleware() mux.MiddlewareFunc {
 				return
 			}
 
-			userID, authenticated, err := m.UserService.AuthenticateUser(email, password)
+			auth, err := m.UserService.AuthenticateUser(email, password)
 			if err != nil {
 				if errors.Is(err, shared.ErrUserNotFound) {
 					m.Logger.Warn("Attempted login for user which does not exist", "user", email, "domain", "middleware", "path", r.URL.Path, "source_ip", r.RemoteAddr)
@@ -37,7 +37,15 @@ func (m *Middleware) BasicAuthMiddleware() mux.MiddlewareFunc {
 				return
 			}
 
-			if !authenticated {
+			// External auth users are not supported
+			if auth.IdentityProvider != "local" {
+				m.Logger.Warn("Basic auth is only supported for local users", "user", email, "domain", "middleware", "path", r.URL.Path, "source_ip", r.RemoteAddr)
+				w.WriteHeader(http.StatusForbidden)
+				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Basic auth is only supported for local users"})
+				return
+			}
+
+			if !auth.Authenticated {
 				m.Logger.Warn("Basic auth login attempt failed", "user", email, "domain", "middleware", "path", r.URL.Path, "source_ip", r.RemoteAddr)
 				w.WriteHeader(http.StatusUnauthorized)
 				json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Password incorrect or user not found"})
@@ -45,7 +53,7 @@ func (m *Middleware) BasicAuthMiddleware() mux.MiddlewareFunc {
 			}
 
 			// Get user permissions
-			u, err := m.UserService.GetUserAuthorisation(userID)
+			u, err := m.UserService.GetUserAuthorisation(auth.UserID)
 			if err != nil {
 				m.Logger.Error("Error while fetching user authorisation", "user", email, "domain", "middleware", "path", r.URL.Path, "source_ip", r.RemoteAddr, "error", err)
 				w.WriteHeader(http.StatusInternalServerError)

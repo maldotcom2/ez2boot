@@ -1,12 +1,15 @@
 <template>
   <aside class="menu">
     <button @click="showUserNotifications">Notifications</button>
-    <button @click="showChangePassword">Change Password</button>
-    <button @click="showMFA">MFA</button>
+    <button v-if="user.identityProvider === 'local'" @click="showChangePassword">Change Password</button>
+    <button v-if="user.identityProvider !== 'oidc'" @click="showMFA">MFA</button>
   </aside>
 </template>
 
 <script setup>
+import { useUserStore } from '@/stores/user'
+
+const user = useUserStore()
 
 // Props
 const props = defineProps({

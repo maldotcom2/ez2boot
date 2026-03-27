@@ -25,9 +25,13 @@ func SetupBackendRoutes(
 	publicRouter.Use(mw.LimitMiddleware)
 	publicRouter.Use(mw.JsonContentTypeMiddleware)
 
-	publicRouter.HandleFunc("/user/login", handlers.UserHandler.Login()).Methods("POST")
+	publicRouter.HandleFunc("/auth/login", handlers.AuthHandler.Login()).Methods("POST")
+	publicRouter.HandleFunc("/auth/oidc/login", handlers.OidcHandler.Login()).Methods("GET")
+	publicRouter.HandleFunc("/auth/oidc/callback", handlers.OidcHandler.Callback()).Methods("GET")
+	publicRouter.HandleFunc("/auth/oidc/status", handlers.OidcHandler.HasOidc()).Methods("GET")
 	publicRouter.HandleFunc("/user/mfa/verify", handlers.UserHandler.VerifyMFA()).Methods("POST")
 	publicRouter.HandleFunc("/mode", handlers.UserHandler.GetMode()).Methods("GET")
+
 	if cfg.SetupMode {
 		publicRouter.HandleFunc("/setup", handlers.UserHandler.CreateFirstTimeUser()).Methods("POST")
 	}
@@ -42,13 +46,25 @@ func SetupBackendRoutes(
 	adminUIRouter.Use(mw.AdminMiddleware)
 
 	// User
+	adminUIRouter.HandleFunc("/users", handlers.UserHandler.GetUsers()).Methods("GET")
 	adminUIRouter.HandleFunc("/user", handlers.UserHandler.CreateUser()).Methods("POST")
+	adminUIRouter.HandleFunc("/user/ldap", handlers.LdapHandler.CreateLdapUser()).Methods("POST")
 	adminUIRouter.HandleFunc("/user", handlers.UserHandler.DeleteUser()).Methods("DELETE")
 	adminUIRouter.HandleFunc("/user/auth", handlers.UserHandler.UpdateUserAuthorisation()).Methods("PUT")
-	// Notification
-	adminUIRouter.HandleFunc("/notifications/passphrase", handlers.NotificationHandler.RotateEncryptionPhrase()).Methods("PUT")
+	// Encryption
+	adminUIRouter.HandleFunc("/encryption/passphrase", handlers.EncryptionHandler.RotateEncryptionPhrase()).Methods("PUT")
 	// Audit
 	adminUIRouter.HandleFunc("/audit/events", handlers.AuditHandler.GetAuditEvents()).Methods("GET")
+	/// Ldap
+	adminUIRouter.HandleFunc("/auth/ldap", handlers.LdapHandler.GetLdapConfig()).Methods("GET")
+	adminUIRouter.HandleFunc("/auth/ldap", handlers.LdapHandler.SetLdapConfig()).Methods("POST")
+	adminUIRouter.HandleFunc("/auth/ldap", handlers.LdapHandler.DeleteLdapConfig()).Methods("DELETE")
+	adminUIRouter.HandleFunc("/auth/ldap/users/search", handlers.LdapHandler.SearchUser()).Methods("POST")
+	// Oidc
+	adminUIRouter.HandleFunc("/auth/oidc", handlers.OidcHandler.GetOidcConfig()).Methods("GET")
+	adminUIRouter.HandleFunc("/auth/oidc", handlers.OidcHandler.SetOidcConfig()).Methods("POST")
+	adminUIRouter.HandleFunc("/auth/oidc", handlers.OidcHandler.DeleteOidcConfig()).Methods("DELETE")
+	adminUIRouter.HandleFunc("/auth/oidc/test", handlers.OidcHandler.TestOidcConnection()).Methods("POST")
 
 	/////////////////////////// UI subrouter and routes //////////////////////////////////
 
@@ -63,11 +79,10 @@ func SetupBackendRoutes(
 	uiRouter.HandleFunc("/session", handlers.SessionHandler.NewServerSession()).Methods("POST")
 	uiRouter.HandleFunc("/session", handlers.SessionHandler.UpdateServerSession()).Methods("PUT")
 	//// Users
-	uiRouter.HandleFunc("/users", handlers.UserHandler.GetUsers()).Methods("GET")
 	uiRouter.HandleFunc("/user/session", handlers.UserHandler.CheckSession()).Methods("GET") // UI specific
 	uiRouter.HandleFunc("/user/auth", handlers.UserHandler.GetUserAuthorisation()).Methods("GET")
 	uiRouter.HandleFunc("/user/password", handlers.UserHandler.ChangePassword()).Methods("PUT")
-	uiRouter.HandleFunc("/user/logout", handlers.UserHandler.Logout()).Methods("POST")          // UI specific
+	uiRouter.HandleFunc("/user/logout", handlers.AuthHandler.Logout()).Methods("POST")          // UI specific
 	uiRouter.HandleFunc("/user/mfa", handlers.UserHandler.EnrolMFA()).Methods("POST")           // UI specific
 	uiRouter.HandleFunc("/user/mfa/confirm", handlers.UserHandler.ConfirmMFA()).Methods("POST") // UI specific
 	uiRouter.HandleFunc("/user/mfa/delete", handlers.UserHandler.DeleteMFA()).Methods("POST")   // UI specific - Post to allow body
@@ -90,13 +105,20 @@ func SetupBackendRoutes(
 	adminAPIRouter.Use(mw.AdminMiddleware)
 
 	// User
+	adminAPIRouter.HandleFunc("/users", handlers.UserHandler.GetUsers()).Methods("GET")
 	adminAPIRouter.HandleFunc("/user", handlers.UserHandler.CreateUser()).Methods("POST")
+	adminAPIRouter.HandleFunc("/user/ldap", handlers.LdapHandler.CreateLdapUser()).Methods("POST")
 	adminAPIRouter.HandleFunc("/user", handlers.UserHandler.DeleteUser()).Methods("DELETE")
 	adminAPIRouter.HandleFunc("/user/auth", handlers.UserHandler.UpdateUserAuthorisation()).Methods("PUT")
-	// Notification
-	adminAPIRouter.HandleFunc("/notifications/passphrase", handlers.NotificationHandler.RotateEncryptionPhrase()).Methods("PUT")
+	// Encryption
+	adminUIRouter.HandleFunc("/encryption/passphrase", handlers.EncryptionHandler.RotateEncryptionPhrase()).Methods("PUT")
 	// Audit
 	adminAPIRouter.HandleFunc("/audit/events", handlers.AuditHandler.GetAuditEvents()).Methods("GET")
+	/// Auth
+	adminAPIRouter.HandleFunc("/auth/ldap", handlers.LdapHandler.GetLdapConfig()).Methods("GET")
+	adminAPIRouter.HandleFunc("/auth/ldap", handlers.LdapHandler.SetLdapConfig()).Methods("POST")
+	adminAPIRouter.HandleFunc("/auth/ldap", handlers.LdapHandler.DeleteLdapConfig()).Methods("DELETE")
+	adminAPIRouter.HandleFunc("/auth/ldap/users/search", handlers.LdapHandler.SearchUser()).Methods("POST")
 
 	/////////////////////////// API subrouter and routes /////////////////////////////////
 
@@ -110,7 +132,6 @@ func SetupBackendRoutes(
 	apiRouter.HandleFunc("/session", handlers.SessionHandler.NewServerSession()).Methods("POST")
 	apiRouter.HandleFunc("/session", handlers.SessionHandler.UpdateServerSession()).Methods("PUT")
 	//// Users
-	apiRouter.HandleFunc("/users", handlers.UserHandler.GetUsers()).Methods("GET")
 	apiRouter.HandleFunc("/user/auth", handlers.UserHandler.GetUserAuthorisation()).Methods("GET")
 	apiRouter.HandleFunc("/user/password", handlers.UserHandler.ChangePassword()).Methods("PUT")
 	/// Notification channels

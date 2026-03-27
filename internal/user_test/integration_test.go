@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"ez2boot/internal/auth"
 	"ez2boot/internal/shared"
 	"ez2boot/internal/testutil"
 	"ez2boot/internal/user"
@@ -18,165 +19,6 @@ import (
 	"github.com/pquerna/otp/totp"
 )
 
-func TestLogin_Success(t *testing.T) {
-	// Create a test env
-	env := testutil.NewTestEnv(t)
-
-	// Create user
-	email := "example@example.com"
-	password := "testpassword123"
-	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, email, hash, true, false, true, true, "local")
-
-	// Helper confirms login
-	_ = testutil.LoginAndGetCookies(t, env.Router, email, password)
-}
-
-func TestLogin_WrongPassword_ReturnsUnauth(t *testing.T) {
-	// Create a test env
-	env := testutil.NewTestEnv(t)
-
-	// Create user
-	email := "example@example.com"
-
-	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, email, hash, true, false, true, true, "local")
-
-	// Attempt login with wrong password
-	loginPayload := user.UserLogin{
-		Email:    email,
-		Password: "badpassword123",
-	}
-
-	loginBody, _ := json.Marshal(loginPayload)
-	req := httptest.NewRequest("POST", "/ui/user/login", bytes.NewReader(loginBody))
-
-	// Record the response
-	w := httptest.NewRecorder()
-	env.Router.ServeHTTP(w, req)
-
-	// Expect 401 Unauthorized
-	if w.Code != http.StatusUnauthorized {
-		t.Fatalf("want 401, got %d, body=%s", w.Code, w.Body.String())
-	}
-
-	// Expect no session cookies to be set
-	cookies := w.Result().Cookies()
-	if len(cookies) != 0 {
-		t.Fatalf("want no cookies, got %d cookies", len(cookies))
-	}
-}
-
-func TestLogin_Inactive_ReturnsForbidden(t *testing.T) {
-	// Create a test env
-	env := testutil.NewTestEnv(t)
-
-	// Create user
-	email := "example@example.com"
-
-	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, email, hash, false, false, true, true, "local")
-
-	// Attempt login
-	loginPayload := user.UserLogin{
-		Email:    email,
-		Password: "testpassword123",
-	}
-
-	loginBody, _ := json.Marshal(loginPayload)
-	req := httptest.NewRequest("POST", "/ui/user/login", bytes.NewReader(loginBody))
-
-	// Record the response
-	w := httptest.NewRecorder()
-	env.Router.ServeHTTP(w, req)
-
-	// Expect 403 Forbidden
-	if w.Code != http.StatusForbidden {
-		t.Fatalf("want 403, got %d, body=%s", w.Code, w.Body.String())
-	}
-
-	// Expect no session cookies to be set
-	cookies := w.Result().Cookies()
-	if len(cookies) != 0 {
-		t.Fatalf("want no cookies, got %d cookies", len(cookies))
-	}
-}
-
-func TestLogin_UIblocked_ReturnsForbidden(t *testing.T) {
-	// Create a test env
-	env := testutil.NewTestEnv(t)
-
-	// Create user
-	email := "example@example.com"
-
-	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, email, hash, true, false, true, false, "local")
-
-	// Attempt login
-	loginPayload := user.UserLogin{
-		Email:    email,
-		Password: "testpassword123",
-	}
-
-	loginBody, _ := json.Marshal(loginPayload)
-	req := httptest.NewRequest("POST", "/ui/user/login", bytes.NewReader(loginBody))
-
-	// Record the response
-	w := httptest.NewRecorder()
-	env.Router.ServeHTTP(w, req)
-
-	// Expect 403 Forbidden
-	if w.Code != http.StatusForbidden {
-		t.Fatalf("want 403, got %d, body=%s", w.Code, w.Body.String())
-	}
-
-	// Expect no session cookies to be set
-	cookies := w.Result().Cookies()
-	if len(cookies) != 0 {
-		t.Fatalf("want no cookies, got %d cookies", len(cookies))
-	}
-}
-
-func TestLogout_Success(t *testing.T) {
-	// Create a test env
-	env := testutil.NewTestEnv(t)
-
-	// Create user
-	email := "example@example.com"
-	password := "testpassword123"
-	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, email, hash, true, false, true, true, "local")
-
-	// Helper confirms login
-	cookies := testutil.LoginAndGetCookies(t, env.Router, email, password)
-
-	// Prepare HTTP request to the real route
-	req := httptest.NewRequest("POST", "/ui/user/logout", nil)
-	for _, c := range cookies {
-		req.AddCookie(c)
-	}
-
-	// Record the response
-	w := httptest.NewRecorder()
-	env.Router.ServeHTTP(w, req)
-
-	// Check HTTP status code
-	if w.Code != http.StatusOK {
-		t.Fatalf("want 200, got %d, body=%s", w.Code, w.Body.String())
-	}
-
-	// Verify DB change
-	var count int64
-	err := env.DB.QueryRow("SELECT COUNT(*) FROM user_sessions WHERE user_id = $1", 1).Scan(&count)
-	if err != nil {
-		t.Fatalf("db query failed: %v", err)
-	}
-
-	if count != 0 {
-		t.Fatalf("row count for user session want: 0, found %d rows", count)
-	}
-}
-
 func TestGetUsers_Success(t *testing.T) {
 	// Create a test env
 	env := testutil.NewTestEnv(t)
@@ -185,9 +27,9 @@ func TestGetUsers_Success(t *testing.T) {
 	adminEmail := "admin@example.com"
 	adminPassword := "testpassword123"
 	adminHash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, adminEmail, adminHash, true, true, true, true, "local")
-	testutil.InsertUser(t, env.DB, "example@example.com", "x", true, false, true, true, "local")
-	testutil.InsertUser(t, env.DB, "example2@example.com", "x", true, false, true, true, "local")
+	testutil.InsertUser(t, env.DB, adminEmail, &adminHash, true, true, true, true, "local")
+	testutil.InsertUser(t, env.DB, "example@example.com", nil, true, false, true, true, "local")
+	testutil.InsertUser(t, env.DB, "example2@example.com", nil, true, false, true, true, "local")
 
 	cookies := testutil.LoginAndGetCookies(t, env.Router, adminEmail, adminPassword)
 
@@ -207,7 +49,7 @@ func TestGetUsers_Success(t *testing.T) {
 	}
 
 	// Decode response
-	var got shared.ApiResponse[[]user.User]
+	var got shared.ApiResponse[[]user.GetUsersResponse]
 	if err := json.Unmarshal(w.Body.Bytes(), &got); err != nil {
 		t.Fatalf("failed to unmarshal response: %v", err)
 	}
@@ -218,35 +60,38 @@ func TestGetUsers_Success(t *testing.T) {
 	}
 
 	// Expected API response
-	want := shared.ApiResponse[[]user.User]{
+	want := shared.ApiResponse[[]user.GetUsersResponse]{
 		Success: true,
-		Data: []user.User{
+		Data: []user.GetUsersResponse{
 			{
-				UserID:     1,
-				Email:      "admin@example.com",
-				IsActive:   true,
-				IsAdmin:    true,
-				APIEnabled: true,
-				UIEnabled:  true,
-				LastLogin:  nil,
+				UserID:           1,
+				Email:            "admin@example.com",
+				IsActive:         true,
+				IsAdmin:          true,
+				APIEnabled:       true,
+				UIEnabled:        true,
+				IdentityProvider: "local",
+				LastLogin:        nil,
 			},
 			{
-				UserID:     2,
-				Email:      "example@example.com",
-				IsActive:   true,
-				IsAdmin:    false,
-				APIEnabled: true,
-				UIEnabled:  true,
-				LastLogin:  nil,
+				UserID:           2,
+				Email:            "example@example.com",
+				IsActive:         true,
+				IsAdmin:          false,
+				APIEnabled:       true,
+				UIEnabled:        true,
+				IdentityProvider: "local",
+				LastLogin:        nil,
 			},
 			{
-				UserID:     3,
-				Email:      "example2@example.com",
-				IsActive:   true,
-				IsAdmin:    false,
-				APIEnabled: true,
-				UIEnabled:  true,
-				LastLogin:  nil,
+				UserID:           3,
+				Email:            "example2@example.com",
+				IsActive:         true,
+				IsAdmin:          false,
+				APIEnabled:       true,
+				UIEnabled:        true,
+				IdentityProvider: "local",
+				LastLogin:        nil,
 			},
 		},
 		Error: "",
@@ -266,7 +111,7 @@ func TestGetUserAuthorisation_Success(t *testing.T) {
 	email := "example@example.com"
 	password := "testpassword123"
 	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, email, hash, true, false, true, true, "local")
+	testutil.InsertUser(t, env.DB, email, &hash, true, false, true, true, "local")
 
 	cookies := testutil.LoginAndGetCookies(t, env.Router, email, password)
 
@@ -321,8 +166,8 @@ func TestUpdateUserAuthorisation_Success(t *testing.T) {
 	adminEmail := "admin@example.com"
 	adminPassword := "testpassword123"
 	adminHash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, adminEmail, adminHash, true, true, true, true, "local")
-	testutil.InsertUser(t, env.DB, "example@example.com", "x", true, false, true, true, "local")
+	testutil.InsertUser(t, env.DB, adminEmail, &adminHash, true, true, true, true, "local")
+	testutil.InsertUser(t, env.DB, "example@example.com", nil, true, false, true, true, "local")
 
 	cookies := testutil.LoginAndGetCookies(t, env.Router, adminEmail, adminPassword)
 
@@ -363,6 +208,51 @@ func TestUpdateUserAuthorisation_Success(t *testing.T) {
 	}
 }
 
+func TestUpdateUserAuthorisation_ExternalUserAPIAccess_ReturnsBad(t *testing.T) {
+	env := testutil.NewTestEnv(t)
+
+	adminEmail := "admin@example.com"
+	adminPassword := "testpassword123"
+	adminHash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
+	testutil.InsertUser(t, env.DB, adminEmail, &adminHash, true, true, true, true, "local")
+	testutil.InsertUser(t, env.DB, "ldapuser@example.com", nil, true, false, false, true, "ldap")
+
+	cookies := testutil.LoginAndGetCookies(t, env.Router, adminEmail, adminPassword)
+
+	reqPayload := []user.UpdateUserRequest{
+		{
+			UserID:     2,
+			IsActive:   true,
+			IsAdmin:    false,
+			APIEnabled: true,
+			UIEnabled:  true,
+		},
+	}
+
+	body, _ := json.Marshal(reqPayload)
+	req := httptest.NewRequest("PUT", "/ui/user/auth", bytes.NewReader(body))
+	for _, c := range cookies {
+		req.AddCookie(c)
+	}
+
+	w := httptest.NewRecorder()
+	env.Router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("want 400, got %d, body=%s", w.Code, w.Body.String())
+	}
+
+	// Verify DB unchanged
+	var apiEnabled int64
+	err := env.DB.QueryRow("SELECT api_enabled FROM users WHERE email = $1", "ldapuser@example.com").Scan(&apiEnabled)
+	if err != nil {
+		t.Fatalf("Failed to select value: %v", err)
+	}
+	if apiEnabled != 0 {
+		t.Fatalf("API access was granted to external user, want 0, got %d", apiEnabled)
+	}
+}
+
 func TestCreateUser_Success(t *testing.T) {
 	// Create a test env
 	env := testutil.NewTestEnv(t)
@@ -371,7 +261,7 @@ func TestCreateUser_Success(t *testing.T) {
 	adminEmail := "admin@example.com"
 	adminPassword := "testpassword123"
 	adminHash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, adminEmail, adminHash, true, true, true, true, "local")
+	testutil.InsertUser(t, env.DB, adminEmail, &adminHash, true, true, true, true, "local")
 
 	cookies := testutil.LoginAndGetCookies(t, env.Router, adminEmail, adminPassword)
 
@@ -418,7 +308,7 @@ func TestCreateUser_NotAdmin_ReturnsForbidden(t *testing.T) {
 	newUser := "test@example.com"
 	newUserPassword := "strongpassword123"
 	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, email, hash, true, false, true, true, "local")
+	testutil.InsertUser(t, env.DB, email, &hash, true, false, true, true, "local")
 
 	cookies := testutil.LoginAndGetCookies(t, env.Router, email, password)
 
@@ -467,8 +357,8 @@ func TestDeleteUser_Success(t *testing.T) {
 	adminEmail := "admin@example.com"
 	adminPassword := "testpassword123"
 	adminHash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, adminEmail, adminHash, true, true, true, true, "local")
-	testutil.InsertUser(t, env.DB, "example@example.com", "x", true, false, true, true, "local")
+	testutil.InsertUser(t, env.DB, adminEmail, &adminHash, true, true, true, true, "local")
+	testutil.InsertUser(t, env.DB, "example@example.com", nil, true, false, true, true, "local")
 
 	cookies := testutil.LoginAndGetCookies(t, env.Router, adminEmail, adminPassword)
 
@@ -527,7 +417,7 @@ func TestCreateFirstTimeUser_Success(t *testing.T) {
 	}
 
 	// Verify DB entry
-	var u user.User
+	var u user.GetUsersResponse
 	row := env.DB.QueryRow("SELECT email, is_active, is_admin, ui_enabled, api_enabled FROM users WHERE email = $1", "admin@example.com")
 	if err := row.Scan(&u.Email, &u.IsActive, &u.IsAdmin, &u.UIEnabled, &u.APIEnabled); err != nil {
 		t.Fatalf("user not inserted: %v", err)
@@ -607,7 +497,7 @@ func TestChangePassword_Success(t *testing.T) {
 	adminPassword := "testpassword123"
 	adminNewPassword := "testpassword456"
 	adminHash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, adminEmail, adminHash, true, true, true, true, "local")
+	testutil.InsertUser(t, env.DB, adminEmail, &adminHash, true, true, true, true, "local")
 
 	cookies := testutil.LoginAndGetCookies(t, env.Router, adminEmail, adminPassword)
 
@@ -642,7 +532,7 @@ func TestEnrolMFA_Success(t *testing.T) {
 	email := "user@example.com"
 	password := "testpassword123"
 	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, email, hash, true, true, false, true, "local")
+	testutil.InsertUser(t, env.DB, email, &hash, true, true, false, true, "local")
 
 	cookies := testutil.LoginAndGetCookies(t, env.Router, email, password)
 
@@ -691,36 +581,6 @@ func TestEnrolMFA_Success(t *testing.T) {
 	}
 }
 
-func TestEnrolMFA_OIDCUser(t *testing.T) {
-	env := testutil.NewTestEnv(t)
-
-	email := "oidcuser@example.com"
-	password := "testpassword123"
-	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, email, hash, true, true, true, true, "oidc")
-
-	cookies := testutil.LoginAndGetCookies(t, env.Router, email, password)
-
-	req := httptest.NewRequest("POST", "/ui/user/mfa", nil)
-	for _, c := range cookies {
-		req.AddCookie(c)
-	}
-
-	w := httptest.NewRecorder()
-	env.Router.ServeHTTP(w, req)
-
-	if w.Code != http.StatusBadRequest {
-		t.Fatalf("want 400, got %d, body=%s", w.Code, w.Body.String())
-	}
-
-	var resp shared.ApiResponse[any]
-	json.NewDecoder(w.Body).Decode(&resp)
-
-	if resp.Success {
-		t.Fatal("want success=false, got true")
-	}
-}
-
 func TestEnrolMFA_Unauthenticated(t *testing.T) {
 	env := testutil.NewTestEnv(t)
 
@@ -740,7 +600,7 @@ func TestEnrolMFA_ReenrolOverwritesSecret(t *testing.T) {
 	email := "user@example.com"
 	password := "testpassword123"
 	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, email, hash, true, true, false, true, "local")
+	testutil.InsertUser(t, env.DB, email, &hash, true, true, false, true, "local")
 
 	cookies := testutil.LoginAndGetCookies(t, env.Router, email, password)
 
@@ -778,7 +638,7 @@ func TestConfirmMFA_Success(t *testing.T) {
 	email := "user@example.com"
 	password := "testpassword123"
 	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, email, hash, true, true, false, true, "local")
+	testutil.InsertUser(t, env.DB, email, &hash, true, true, false, true, "local")
 
 	cookies := testutil.LoginAndGetCookies(t, env.Router, email, password)
 
@@ -841,7 +701,7 @@ func TestConfirmMFA_IncorrectCode(t *testing.T) {
 	email := "user@example.com"
 	password := "testpassword123"
 	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, email, hash, true, true, false, true, "local")
+	testutil.InsertUser(t, env.DB, email, &hash, true, true, false, true, "local")
 
 	cookies := testutil.LoginAndGetCookies(t, env.Router, email, password)
 
@@ -877,7 +737,7 @@ func TestConfirmMFA_NotEnrolled(t *testing.T) {
 	email := "user@example.com"
 	password := "testpassword123"
 	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, email, hash, true, true, false, true, "local")
+	testutil.InsertUser(t, env.DB, email, &hash, true, true, false, true, "local")
 
 	cookies := testutil.LoginAndGetCookies(t, env.Router, email, password)
 
@@ -906,7 +766,7 @@ func TestConfirmMFA_AlreadyConfirmed(t *testing.T) {
 	email := "user@example.com"
 	password := "testpassword123"
 	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, email, hash, true, true, false, true, "local")
+	testutil.InsertUser(t, env.DB, email, &hash, true, true, false, true, "local")
 
 	cookies := testutil.LoginAndGetCookies(t, env.Router, email, password)
 
@@ -962,7 +822,7 @@ func TestConfirmMFA_ReplayAttack(t *testing.T) {
 	email := "user@example.com"
 	password := "testpassword123"
 	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, email, hash, true, true, false, true, "local")
+	testutil.InsertUser(t, env.DB, email, &hash, true, true, false, true, "local")
 
 	cookies := testutil.LoginAndGetCookies(t, env.Router, email, password)
 
@@ -1035,7 +895,7 @@ func TestDeleteMFA_Success(t *testing.T) {
 	email := "user@example.com"
 	password := "testpassword123"
 	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, email, hash, true, true, false, true, "local")
+	testutil.InsertUser(t, env.DB, email, &hash, true, true, false, true, "local")
 
 	cookies := testutil.LoginAndGetCookies(t, env.Router, email, password)
 
@@ -1126,7 +986,7 @@ func TestVerifyMFA_Success(t *testing.T) {
 	email := "user@example.com"
 	password := "testpassword123"
 	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, email, hash, true, true, false, true, "local")
+	testutil.InsertUser(t, env.DB, email, &hash, true, true, false, true, "local")
 
 	cookies := testutil.LoginAndGetCookies(t, env.Router, email, password)
 
@@ -1161,13 +1021,13 @@ func TestVerifyMFA_Success(t *testing.T) {
 	}
 
 	// Login again to trigger MFA flow
-	loginPayload := user.UserLogin{
+	loginPayload := auth.UserLogin{
 		Email:    email,
 		Password: password,
 	}
 
 	body, _ = json.Marshal(loginPayload)
-	req = httptest.NewRequest("POST", "/ui/user/login", bytes.NewReader(body))
+	req = httptest.NewRequest("POST", "/ui/auth/login", bytes.NewReader(body))
 	w = httptest.NewRecorder()
 	env.Router.ServeHTTP(w, req)
 
@@ -1247,7 +1107,7 @@ func TestVerifyMFA_ExpiredSession(t *testing.T) {
 	email := "user@example.com"
 	//password := "testpassword123"
 	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, email, hash, true, true, false, true, "local")
+	testutil.InsertUser(t, env.DB, email, &hash, true, true, false, true, "local")
 
 	// Insert expired pending session directly into DB
 	expiredToken, _ := util.GenerateRandomString(32)
@@ -1283,7 +1143,7 @@ func TestVerifyMFA_IncorrectCode(t *testing.T) {
 	email := "user@example.com"
 	password := "testpassword123"
 	hash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
-	testutil.InsertUser(t, env.DB, email, hash, true, true, false, true, "local")
+	testutil.InsertUser(t, env.DB, email, &hash, true, true, false, true, "local")
 
 	cookies := testutil.LoginAndGetCookies(t, env.Router, email, password)
 
@@ -1314,12 +1174,13 @@ func TestVerifyMFA_IncorrectCode(t *testing.T) {
 	env.Router.ServeHTTP(w, req)
 
 	// Login again to get mfa_pending cookie
-	loginPayload := user.UserLogin{
+	loginPayload := auth.UserLogin{
 		Email:    email,
 		Password: password,
 	}
+
 	body, _ = json.Marshal(loginPayload)
-	req = httptest.NewRequest("POST", "/ui/user/login", bytes.NewReader(body))
+	req = httptest.NewRequest("POST", "/ui/auth/login", bytes.NewReader(body))
 	w = httptest.NewRecorder()
 	env.Router.ServeHTTP(w, req)
 

@@ -71,16 +71,16 @@ button:not(:disabled):hover {
   color: var(--success-msg);
 }
 
+.checkbox-row {
+  display: flex;
+  flex-direction: column;
+}
+
 /* Notification channels */
 .channel-config input {
   width: 500px;
   display: block;
   margin-bottom: 1rem;
-}
-
-.checkbox-row {
-  display: flex;
-  flex-direction: column;
 }
 
 .channel-config input[type="checkbox"] {
@@ -89,3 +89,21 @@ button:not(:disabled):hover {
   display: inline-block;
   margin-bottom: 1rem;
 }
+
+/* External Auth */
+.auth-config input {
+  width: 500px;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.auth-config input[type="checkbox"] {
+  width: var(--input-height);
+  margin: 0;
+  display: inline-block;
+  margin-bottom: 1rem;
+}
+
+
+
+

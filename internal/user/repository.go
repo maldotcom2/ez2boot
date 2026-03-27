@@ -2,6 +2,7 @@ package user
 
 import (
 	"database/sql"
+	"errors"
 	"ez2boot/internal/shared"
 	"time"
 
@@ -27,19 +28,19 @@ func (r *Repository) deleteUserSession(tokenHash string) error {
 	return nil
 }
 
-func (r *Repository) getUsers() ([]User, error) {
-	rows, err := r.Base.DB.Query("SELECT id, email, is_active, is_admin, api_enabled, ui_enabled, last_login FROM users")
+func (r *Repository) getUsers() ([]GetUsersResponse, error) {
+	rows, err := r.Base.DB.Query("SELECT id, email, is_active, is_admin, api_enabled, ui_enabled, identity_provider, last_login FROM users")
 	if err != nil {
 		return nil, err
 	}
 
 	defer rows.Close()
 
-	users := []User{}
+	users := []GetUsersResponse{}
 
 	for rows.Next() {
-		var u User
-		if err = rows.Scan(&u.UserID, &u.Email, &u.IsActive, &u.IsAdmin, &u.APIEnabled, &u.UIEnabled, &u.LastLogin); err != nil {
+		var u GetUsersResponse
+		if err = rows.Scan(&u.UserID, &u.Email, &u.IsActive, &u.IsAdmin, &u.APIEnabled, &u.UIEnabled, &u.IdentityProvider, &u.LastLogin); err != nil {
 			return nil, err
 		}
 
@@ -80,7 +81,7 @@ func (r *Repository) updateLastLogin(userID int64) error {
 // Create new user
 func (r *Repository) createUser(u CreateUser) (int64, error) {
 	var userID int64
-	if err := r.Base.DB.QueryRow("INSERT INTO users (email, password_hash, is_active, is_admin, api_enabled, ui_enabled, identity_provider) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id", u.Email, u.PasswordHash, u.IsActive, u.IsAdmin, u.APIEnabled, u.UIEnabled, "local").Scan(&userID); err != nil {
+	if err := r.Base.DB.QueryRow("INSERT INTO users (email, password_hash, is_active, is_admin, api_enabled, ui_enabled, identity_provider) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id", u.Email, u.PasswordHash, u.IsActive, u.IsAdmin, u.APIEnabled, u.UIEnabled, u.IdentityProvider).Scan(&userID); err != nil {
 		if sqliteErr, ok := err.(sqlite3.Error); ok {
 			if sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
 				return 0, shared.ErrUserAlreadyExists
@@ -93,21 +94,39 @@ func (r *Repository) createUser(u CreateUser) (int64, error) {
 
 func (r *Repository) deleteUser(userID int64) error {
 	if _, err := r.Base.DB.Exec("DELETE FROM users WHERE id = $1", userID); err != nil {
+		if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.Code == sqlite3.ErrConstraint {
+			return shared.ErrUserHasActiveSessions
+		}
+
 		return err
 	}
 
 	return nil
 }
 
-// Find password hash and ID by email
-func (r *Repository) getUserIDHashByEmail(email string) (int64, string, error) {
-	var passwordHash string
-	var id int64
-	err := r.Base.DB.QueryRow("SELECT id, password_hash FROM users WHERE email = $1", email).Scan(&id, &passwordHash)
+// Find info by email
+func (r *Repository) getCredentialsByEmail(email string) (shared.UserCredentials, error) {
+	var u shared.UserCredentials
+	err := r.Base.DB.QueryRow("SELECT id, password_hash, identity_provider FROM users WHERE email = $1", email).Scan(&u.UserID, &u.PasswordHash, &u.IdentityProvider)
 	if err != nil {
-		return 0, "", err
+		if errors.Is(err, sql.ErrNoRows) {
+			return shared.UserCredentials{}, shared.ErrUserNotFound
+		}
+		return shared.UserCredentials{}, err
 	}
-	return id, passwordHash, nil
+	return u, nil
+}
+
+func (r *Repository) getCredentialsByUserID(userID int64) (shared.UserCredentials, error) {
+	var u shared.UserCredentials
+	err := r.Base.DB.QueryRow("SELECT email, password_hash, identity_provider FROM users WHERE id = $1", userID).Scan(&u.Email, &u.PasswordHash, &u.IdentityProvider)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return shared.UserCredentials{}, shared.ErrUserNotFound
+		}
+		return shared.UserCredentials{}, err
+	}
+	return u, nil
 }
 
 func (r *Repository) getEmailFromUserID(userID int64) (string, error) {
