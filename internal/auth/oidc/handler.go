@@ -36,7 +36,7 @@ func (h *Handler) Login() http.HandlerFunc {
 		http.SetCookie(w, &http.Cookie{
 			Name:     "oidc_state",
 			Value:    state,
-			MaxAge:   int((5 * time.Minute).Seconds()),
+			Expires:  time.Now().Add(5 * time.Minute),
 			SameSite: h.Config.SameSiteMode,
 			HttpOnly: true,
 			Secure:   h.Config.SecureCookie,

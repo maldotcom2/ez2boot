@@ -33,7 +33,7 @@ func (r *Repository) getOidcSecret() ([]byte, error) {
 }
 
 func (r *Repository) setOidcSecretTx(tx *sql.Tx, encSecret []byte) error {
-	_, err := tx.Exec("UPDATE oidc_config SET oidc_secret = $1 WHERE id = 1", encSecret)
+	_, err := tx.Exec("UPDATE oidc_config SET client_secret = $1 WHERE id = 1", encSecret)
 	return err
 }
 
