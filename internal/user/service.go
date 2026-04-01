@@ -11,6 +11,7 @@ import (
 	"ez2boot/internal/util"
 	"fmt"
 	"image/png"
+	"strings"
 	"time"
 
 	"github.com/alexedwards/argon2id"
@@ -92,6 +93,8 @@ func (s *Service) updateUserAuthorisation(users []UpdateUserRequest, ctx context
 }
 
 func (s *Service) createUser(req CreateUserRequest, ctx context.Context) error {
+	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
+
 	if err := s.validateEmail(req.Email); err != nil {
 		return err
 	}
@@ -140,6 +143,8 @@ func (s *Service) createUser(req CreateUserRequest, ctx context.Context) error {
 
 // Returns userID of created user
 func (s *Service) CreateExternalUser(email string, identityProvider string, ctx context.Context) (int64, error) {
+	email = strings.ToLower(email) // Normalise
+
 	actorUserID, actorEmail := ctxutil.GetActor(ctx)
 
 	if err := s.validateEmail(email); err != nil {
@@ -268,6 +273,8 @@ func (s *Service) changePassword(req ChangePasswordRequest, ctx context.Context)
 var dummyHash = "$argon2id$v=19$m=131072,t=4,p=1$fCSLCAorTbr9UeFcmUW3Jg$q8wabA06xx+zN8j80pwmxTMk0b/T88R+M3ycbFWZPlc"
 
 func (s *Service) AuthenticateUser(email string, password string) (shared.AuthResult, error) {
+	email = strings.ToLower(email) // Normalise
+
 	user, err := s.Repo.getCredentialsByEmail(email)
 	if err != nil && !errors.Is(err, shared.ErrUserNotFound) {
 		return shared.AuthResult{}, err // generic error other than no user
@@ -551,6 +558,10 @@ func (s *Service) verifyMFA(req MFARequest, pendingToken string) (_ string, _ st
 			Reason:      reason,
 		})
 	}()
+
+	if err := validateMFACode(req.Code); err != nil {
+		return "", "", err
+	}
 
 	hash := util.HashToken(pendingToken)
 

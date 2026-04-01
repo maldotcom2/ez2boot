@@ -124,7 +124,7 @@ func InsertServer(t *testing.T, db *sql.DB, uniqueID string, name string, state 
 func LoginAndGetCookies(t *testing.T, router http.Handler, email, password string) []*http.Cookie {
 	t.Helper()
 
-	payload := auth.UserLogin{
+	payload := auth.UserLoginRequest{
 		Email:    email,
 		Password: password,
 	}

@@ -11,7 +11,7 @@ import (
 
 func (h *Handler) Login() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var u UserLogin
+		var u UserLoginRequest
 		if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
 			h.Logger.Error("Malformed request", "user", u.Email, "domain", "auth", "error", err)
 			w.WriteHeader(http.StatusBadRequest)
@@ -31,6 +31,13 @@ func (h *Handler) Login() http.HandlerFunc {
 				resp = shared.ApiResponse[any]{
 					Success: false,
 					Error:   "Missing email or password for login",
+				}
+			case errors.Is(err, shared.ErrInputTooLong):
+				h.Logger.Warn("Login failed", "user", u.Email, "domain", "auth", "error", err)
+				w.WriteHeader(http.StatusBadRequest)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "Input too long",
 				}
 			case errors.Is(err, shared.ErrUserNotFound):
 				h.Logger.Warn("Login failed", "user", u.Email, "domain", "auth", "error", err)

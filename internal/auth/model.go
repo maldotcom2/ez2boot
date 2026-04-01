@@ -25,7 +25,7 @@ type Handler struct {
 	Logger  *slog.Logger
 }
 
-type UserLogin struct {
+type UserLoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }

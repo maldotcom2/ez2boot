@@ -1021,7 +1021,7 @@ func TestVerifyMFA_Success(t *testing.T) {
 	}
 
 	// Login again to trigger MFA flow
-	loginPayload := auth.UserLogin{
+	loginPayload := auth.UserLoginRequest{
 		Email:    email,
 		Password: password,
 	}
@@ -1174,7 +1174,7 @@ func TestVerifyMFA_IncorrectCode(t *testing.T) {
 	env.Router.ServeHTTP(w, req)
 
 	// Login again to get mfa_pending cookie
-	loginPayload := auth.UserLogin{
+	loginPayload := auth.UserLoginRequest{
 		Email:    email,
 		Password: password,
 	}
