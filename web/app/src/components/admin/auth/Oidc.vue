@@ -7,7 +7,7 @@
     <label for="client-secret">Client Secret</label>
     <input id="client-secret" type=password v-model="config.client_secret"/>
     <label for="App URL">App URL</label>
-    <input id="App URL" placeholder="ez2boot.mycompany.com" v-model="config.app_url"/>
+    <input id="App URL" placeholder="https://ez2boot.mycompany.com" v-model="config.app_url"/>
   </div>
 </template>
 
