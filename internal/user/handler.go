@@ -79,9 +79,10 @@ func (h *Handler) UpdateUserAuthorisation() http.HandlerFunc {
 			default:
 				h.Logger.Error("Failed to update user authorisation", "user", email, "domain", "user", "error", err)
 				w.WriteHeader(http.StatusInternalServerError)
-				resp = (shared.ApiResponse[any]{
+				resp = shared.ApiResponse[any]{
 					Success: false,
-					Error:   "Failed to update user authorisation"})
+					Error:   "Failed to update user authorisation",
+				}
 			}
 
 			json.NewEncoder(w).Encode(resp)

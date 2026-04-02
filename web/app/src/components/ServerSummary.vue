@@ -92,7 +92,7 @@ async function loadServerSessions() {
 // Start a new server session
 async function startServerSession(serverGroup) {
   if (!validateDuration(duration.value[serverGroup])) {
-    console.error("duration input invalid");
+    alert("Duration input invalid");
     return
   }
 
@@ -107,13 +107,18 @@ async function startServerSession(serverGroup) {
       loadServerSessions() // refresh table after creating session
     }
   } catch (err) {
-    console.error('Error starting server session:', err)
+    if (err.response?.data?.error) {
+      alert(err.response.data.error)
+    } else {
+      alert('Failed to start server session')
+    }
   }
 }
 
 // Update server session
 async function updateServerSession(serverGroup) {
   if (!validateDuration(duration.value[serverGroup])) {
+    alert("Duration input invalid");
     return
   }
 
@@ -127,7 +132,11 @@ async function updateServerSession(serverGroup) {
       loadServerSessions() // refresh table after creating session
     }
   } catch (err) {
-    console.error('Error updating server session:', err)
+    if (err.response?.data?.error) {
+      alert(err.response.data.error)
+    } else {
+      alert('Failed to update server session')
+    }
   }
 }
 
@@ -142,7 +151,11 @@ async function endServerSession(serverGroup) {
       loadServerSessions() // refresh table after creating session
     }
   } catch (err) {
-    console.error('Error updating server session:', err)
+    if (err.response?.data?.error) {
+      alert(err.response.data.error)
+    } else {
+      alert('Failed to update server session')
+    }
   }
 }
 
