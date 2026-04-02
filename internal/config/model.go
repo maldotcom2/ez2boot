@@ -18,7 +18,8 @@ type Config struct {
 	UserSessionDuration time.Duration // Duration for user UI authenticated session, not related to server session duration
 	LogLevel            slog.Level    // Logging level, use info unless debugging
 	EncryptionPhrase    string        // Implementation specific encryption phrase used to derive an encryption key to encrypt sensitive credentials within the app
-	RateLimit           int           // Max number of requests per second allowed by each user of this application
+	PublicRateLimit     int           // Max number of requests per second allowed by each user (IP) of this application to public routes
+	PrivateRateLimit    int           // Max number of requests per second allowed by each user (IP) of this application to authenticated routes
 	ShowBetaVersions    bool          // UI will show alert for beta releases and not just full releases
 	AzureSubscriptionID string        // Azure subscription ID, Azure scrape specific
 	SecureCookie        bool          // Session cookie parameter. Browser will send cookie over https only - affects insecure http login

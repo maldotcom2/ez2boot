@@ -26,7 +26,6 @@ export const useVersionStore = defineStore('version', {
         this.checkedAt = response.data.data.checked_at
         this.releaseURL = response.data.data.release_url
         this.loaded = true
-        console.log(response)
       } catch (err) {
         this.error = err?.response?.data?.error || err.message
         throw err

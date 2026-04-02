@@ -7,7 +7,9 @@ import (
 )
 
 type Middleware struct {
-	UserService *user.Service
-	Config      *config.Config
-	Logger      *slog.Logger
+	UserService        *user.Service
+	Config             *config.Config
+	PublicRateLimiter  *RateLimiter
+	PrivateRateLimiter *RateLimiter
+	Logger             *slog.Logger
 }

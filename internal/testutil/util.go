@@ -68,7 +68,8 @@ func NewTestEnv(t *testing.T) *TestEnv {
 	cfg := &config.Config{
 		CloudProvider:       "aws",
 		AWSRegion:           "ap-southeast-2",
-		RateLimit:           100,
+		PublicRateLimit:     50,            // Elevate if 429's in tests
+		PrivateRateLimit:    100,           // Elevate if 429's in tests
 		UserSessionDuration: 1 * time.Hour, // Prevent intermittent 401s during test
 		EncryptionPhrase:    "newphrase",
 	}
@@ -123,7 +124,7 @@ func InsertServer(t *testing.T, db *sql.DB, uniqueID string, name string, state 
 func LoginAndGetCookies(t *testing.T, router http.Handler, email, password string) []*http.Cookie {
 	t.Helper()
 
-	payload := auth.UserLogin{
+	payload := auth.UserLoginRequest{
 		Email:    email,
 		Password: password,
 	}

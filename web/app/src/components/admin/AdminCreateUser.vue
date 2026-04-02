@@ -13,10 +13,11 @@
         <button type="submit" :disabled="!passwordsMatch || !email || !password || !confirmPassword">Create</button>
       </form>
       <form v-else @submit.prevent="searchLdap">
-        <input v-model="ldapQuery" placeholder="Search by email" />
+        <input v-model="ldapQuery" placeholder="Search by UPN" />
         <button type="submit" :disabled="!ldapQuery">Search</button>
         <div v-if="ldapResult" class="ldap-result">
-          <p class="ldap-email">{{ ldapResult.Email }}</p>
+          <p class="ldap-name">{{ ldapResult.display_name }}</p>
+          <p class="ldap-email">{{ ldapResult.email }}</p>
         </div>
         <button v-if="ldapResult" @click="provisionLdapUser">Add User</button>
       </form>
@@ -138,7 +139,7 @@ async function provisionLdapUser() {
   try {
     await axios.post('/ui/user/ldap',
     { 
-      email: ldapResult.value.Email 
+      email: ldapResult.value.email 
     },
     { 
       withCredentials: true // Cookies

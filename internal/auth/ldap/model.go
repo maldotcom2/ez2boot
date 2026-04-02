@@ -86,8 +86,8 @@ type LdapSearchRequest struct {
 }
 
 type LdapSearchResponse struct {
-	DisplayName string
-	Email       string
+	DisplayName string `json:"display_name"`
+	Email       string `json:"email"`
 }
 
 type CreateLdapUserRequest struct {

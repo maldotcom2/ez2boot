@@ -9,6 +9,7 @@ import (
 	"ez2boot/internal/ctxutil"
 	"ez2boot/internal/shared"
 	"fmt"
+	"strings"
 
 	goldap "github.com/go-ldap/ldap/v3"
 )
@@ -31,6 +32,9 @@ func (s *Service) Authenticate(email string, password string) error {
 	if err != nil {
 		return err
 	}
+
+	// Normalise after bind
+	email = strings.ToLower(email)
 
 	user, err := s.UserService.GetCredentialsByEmail(email)
 	if err != nil {
@@ -205,10 +209,10 @@ func (s *Service) SearchUser(req LdapSearchRequest) (LdapSearchResponse, error) 
 		goldap.ScopeWholeSubtree,
 		goldap.NeverDerefAliases,
 		0, 0, false,
-		fmt.Sprintf("(mail=%s*)", // Target user requires a mail field
+		fmt.Sprintf("(userPrincipalName=%s*)", // Target user requires a mail field
 			goldap.EscapeFilter(req.Query),
 		),
-		[]string{"cn", "mail"},
+		[]string{"displayName", "userPrincipalName"},
 		nil,
 	)
 
@@ -224,8 +228,8 @@ func (s *Service) SearchUser(req LdapSearchRequest) (LdapSearchResponse, error) 
 	// Singular return - possibly expand to a collection
 	entry := result.Entries[0]
 	return LdapSearchResponse{
-		DisplayName: entry.GetAttributeValue("cn"),
-		Email:       entry.GetAttributeValue("mail"),
+		DisplayName: entry.GetAttributeValue("displayName"),
+		Email:       entry.GetAttributeValue("userPrincipalName"),
 	}, nil
 }
 

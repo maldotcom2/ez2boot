@@ -35,7 +35,7 @@ func TestLogin_WrongPassword_ReturnsUnauth(t *testing.T) {
 	testutil.InsertUser(t, env.DB, email, &hash, true, false, true, true, "local")
 
 	// Attempt login with wrong password
-	loginPayload := auth.UserLogin{
+	loginPayload := auth.UserLoginRequest{
 		Email:    email,
 		Password: "badpassword123",
 	}
@@ -70,7 +70,7 @@ func TestLogin_Inactive_ReturnsForbidden(t *testing.T) {
 	testutil.InsertUser(t, env.DB, email, &hash, false, false, true, true, "local")
 
 	// Attempt login
-	loginPayload := auth.UserLogin{
+	loginPayload := auth.UserLoginRequest{
 		Email:    email,
 		Password: "testpassword123",
 	}
@@ -105,7 +105,7 @@ func TestLogin_UIblocked_ReturnsForbidden(t *testing.T) {
 	testutil.InsertUser(t, env.DB, email, &hash, true, false, true, false, "local")
 
 	// Attempt login
-	loginPayload := auth.UserLogin{
+	loginPayload := auth.UserLoginRequest{
 		Email:    email,
 		Password: "testpassword123",
 	}

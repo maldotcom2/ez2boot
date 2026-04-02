@@ -7,6 +7,7 @@ import (
 	"ez2boot/internal/audit"
 	"ez2boot/internal/ctxutil"
 	"ez2boot/internal/shared"
+	"strings"
 )
 
 // UI calls, nulls password value
@@ -159,6 +160,7 @@ func (s *Service) testOidcConnection(ctx context.Context) error {
 
 func (s *Service) loginOidcUser(email string, ctx context.Context) (token string, err error) {
 	var actorUserID int64
+	email = strings.ToLower(email) // Normalise
 
 	defer func() {
 		var reason string

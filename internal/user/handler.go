@@ -591,6 +591,13 @@ func (h *Handler) VerifyMFA() http.HandlerFunc {
 					Success: false,
 					Error:   "Invalid or expired MFA pending session",
 				}
+			case errors.Is(err, shared.ErrInvalidMFACode):
+				h.Logger.Warn("MFA code invalid", "user", email, "domain", "user")
+				w.WriteHeader(http.StatusBadRequest)
+				resp = shared.ApiResponse[any]{
+					Success: false,
+					Error:   "MFA code invalid",
+				}
 			case errors.Is(err, shared.ErrIncorrectMFACode):
 				h.Logger.Warn("Incorrect MFA code on verify", "user", email, "domain", "user")
 				w.WriteHeader(http.StatusUnauthorized)
