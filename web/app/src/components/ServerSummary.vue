@@ -39,7 +39,7 @@
 
               <!-- End Session enabled for current user-->
               <button @click="endServerSession(server.server_group)"
-              :disabled="server.current_user !== user.email">End Session</button>
+              :disabled="server.current_user !== user.email && !user.isAdmin">End Session</button>
             </div>
           </td>
         </tr>
@@ -92,7 +92,7 @@ async function loadServerSessions() {
 // Start a new server session
 async function startServerSession(serverGroup) {
   if (!validateDuration(duration.value[serverGroup])) {
-    console.error("duration input invalid");
+    alert("Duration input invalid");
     return
   }
 
@@ -107,13 +107,18 @@ async function startServerSession(serverGroup) {
       loadServerSessions() // refresh table after creating session
     }
   } catch (err) {
-    console.error('Error starting server session:', err)
+    if (err.response?.data?.error) {
+      alert(err.response.data.error)
+    } else {
+      alert('Failed to start server session')
+    }
   }
 }
 
 // Update server session
 async function updateServerSession(serverGroup) {
   if (!validateDuration(duration.value[serverGroup])) {
+    alert("Duration input invalid");
     return
   }
 
@@ -127,13 +132,18 @@ async function updateServerSession(serverGroup) {
       loadServerSessions() // refresh table after creating session
     }
   } catch (err) {
-    console.error('Error updating server session:', err)
+    if (err.response?.data?.error) {
+      alert(err.response.data.error)
+    } else {
+      alert('Failed to update server session')
+    }
   }
 }
 
 async function endServerSession(serverGroup) {
   try {
-    const response = await axios.put('/ui/session', {
+    const path = user.isAdmin ? '/ui/admin/session' : '/ui/session'
+    const response = await axios.put(path, {
       server_group: serverGroup,
       duration: '0h'
     })
@@ -142,7 +152,11 @@ async function endServerSession(serverGroup) {
       loadServerSessions() // refresh table after creating session
     }
   } catch (err) {
-    console.error('Error updating server session:', err)
+    if (err.response?.data?.error) {
+      alert(err.response.data.error)
+    } else {
+      alert('Failed to update server session')
+    }
   }
 }
 

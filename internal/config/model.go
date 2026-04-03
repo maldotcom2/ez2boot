@@ -7,22 +7,23 @@ import (
 )
 
 type Config struct {
-	SetupMode           bool          // Mode which allows initial user bootstrap, not manually setable
-	TrustProxyHeaders   bool          // Affects source IP address recognition within middleware
-	CloudProvider       string        // Cloud provider eg aws, azure
-	Port                string        // Listener port for this application
-	ScrapeInterval      time.Duration // Interval for scraping cloud provider
-	InternalClock       time.Duration // Interval for all other background workers
-	TagKey              string        // Tag Key used to itentify target servers, where the values are the server groups
-	AWSRegion           string        // AWS Region, AWS scrape specific
-	UserSessionDuration time.Duration // Duration for user UI authenticated session, not related to server session duration
-	LogLevel            slog.Level    // Logging level, use info unless debugging
-	EncryptionPhrase    string        // Implementation specific encryption phrase used to derive an encryption key to encrypt sensitive credentials within the app
-	PublicRateLimit     int           // Max number of requests per second allowed by each user (IP) of this application to public routes
-	PrivateRateLimit    int           // Max number of requests per second allowed by each user (IP) of this application to authenticated routes
-	ShowBetaVersions    bool          // UI will show alert for beta releases and not just full releases
-	AzureSubscriptionID string        // Azure subscription ID, Azure scrape specific
-	SecureCookie        bool          // Session cookie parameter. Browser will send cookie over https only - affects insecure http login
-	SameSiteMode        http.SameSite // Session cookie parameter. Controls when the browser will send cookie
+	SetupMode                bool          // Mode which allows initial user bootstrap, not manually setable
+	TrustProxyHeaders        bool          // Affects source IP address recognition within middleware
+	CloudProvider            string        // Cloud provider eg aws, azure
+	Port                     string        // Listener port for this application
+	ScrapeInterval           time.Duration // Interval for scraping cloud provider
+	InternalClock            time.Duration // Interval for all other background workers
+	TagKey                   string        // Tag Key used to itentify target servers, where the values are the server groups
+	AWSRegion                string        // AWS Region, AWS scrape specific
+	UserSessionDuration      time.Duration // Duration for user UI authenticated session, not related to server session duration
+	MaxServerSessionDuration time.Duration // Maximum duration for a server session
+	LogLevel                 slog.Level    // Logging level, use info unless debugging
+	EncryptionPhrase         string        // Implementation specific encryption phrase used to derive an encryption key to encrypt sensitive credentials within the app
+	PublicRateLimit          int           // Max number of requests per second allowed by each user (IP) of this application to public routes
+	PrivateRateLimit         int           // Max number of requests per second allowed by each user (IP) of this application to authenticated routes
+	ShowBetaVersions         bool          // UI will show alert for beta releases and not just full releases
+	AzureSubscriptionID      string        // Azure subscription ID, Azure scrape specific
+	SecureCookie             bool          // Session cookie parameter. Browser will send cookie over https only - affects insecure http login
+	SameSiteMode             http.SameSite // Session cookie parameter. Controls when the browser will send cookie
 	// Add more fields as needed
 }

@@ -24,6 +24,7 @@ var (
 	ErrEmailPattern                 = errors.New("email does not match required pattern")
 	ErrEmailOrPasswordMissing       = errors.New("email and password field required")
 	ErrInputTooLong                 = errors.New("input too long")
+	ErrDurationTooLong              = errors.New("duration too long")
 	ErrEmailMissing                 = errors.New("email field missing")
 	ErrCurrentOrNewPasswordMissing  = errors.New("current_password and new_password field required")
 	ErrCannotModifyOwnAuth          = errors.New("cannot modify own authorisation")

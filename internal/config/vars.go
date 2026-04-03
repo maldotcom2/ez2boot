@@ -70,6 +70,16 @@ func GetEnvVars() (*Config, error) {
 		return nil, err
 	}
 
+	maxServerSessionDurationStr := os.Getenv("MAX_SERVER_SESSION_DURATION")
+	if maxServerSessionDurationStr == "" {
+		maxServerSessionDurationStr = "87600h" //default
+	}
+
+	maxServerSessionDuration, err := GetDurationFromString(maxServerSessionDurationStr)
+	if err != nil {
+		return nil, err
+	}
+
 	logLevelStr := os.Getenv("LOG_LEVEL")
 	if logLevelStr == "" {
 		logLevelStr = "info" //default
@@ -128,22 +138,23 @@ func GetEnvVars() (*Config, error) {
 	sameSiteMode := ParseSameSiteMode(sameSiteModeStr)
 
 	cfg := &Config{
-		TrustProxyHeaders:   trustProxyHeaders,
-		CloudProvider:       cloudProvider,
-		Port:                port,
-		ScrapeInterval:      scrapeInterval,
-		InternalClock:       internalClock,
-		TagKey:              tagKey,
-		AWSRegion:           awsRegion,
-		UserSessionDuration: userSessionDuration,
-		LogLevel:            logLevel,
-		EncryptionPhrase:    encryptionPhrase,
-		PublicRateLimit:     publicrateLimit,
-		PrivateRateLimit:    privaterateLimit,
-		ShowBetaVersions:    showBetaVersions,
-		AzureSubscriptionID: azureSubscriptionID,
-		SecureCookie:        secureCookie,
-		SameSiteMode:        sameSiteMode,
+		TrustProxyHeaders:        trustProxyHeaders,
+		CloudProvider:            cloudProvider,
+		Port:                     port,
+		ScrapeInterval:           scrapeInterval,
+		InternalClock:            internalClock,
+		TagKey:                   tagKey,
+		AWSRegion:                awsRegion,
+		UserSessionDuration:      userSessionDuration,
+		MaxServerSessionDuration: maxServerSessionDuration,
+		LogLevel:                 logLevel,
+		EncryptionPhrase:         encryptionPhrase,
+		PublicRateLimit:          publicrateLimit,
+		PrivateRateLimit:         privaterateLimit,
+		ShowBetaVersions:         showBetaVersions,
+		AzureSubscriptionID:      azureSubscriptionID,
+		SecureCookie:             secureCookie,
+		SameSiteMode:             sameSiteMode,
 	}
 
 	return cfg, nil

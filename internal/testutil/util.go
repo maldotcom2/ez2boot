@@ -66,12 +66,13 @@ func NewTestEnv(t *testing.T) *TestEnv {
 	}
 
 	cfg := &config.Config{
-		CloudProvider:       "aws",
-		AWSRegion:           "ap-southeast-2",
-		PublicRateLimit:     50,            // Elevate if 429's in tests
-		PrivateRateLimit:    100,           // Elevate if 429's in tests
-		UserSessionDuration: 1 * time.Hour, // Prevent intermittent 401s during test
-		EncryptionPhrase:    "newphrase",
+		CloudProvider:            "aws",
+		AWSRegion:                "ap-southeast-2",
+		PublicRateLimit:          50,            // Elevate if 429's in tests
+		PrivateRateLimit:         100,           // Elevate if 429's in tests
+		UserSessionDuration:      1 * time.Hour, // Prevent intermittent 401s during test
+		MaxServerSessionDuration: 2 * time.Hour,
+		EncryptionPhrase:         "newphrase",
 	}
 
 	router, services, wkr, err := app.NewApp("dev", "unknown", cfg, baseRepo, logger)

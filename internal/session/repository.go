@@ -189,6 +189,26 @@ func (r *Repository) updateServerSession(session ServerSessionRequest) error {
 	return nil
 }
 
+// Update existing session admin
+func (r *Repository) updateServerSessionAdmin(session ServerSessionRequest) error {
+	result, err := r.Base.DB.Exec("UPDATE server_sessions SET expiry = $1, warning_notified = $2 WHERE server_group = $3 AND expiry > $4", session.Expiry, 0, session.ServerGroup, time.Now().Unix())
+	if err != nil {
+		return err
+	}
+
+	// Impact check
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return shared.ErrNoRowsUpdated
+	}
+
+	return nil
+}
+
 // Set servers next_state off and mark session for cleanup
 func (r *Repository) endServerSession(tx *sql.Tx, serverGroup string) error {
 	// Set server next state
