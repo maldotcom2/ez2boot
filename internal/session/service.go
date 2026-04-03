@@ -115,6 +115,54 @@ func (s *Service) updateServerSession(session ServerSessionRequest, ctx context.
 	}, nil
 }
 
+func (s *Service) updateServerSessionAdmin(session ServerSessionRequest, ctx context.Context) (_ ServerSessionResponse, err error) {
+	actorUserID, actorEmail := ctxutil.GetActor(ctx)
+
+	defer func() {
+		var reason string
+		if err != nil {
+			reason = err.Error()
+		}
+
+		s.Audit.Log(audit.Event{
+			ActorUserID: actorUserID,
+			ActorEmail:  actorEmail,
+			Action:      "update",
+			Resource:    "server session",
+			Success:     err == nil,
+			Reason:      reason,
+			Metadata: map[string]any{
+				"server_group": session.ServerGroup,
+				"duration":     session.Duration,
+			},
+		})
+	}()
+
+	if err := s.validateServerSession(session); err != nil {
+		return ServerSessionResponse{}, err
+	}
+
+	// Get new expiry as epoch
+	newExpiry, err := util.GetExpiryFromDuration(session.Duration)
+	if err != nil {
+		return ServerSessionResponse{}, err
+	}
+
+	// Add expiry
+	session.Expiry = newExpiry
+
+	err = s.Repo.updateServerSessionAdmin(session)
+	if err != nil {
+		return ServerSessionResponse{}, err
+	}
+
+	return ServerSessionResponse{
+		ServerGroup: session.ServerGroup,
+		Duration:    session.Duration,
+		Expiry:      time.Unix(newExpiry, 0).UTC(),
+	}, nil
+}
+
 // High level for processing server sessions in each state - called by go routine worker
 func (s *Service) ProcessServerSessions(ctx context.Context) {
 	// Ready-for-use sessions

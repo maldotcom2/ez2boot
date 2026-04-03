@@ -39,7 +39,7 @@
 
               <!-- End Session enabled for current user-->
               <button @click="endServerSession(server.server_group)"
-              :disabled="server.current_user !== user.email">End Session</button>
+              :disabled="server.current_user !== user.email && !user.isAdmin">End Session</button>
             </div>
           </td>
         </tr>
@@ -142,7 +142,8 @@ async function updateServerSession(serverGroup) {
 
 async function endServerSession(serverGroup) {
   try {
-    const response = await axios.put('/ui/session', {
+    const path = user.isAdmin ? '/ui/admin/session' : '/ui/session'
+    const response = await axios.put(path, {
       server_group: serverGroup,
       duration: '0h'
     })

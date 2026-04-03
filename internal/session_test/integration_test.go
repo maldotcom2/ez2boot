@@ -93,3 +93,89 @@ func TestNewServerSession_Success(t *testing.T) {
 		t.Fatalf("Server group incorrect: want: %s, got: %s", wantServerGroup, sg)
 	}
 }
+
+func TestAdminTerminateServerSession_Success(t *testing.T) {
+	env := testutil.NewTestEnv(t)
+
+	adminEmail := "admin@example.com"
+	adminPassword := "testpassword123"
+	adminHash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
+	testutil.InsertUser(t, env.DB, adminEmail, &adminHash, true, true, true, true, "local")
+	testutil.InsertUser(t, env.DB, "user@example.com", nil, true, false, false, true, "local")
+
+	testutil.InsertServer(t, env.DB, "i-3728hvi2vn2u4vn2", "test01", "off", "QA", time.Now().Unix())
+	testutil.InsertServerSession(t, env.DB, 2, "QA", time.Now().Add(2*time.Hour).Unix())
+
+	cookies := testutil.LoginAndGetCookies(t, env.Router, adminEmail, adminPassword)
+
+	reqPayload := session.ServerSessionRequest{
+		ServerGroup: "QA",
+		Duration:    "0h",
+	}
+
+	body, _ := json.Marshal(reqPayload)
+	req := httptest.NewRequest("PUT", "/ui/admin/session", bytes.NewReader(body))
+	for _, c := range cookies {
+		req.AddCookie(c)
+	}
+
+	w := httptest.NewRecorder()
+	env.Router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("want 200, got %d, body=%s", w.Code, w.Body.String())
+	}
+
+	// Verify session was terminated in DB
+	var expiry int64
+	err := env.DB.QueryRow("SELECT expiry FROM server_sessions WHERE server_group = $1", "QA").Scan(&expiry)
+	if err != nil {
+		t.Fatalf("failed to query session: %v", err)
+	}
+	if expiry > time.Now().Unix() {
+		t.Fatalf("want session terminated, got expiry in future: %d", expiry)
+	}
+}
+
+func TestAdminTerminateServerSession_NonAdmin_Forbidden(t *testing.T) {
+	env := testutil.NewTestEnv(t)
+
+	adminEmail := "admin@example.com"
+	adminPassword := "testpassword123"
+	adminHash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
+	testutil.InsertUser(t, env.DB, adminEmail, &adminHash, true, true, true, true, "local")
+	testutil.InsertUser(t, env.DB, "user@example.com", &adminHash, true, false, false, true, "local")
+
+	testutil.InsertServer(t, env.DB, "i-3728hvi2vn2u4vn2", "test01", "off", "QA", time.Now().Unix())
+	testutil.InsertServerSession(t, env.DB, 2, "QA", time.Now().Add(2*time.Hour).Unix())
+
+	cookies := testutil.LoginAndGetCookies(t, env.Router, "user@example.com", adminPassword)
+
+	reqPayload := session.ServerSessionRequest{
+		ServerGroup: "QA",
+		Duration:    "0h",
+	}
+
+	body, _ := json.Marshal(reqPayload)
+	req := httptest.NewRequest("PUT", "/ui/admin/session", bytes.NewReader(body))
+	for _, c := range cookies {
+		req.AddCookie(c)
+	}
+
+	w := httptest.NewRecorder()
+	env.Router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("want 403, got %d, body=%s", w.Code, w.Body.String())
+	}
+
+	// Verify session was not terminated
+	var expiry int64
+	err := env.DB.QueryRow("SELECT expiry FROM server_sessions WHERE server_group = $1", "QA").Scan(&expiry)
+	if err != nil {
+		t.Fatalf("failed to query session: %v", err)
+	}
+	if expiry < time.Now().Unix() {
+		t.Fatalf("want session still active, got terminated")
+	}
+}

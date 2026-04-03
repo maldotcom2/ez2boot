@@ -45,6 +45,8 @@ func SetupBackendRoutes(
 	adminUIRouter.Use(mw.SessionAuthMiddleware()) // This pattern allows passing in params, can be simplified.
 	adminUIRouter.Use(mw.AdminMiddleware)
 
+	//// Server Sessions
+	adminUIRouter.HandleFunc("/admin/session", handlers.SessionHandler.UpdateServerSessionAdmin()).Methods("PUT")
 	// User
 	adminUIRouter.HandleFunc("/users", handlers.UserHandler.GetUsers()).Methods("GET")
 	adminUIRouter.HandleFunc("/user", handlers.UserHandler.CreateUser()).Methods("POST")
@@ -104,6 +106,8 @@ func SetupBackendRoutes(
 	adminAPIRouter.Use(mw.BasicAuthMiddleware()) // This pattern allows passing in params, can be simplified.
 	adminAPIRouter.Use(mw.AdminMiddleware)
 
+	//// Server Sessions
+	adminAPIRouter.HandleFunc("/admin/session", handlers.SessionHandler.UpdateServerSessionAdmin()).Methods("PUT")
 	// User
 	adminAPIRouter.HandleFunc("/users", handlers.UserHandler.GetUsers()).Methods("GET")
 	adminAPIRouter.HandleFunc("/user", handlers.UserHandler.CreateUser()).Methods("POST")
@@ -114,11 +118,16 @@ func SetupBackendRoutes(
 	adminUIRouter.HandleFunc("/encryption/passphrase", handlers.EncryptionHandler.RotateEncryptionPhrase()).Methods("PUT")
 	// Audit
 	adminAPIRouter.HandleFunc("/audit/events", handlers.AuditHandler.GetAuditEvents()).Methods("GET")
-	/// Auth
+	/// Ldap
 	adminAPIRouter.HandleFunc("/auth/ldap", handlers.LdapHandler.GetLdapConfig()).Methods("GET")
 	adminAPIRouter.HandleFunc("/auth/ldap", handlers.LdapHandler.SetLdapConfig()).Methods("POST")
 	adminAPIRouter.HandleFunc("/auth/ldap", handlers.LdapHandler.DeleteLdapConfig()).Methods("DELETE")
 	adminAPIRouter.HandleFunc("/auth/ldap/users/search", handlers.LdapHandler.SearchUser()).Methods("POST")
+	// Oidc
+	adminAPIRouter.HandleFunc("/auth/oidc", handlers.OidcHandler.GetOidcConfig()).Methods("GET")
+	adminAPIRouter.HandleFunc("/auth/oidc", handlers.OidcHandler.SetOidcConfig()).Methods("POST")
+	adminAPIRouter.HandleFunc("/auth/oidc", handlers.OidcHandler.DeleteOidcConfig()).Methods("DELETE")
+	adminAPIRouter.HandleFunc("/auth/oidc/test", handlers.OidcHandler.TestOidcConnection()).Methods("POST")
 
 	/////////////////////////// API subrouter and routes /////////////////////////////////
 
