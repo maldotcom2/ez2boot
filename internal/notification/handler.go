@@ -43,7 +43,7 @@ func (h *Handler) SetUserNotificationSettings() http.HandlerFunc {
 		json.NewDecoder(r.Body).Decode(&req)
 
 		var resp shared.ApiResponse[any]
-		if err := h.Service.setUserNotificationSettings(userID, req); err != nil {
+		if err := h.Service.setUserNotificationSettings(userID, req, ctx); err != nil {
 			switch {
 			case errors.Is(err, shared.ErrNotificationTypeNotSupported):
 				h.Logger.Error("Notification type not supported", "user", email, "domain", "notification", "type", req.Type)
@@ -92,7 +92,7 @@ func (h *Handler) DeleteUserNotificationSettings() http.HandlerFunc {
 		ctx := r.Context()
 		userID, email := ctxutil.GetActor(ctx)
 
-		if err := h.Service.deleteUserNotificationSettings(userID); err != nil {
+		if err := h.Service.deleteUserNotificationSettings(userID, ctx); err != nil {
 			h.Logger.Error("Failed to delete user notification settings", "user", email, "domain", "notification", "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to delete user notification"})

@@ -92,7 +92,31 @@ func (s *Service) updateUserAuthorisation(users []UpdateUserRequest, ctx context
 	return nil
 }
 
-func (s *Service) createUser(req CreateUserRequest, ctx context.Context) error {
+func (s *Service) createUser(req CreateUserRequest, ctx context.Context) (err error) {
+	actorUserID, actorEmail := ctxutil.GetActor(ctx)
+	var targetUserID int64
+
+	defer func() {
+		var reason string
+		if err != nil {
+			reason = err.Error()
+		}
+
+		s.Audit.Log(audit.Event{
+			ActorUserID:  actorUserID,
+			ActorEmail:   actorEmail,
+			TargetUserID: targetUserID,
+			TargetEmail:  req.Email,
+			Action:       "create",
+			Resource:     "user",
+			Success:      err == nil,
+			Reason:       reason,
+			Metadata: map[string]any{
+				"user type": "local",
+			},
+		})
+	}()
+
 	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
 
 	if err := s.validateEmail(req.Email); err != nil {
@@ -119,33 +143,41 @@ func (s *Service) createUser(req CreateUserRequest, ctx context.Context) error {
 		IdentityProvider: "local",
 	}
 
-	targetUserID, err := s.Repo.createUser(user)
+	targetUserID, err = s.Repo.createUser(user)
 	if err != nil {
 		return err
 	}
-
-	actorUserID, actorEmail := ctxutil.GetActor(ctx)
-	s.Audit.Log(audit.Event{
-		ActorUserID:  actorUserID,
-		ActorEmail:   actorEmail,
-		TargetUserID: targetUserID,
-		TargetEmail:  req.Email,
-		Action:       "create",
-		Resource:     "user",
-		Success:      true,
-		Metadata: map[string]any{
-			"user type": "local",
-		},
-	})
 
 	return nil
 }
 
 // Returns userID of created user
-func (s *Service) CreateExternalUser(email string, identityProvider string, ctx context.Context) (int64, error) {
-	email = strings.ToLower(email) // Normalise
-
+func (s *Service) CreateExternalUser(email string, identityProvider string, ctx context.Context) (_ int64, err error) {
 	actorUserID, actorEmail := ctxutil.GetActor(ctx)
+	var targetUserID int64
+
+	defer func() {
+		var reason string
+		if err != nil {
+			reason = err.Error()
+		}
+
+		s.Audit.Log(audit.Event{
+			ActorUserID:  actorUserID,
+			ActorEmail:   actorEmail,
+			TargetUserID: targetUserID,
+			TargetEmail:  email,
+			Action:       "create",
+			Resource:     "user",
+			Success:      err == nil,
+			Reason:       reason,
+			Metadata: map[string]any{
+				"user type": identityProvider,
+			},
+		})
+	}()
+
+	email = strings.ToLower(email) // Normalise
 
 	if err := s.validateEmail(email); err != nil {
 		return 0, err
@@ -161,50 +193,47 @@ func (s *Service) CreateExternalUser(email string, identityProvider string, ctx 
 		IdentityProvider: identityProvider,
 	}
 
-	targetUserID, err := s.Repo.createUser(user)
+	targetUserID, err = s.Repo.createUser(user)
 	if err != nil {
 		return 0, err
 	}
-
-	s.Audit.Log(audit.Event{
-		ActorUserID:  actorUserID,
-		ActorEmail:   actorEmail, // Users are created on first time login
-		TargetUserID: targetUserID,
-		TargetEmail:  email,
-		Action:       "create",
-		Resource:     "user",
-		Success:      true,
-		Metadata: map[string]any{
-			"user type": identityProvider,
-		},
-	})
 
 	// Log here - this is a service called from internally only
 	s.Logger.Info("New user created", "user", actorEmail, "domain", "user", "target_user", email)
 	return targetUserID, nil
 }
 
-func (s *Service) deleteUser(targetUserID int64, ctx context.Context) error {
+func (s *Service) deleteUser(targetUserID int64, ctx context.Context) (err error) {
 	actorUserID, actorEmail := ctxutil.GetActor(ctx)
+	var targetEmail string
+
+	defer func() {
+		var reason string
+		if err != nil {
+			reason = err.Error()
+		}
+
+		s.Audit.Log(audit.Event{
+			ActorUserID:  actorUserID,
+			ActorEmail:   actorEmail,
+			TargetUserID: targetUserID,
+			TargetEmail:  targetEmail,
+			Action:       "delete",
+			Resource:     "user",
+			Success:      err == nil,
+			Reason:       reason,
+		})
+	}()
+
 	if targetUserID == actorUserID {
 		return shared.ErrCannotDeleteOwnUser
 	}
 
-	targetEmail, _ := s.GetEmailFromUserID(targetUserID)
+	targetEmail, _ = s.GetEmailFromUserID(targetUserID)
 
 	if err := s.Repo.deleteUser(targetUserID); err != nil {
 		return err
 	}
-
-	s.Audit.Log(audit.Event{
-		ActorUserID:  actorUserID,
-		ActorEmail:   actorEmail,
-		TargetUserID: targetUserID,
-		TargetEmail:  targetEmail,
-		Action:       "delete",
-		Resource:     "user",
-		Success:      true,
-	})
 
 	return nil
 }
