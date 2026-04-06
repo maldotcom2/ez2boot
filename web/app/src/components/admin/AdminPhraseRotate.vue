@@ -1,20 +1,29 @@
 <template>
   <div class="rotate-phrase-container">
-      <form class="rotate-phrase-form" @submit.prevent="rotatePhrase">
-        <p class="warning">Warning! This feature will re-encrypt all currently encrypted settings using the passphrase entered below.
-            The environment variable must then be updated to this new passphrase and ez2boot restarted. Until that is done, 
-            numerous features may not operate correctly. If the new passphrase is lost before updating the environment variable, 
-            user notification settings, and external auth settings will need to be re-applied.
-            This is a one-shot. The passphrase can only be changed once before the environment variable must be updated. 
-        </p>
-        <div class="checkbox-row">
-            <label for="acknowledge">I Understand</label>
-            <input id="acknowledge" class="checkbox" type="checkbox" v-model="acknowledge"/>
-        </div>
-        <input type="text" :disabled="!acknowledge || messageType === 'success'" placeholder="New phrase" v-model="phrase"/>
-        <button type="submit" :disabled="!phrase || !acknowledge || messageType === 'success'">Rotate</button>
-        <p class="result" :class="messageType">{{ message || '\u00A0' }}</p>
-      </form>
+    <form class="rotate-phrase-form" @submit.prevent="rotatePhrase">
+      <p class="warning">
+        Warning! This feature will re-encrypt all currently encrypted settings using the passphrase
+        entered below. The environment variable must then be updated to this new passphrase and
+        ez2boot restarted. Until that is done, numerous features may not operate correctly. If the
+        new passphrase is lost before updating the environment variable, user notification settings,
+        and external auth settings will need to be re-applied. This is a one-shot. The passphrase
+        can only be changed once before the environment variable must be updated.
+      </p>
+      <div class="checkbox-row">
+        <label for="acknowledge">I Understand</label>
+        <input id="acknowledge" class="checkbox" type="checkbox" v-model="acknowledge" />
+      </div>
+      <input
+        type="text"
+        :disabled="!acknowledge || messageType === 'success'"
+        placeholder="New phrase"
+        v-model="phrase"
+      />
+      <button type="submit" :disabled="!phrase || !acknowledge || messageType === 'success'">
+        Rotate
+      </button>
+      <p class="result" :class="messageType">{{ message || '\u00A0' }}</p>
+    </form>
   </div>
 </template>
 
@@ -32,18 +41,11 @@ async function rotatePhrase() {
   messageType.value = ''
 
   try {
-    const response = await axios.put('ui/encryption/passphrase',
-      {
-        phrase: phrase.value,
-      },
-      {
-        withCredentials: true // Cookies
-      }
-    )
-    
+    await axios.put('/ui/encryption/passphrase', {
+      phrase: phrase.value,
+    })
     message.value = 'Encryption phrase rotated - set environment variable now!'
     messageType.value = 'success'
-
   } catch (err) {
     messageType.value = 'error'
     if (err.response) {
@@ -61,7 +63,6 @@ async function rotatePhrase() {
 </script>
 
 <style scoped>
-    
 .rotate-phrase-container {
   background-color: var(--container-modal);
   width: 100%;
@@ -83,7 +84,7 @@ async function rotatePhrase() {
   border-radius: var(--big-radius);
 }
 
-.rotate-phrase-form input[type="text"],
+.rotate-phrase-form input[type='text'],
 .rotate-phrase-form button {
   width: 50%;
 }
@@ -97,12 +98,12 @@ async function rotatePhrase() {
   gap: 1rem;
 }
 
-.checkbox-row input[type="checkbox"] {
+.checkbox-row input[type='checkbox'] {
   width: var(--input-height);
 }
 
 .warning {
-    color: var(--warn-amber);
+  color: var(--warn-amber);
 }
 
 .result {
@@ -118,6 +119,4 @@ async function rotatePhrase() {
 .result.success {
   color: var(--success-msg);
 }
-
-
 </style>

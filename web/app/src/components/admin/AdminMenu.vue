@@ -8,10 +8,9 @@
 </template>
 
 <script setup>
-
 // Props
 const props = defineProps({
-  modelValue: Object
+  modelValue: Object,
 })
 
 // Emits for v-model
@@ -38,7 +37,6 @@ function showPhraseRotate() {
 function showExternalAuth() {
   emit('update:modelValue', ExternalAuth)
 }
-
 </script>
 
 <style scoped>

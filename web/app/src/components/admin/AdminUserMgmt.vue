@@ -21,13 +21,50 @@
       <tbody>
         <tr v-for="user in users" :key="user.email">
           <td>{{ user.email }}</td>
-          <td><input class="checkbox" type="checkbox" v-model="user.is_active" @change="markChanged(user.user_id)" :disabled="user.user_id === currentUserId"/></td>
-          <td><input class="checkbox" type="checkbox" v-model="user.is_admin" @change="markChanged(user.user_id)" :disabled="user.user_id === currentUserId"/></td>
-          <td><input v-if="user.identity_provider==='local'" class="checkbox" type="checkbox" v-model="user.api_enabled" @change="markChanged(user.user_id)" :disabled="user.user_id === currentUserId"/></td>
-          <td><input class="checkbox" type="checkbox" v-model="user.ui_enabled" @change="markChanged(user.user_id)" :disabled="user.user_id === currentUserId"/></td>
+          <td>
+            <input
+              class="checkbox"
+              type="checkbox"
+              v-model="user.is_active"
+              @change="markChanged(user.user_id)"
+              :disabled="user.user_id === currentUserId"
+            />
+          </td>
+          <td>
+            <input
+              class="checkbox"
+              type="checkbox"
+              v-model="user.is_admin"
+              @change="markChanged(user.user_id)"
+              :disabled="user.user_id === currentUserId"
+            />
+          </td>
+          <td>
+            <input
+              v-if="user.identity_provider === 'local'"
+              class="checkbox"
+              type="checkbox"
+              v-model="user.api_enabled"
+              @change="markChanged(user.user_id)"
+              :disabled="user.user_id === currentUserId"
+            />
+          </td>
+          <td>
+            <input
+              class="checkbox"
+              type="checkbox"
+              v-model="user.ui_enabled"
+              @change="markChanged(user.user_id)"
+              :disabled="user.user_id === currentUserId"
+            />
+          </td>
           <td>{{ user.identity_provider }}</td>
           <td>{{ user.last_login ? new Date(user.last_login * 1000).toLocaleString() : '-' }}</td>
-          <td><button @click="deleteUser(user.user_id)" :disabled="user.user_id === currentUserId">Delete User</button></td>
+          <td>
+            <button @click="deleteUser(user.user_id)" :disabled="user.user_id === currentUserId">
+              Delete User
+            </button>
+          </td>
         </tr>
       </tbody>
     </table>
@@ -57,9 +94,8 @@ async function getUsers() {
   try {
     const response = await axios.get('/ui/users')
     if (response.data.success) {
-        users.value = response.data.data
+      users.value = response.data.data
     }
-
   } catch (err) {
     messageType.value = 'error'
     if (err.response) {
@@ -79,23 +115,19 @@ async function deleteUser(userID) {
   message.value = ''
   messageType.value = ''
 
-  if (!confirm("Are you sure you want to delete this user?")) {
+  if (!confirm('Are you sure you want to delete this user?')) {
     return
   }
-  
+
   try {
-    await axios.delete('/ui/user',
-      {
-        data: { user_id: userID },
-        withCredentials: true
-      }
-    )
+    await axios.delete('/ui/user', {
+      data: { user_id: userID },
+    })
 
     getUsers()
 
     message.value = 'User deleted'
     messageType.value = 'success'
-
   } catch (err) {
     messageType.value = 'error'
     if (err.response) {
@@ -127,13 +159,13 @@ async function saveChanges() {
   messageType.value = ''
 
   const payload = users.value
-    .filter(u => changedUsers.value.has(u.user_id)) // only changed users
-    .map(u => ({
+    .filter((u) => changedUsers.value.has(u.user_id)) // only changed users
+    .map((u) => ({
       user_id: u.user_id,
       is_active: u.is_active,
       is_admin: u.is_admin,
       api_enabled: u.api_enabled,
-      ui_enabled: u.ui_enabled
+      ui_enabled: u.ui_enabled,
     }))
   try {
     await axios.put('/ui/user/auth', payload)
@@ -141,7 +173,6 @@ async function saveChanges() {
 
     message.value = 'Auth changes saved'
     messageType.value = 'success'
-
   } catch (err) {
     messageType.value = 'error'
     if (err.response) {
@@ -164,12 +195,11 @@ function createUser() {
   // Swap the right pane to Create User
   emit('switch-pane', AdminCreateUser)
 }
-
 </script>
 
 <style scoped>
 p {
-    color: var(--low-glare)
+  color: var(--low-glare);
 }
 
 .user-mgmt-container {
@@ -209,14 +239,30 @@ p {
   text-align: left;
 }
 
-.user-mgmt-table th:nth-child(1) { width: 24%; } /* Email */
-.user-mgmt-table th:nth-child(2) { width: 8%; } /* Active */
-.user-mgmt-table th:nth-child(3) { width: 8%; } /* Admin */
-.user-mgmt-table th:nth-child(4) { width: 8%; } /* API */
-.user-mgmt-table th:nth-child(5) { width: 8%; } /* UI */
-.user-mgmt-table th:nth-child(6) { width: 8%; } /* IDP */
-.user-mgmt-table th:nth-child(7) { width: 21%; } /* Last Login */
-.user-mgmt-table th:nth-child(8) { width: 15%; } /* Actions */
+.user-mgmt-table th:nth-child(1) {
+  width: 24%;
+} /* Email */
+.user-mgmt-table th:nth-child(2) {
+  width: 8%;
+} /* Active */
+.user-mgmt-table th:nth-child(3) {
+  width: 8%;
+} /* Admin */
+.user-mgmt-table th:nth-child(4) {
+  width: 8%;
+} /* API */
+.user-mgmt-table th:nth-child(5) {
+  width: 8%;
+} /* UI */
+.user-mgmt-table th:nth-child(6) {
+  width: 8%;
+} /* IDP */
+.user-mgmt-table th:nth-child(7) {
+  width: 21%;
+} /* Last Login */
+.user-mgmt-table th:nth-child(8) {
+  width: 15%;
+} /* Actions */
 
 .result {
   min-height: 1.2rem;
@@ -231,5 +277,4 @@ p {
 .result.success {
   color: var(--success-msg);
 }
-
 </style>

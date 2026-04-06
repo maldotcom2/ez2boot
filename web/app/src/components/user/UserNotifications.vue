@@ -13,7 +13,11 @@
       <p class="result" :class="messageType">{{ message || '\u00A0' }}</p>
     </aside>
     <main class="config-panel">
-      <component v-if="selectedType" :is="formComponents[selectedType]" v-model="notificationData[selectedType]"/>
+      <component
+        v-if="selectedType"
+        :is="formComponents[selectedType]"
+        v-model="notificationData[selectedType]"
+      />
     </main>
   </div>
 </template>
@@ -35,10 +39,7 @@ const originalData = reactive({})
 
 // For enabling delete button
 const canDelete = computed(() => {
-  return (
-    savedType.value !== null &&
-    selectedType.value === savedType.value
-  )
+  return savedType.value !== null && selectedType.value === savedType.value
 })
 
 // Track changes to saved notifications
@@ -48,8 +49,6 @@ const isDirty = computed(() => {
   const original = originalData[selectedType.value] || {}
   return JSON.stringify(current) !== JSON.stringify(original)
 })
-
-
 
 // Gracefully handle case of no user notification settings from load, pass valid object to child
 watch(selectedType, (newType) => {
@@ -65,7 +64,7 @@ watch(selectedType, (newType) => {
 const formComponents = {
   email: EmailForm,
   teams: TeamsForm,
-  telegram: TelegramForm
+  telegram: TelegramForm,
 }
 
 // Get supported channels
@@ -75,7 +74,7 @@ async function getNotificationTypes() {
   try {
     const response = await axios.get('ui/notification/types')
     if (response.data.success) {
-    supportedTypes.value = response.data.data
+      supportedTypes.value = response.data.data
       if (supportedTypes.value.length > 0) {
         selectedType.value = supportedTypes.value[0].type // default
       } else {
@@ -140,27 +139,26 @@ async function saveUserNotification() {
     // Build the payload
     const payload = {
       type: selectedType.value,
-      channel_config: notificationData[selectedType.value] || {}
+      channel_config: notificationData[selectedType.value] || {},
     }
 
-    const response = await axios.post('/ui/user/notification', payload)
-    if (response.data.success) {
-      message.value = 'Notification settings saved'
-      messageType.value = 'success'
-      savedType.value = selectedType.value
+    await axios.post('/ui/user/notification', payload)
+    message.value = 'Notification settings saved'
+    messageType.value = 'success'
+    savedType.value = selectedType.value
 
-      // Snapshot data
-      originalData[selectedType.value] = JSON.parse(JSON.stringify(notificationData[selectedType.value]))
+    // Snapshot data
+    originalData[selectedType.value] = JSON.parse(
+      JSON.stringify(notificationData[selectedType.value]),
+    )
 
-      // Purge values of non-selected notification forms
-      Object.keys(notificationData).forEach((type) => {
-        if (type !== selectedType.value) {
-          delete notificationData[type]
-          delete originalData[type]
-        }
-      })
-    }
-
+    // Purge values of non-selected notification forms
+    Object.keys(notificationData).forEach((type) => {
+      if (type !== selectedType.value) {
+        delete notificationData[type]
+        delete originalData[type]
+      }
+    })
   } catch (err) {
     messageType.value = 'error'
     if (err.response) {
@@ -177,21 +175,21 @@ async function saveUserNotification() {
 async function deleteUserNotification() {
   message.value = ''
   messageType.value = ''
-  if (!confirm("Are you sure you want to delete notification settings?")) {
+  if (!confirm('Are you sure you want to delete notification settings?')) {
     return
   }
 
   try {
-    const response = await axios.delete('/ui/user/notification')
-    if (response.data.success) {
-      notificationData[selectedType.value] = {}
-      message.value = 'Notification settings deleted'
-      messageType.value = 'success'
-      savedType.value = null
+    await axios.delete('/ui/user/notification')
+    notificationData[selectedType.value] = {}
+    message.value = 'Notification settings deleted'
+    messageType.value = 'success'
+    savedType.value = null
 
-      // Snapshot data
-      originalData[selectedType.value] = JSON.parse(JSON.stringify(notificationData[selectedType.value]))
-    }
+    // Snapshot data
+    originalData[selectedType.value] = JSON.parse(
+      JSON.stringify(notificationData[selectedType.value]),
+    )
   } catch (err) {
     messageType.value = 'error'
     if (err.response) {
@@ -280,6 +278,4 @@ select {
 .result.success {
   color: var(--success-msg);
 }
-
-
 </style>

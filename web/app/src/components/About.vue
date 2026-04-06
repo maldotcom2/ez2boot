@@ -1,20 +1,29 @@
 <template>
-  <div class="page" >
+  <div class="page">
     <header>
       <UserNav />
     </header>
-    <div class="centre-container" >
-      <div class="legal-block"> 
+    <div class="centre-container">
+      <div class="legal-block">
         Copyright © 2026 maldotcom2<br />
         <span>
           Version: {{ version.version }} ({{ version.buildDate }})
-           <span class="update-nag" v-if="version.updateAvailable"><a :href="version.releaseURL" target="_blank">Update Available! - {{ version.latestRelease }}</a></span>
-           <span v-else>Up to date</span>
-           <span> - last checked: {{ version.checkedAt ? new Date(version.checkedAt * 1000).toLocaleString() : 'never' }}</span>
+          <span class="update-nag" v-if="version.updateAvailable"
+            ><a :href="version.releaseURL" target="_blank"
+              >Update Available! - {{ version.latestRelease }}</a
+            ></span
+          >
+          <span v-else>Up to date</span>
+          <span>
+            - last checked:
+            {{
+              version.checkedAt ? new Date(version.checkedAt * 1000).toLocaleString() : 'never'
+            }}</span
+          >
         </span>
         <a href="/LICENSE.txt" target="_blank">AGPLv3</a>
         <a href="https://github.com/maldotcom2/ez2boot/" target="_blank">Source</a>
-        No warranty 
+        No warranty
       </div>
     </div>
   </div>
@@ -25,11 +34,9 @@ import UserNav from './user/UserNav.vue'
 import { useVersionStore } from '@/stores/version'
 
 const version = useVersionStore()
-
 </script>
 
 <style scoped>
-
 .page {
   display: flex;
   flex-direction: column;
@@ -70,5 +77,4 @@ header {
 .update-nag a {
   color: var(--warn-amber);
 }
-
 </style>

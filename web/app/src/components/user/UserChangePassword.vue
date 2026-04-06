@@ -32,25 +32,19 @@ async function changePassword() {
   messageType.value = ''
 
   try {
-    const response = await axios.put('ui/user/password',
-      {
-        current_password: currentPassword.value,
-        new_password: newPassword.value
-      },
-      {
-        withCredentials: true // Cookies
-      }
-    )
+    await axios.put('ui/user/password', {
+      current_password: currentPassword.value,
+      new_password: newPassword.value,
+    })
 
     message.value = 'Password change successful'
     messageType.value = 'success'
     setTimeout(() => {
-        router.push({
+      router.push({
         path: '/login',
-        query: { message: 'password-changed' }
+        query: { message: 'password-changed' },
       })
     }, 2000)
-
   } catch (err) {
     messageType.value = 'error'
     if (err.response) {
@@ -65,11 +59,9 @@ async function changePassword() {
     }
   }
 }
-
 </script>
 
 <style scoped>
-
 .user-change-password {
   display: flex;
   width: 100%;
@@ -117,6 +109,4 @@ button {
 .result.success {
   color: var(--success-msg);
 }
-
-
 </style>

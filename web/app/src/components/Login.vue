@@ -1,5 +1,5 @@
 <template>
-  <div class="centre-container" >
+  <div class="centre-container">
     <form class="login-form" @submit.prevent="login">
       <h1>Login</h1>
       <template v-if="!mfaRequired">
@@ -19,7 +19,7 @@
       </template>
       <template v-else>
         <p>MFA required: Open your authenticator app and enter the 6-digit code</p>
-        <input v-model="mfaCode" maxlength="6"/>
+        <input v-model="mfaCode" maxlength="6" />
         <button type="button" :disabled="mfaCode.length !== 6" @click="verifyMFA">Verify</button>
       </template>
       <p class="result" :class="messageType">{{ message || '\u00A0' }}</p>
@@ -58,15 +58,10 @@ async function login() {
   messageType.value = ''
 
   try {
-    const response = await axios.post('ui/auth/login',
-      {
-        email: email.value,
-        password: password.value
-      },
-      {
-        withCredentials: true // Cookies
-      }
-    )
+    const response = await axios.post('ui/auth/login', {
+      email: email.value,
+      password: password.value,
+    })
 
     // Intercept if MFA is required for this user
     if (response.data.data?.mfa_required) {
@@ -79,10 +74,9 @@ async function login() {
     messageType.value = 'success'
     setTimeout(() => {
       router.push({
-      path: '/dashboard',
-    })
+        path: '/dashboard',
+      })
     }, 1000)
-
   } catch (err) {
     messageType.value = 'error'
     if (err.response) {
@@ -103,21 +97,12 @@ async function verifyMFA() {
   messageType.value = ''
 
   try {
-    const response = await axios.post('ui/user/mfa/verify',
-      { 
-        code: mfaCode.value 
-      },
-      { 
-        withCredentials: true 
-      }
-    )
-
-    if (response.data.success) {
-      message.value = 'Login successful'
-      messageType.value = 'success'
-      setTimeout(() => router.push('/dashboard'), 1000)
-    }
-
+    await axios.post('ui/user/mfa/verify', {
+      code: mfaCode.value,
+    })
+    message.value = 'Login successful'
+    messageType.value = 'success'
+    setTimeout(() => router.push('/dashboard'), 1000)
   } catch (err) {
     messageType.value = 'error'
     if (err.response) {
@@ -136,10 +121,8 @@ async function getOidcStatus() {
 
   try {
     const response = await axios.get('ui/auth/oidc/status')
-    if (response.data.success) {
-      if (response.data.data.has_oidc) {
-        return true
-      }
+    if (response.data.data.has_oidc) {
+      return true
     }
     return false
   } catch (err) {
@@ -161,7 +144,6 @@ function oidcLogin() {
 onMounted(async () => {
   oidcStatus.value = await getOidcStatus()
 })
-
 </script>
 
 <style scoped>
@@ -187,7 +169,7 @@ onMounted(async () => {
   outline: auto;
 }
 
-button[type="submit"] {
+button[type='submit'] {
   margin-top: 1rem;
 }
 
