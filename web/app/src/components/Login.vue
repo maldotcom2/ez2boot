@@ -42,23 +42,13 @@ const oidcStatus = ref(false)
 const message = ref('')
 const messageType = ref('')
 
-if (route.query.message === 'password-changed') {
-  messageType.value = 'success'
-  message.value = 'Your password was changed. Please log in again.'
-}
-
-if (route.query.message === 'user-created') {
-  messageType.value = 'success'
-  message.value = 'Initial user created. Please login.'
-}
-
 // async login function
 async function login() {
   message.value = ''
   messageType.value = ''
 
   try {
-    const response = await axios.post('ui/auth/login', {
+    const response = await axios.post('/ui/auth/login', {
       email: email.value,
       password: password.value,
     })
@@ -97,7 +87,7 @@ async function verifyMFA() {
   messageType.value = ''
 
   try {
-    await axios.post('ui/user/mfa/verify', {
+    await axios.post('/ui/user/mfa/verify', {
       code: mfaCode.value,
     })
     message.value = 'Login successful'
@@ -120,7 +110,7 @@ async function getOidcStatus() {
   messageType.value = ''
 
   try {
-    const response = await axios.get('ui/auth/oidc/status')
+    const response = await axios.get('/ui/auth/oidc/status')
     if (response.data.data.has_oidc) {
       return true
     }
@@ -143,6 +133,16 @@ function oidcLogin() {
 
 onMounted(async () => {
   oidcStatus.value = await getOidcStatus()
+
+  if (route.query.message === 'password-changed') {
+    messageType.value = 'success'
+    message.value = 'Your password was changed. Please log in again.'
+  }
+
+  if (route.query.message === 'user-created') {
+    messageType.value = 'success'
+    message.value = 'Initial user created. Please login.'
+  }
 })
 </script>
 
