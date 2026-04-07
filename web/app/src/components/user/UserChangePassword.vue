@@ -10,7 +10,13 @@
         New Password
         <input v-model="newPassword" id="new-password" type="password" />
       </label>
-      <button type="submit" :disabled="!currentPassword || !newPassword">Change</button>
+      <label>
+        Confirm Password
+        <input v-model="confirmPassword" type="password" />
+      </label>
+      <button type="submit" :disabled="!currentPassword || !newPassword || !confirmPassword">
+        Change
+      </button>
       <p class="result" :class="messageType">{{ message || '\u00A0' }}</p>
     </form>
   </div>
@@ -24,19 +30,21 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const currentPassword = ref('')
 const newPassword = ref('')
+const confirmPassword = ref('')
 const message = ref('')
 const messageType = ref('')
 
 async function changePassword() {
-  message.value = ''
-  messageType.value = ''
-
+  if (newPassword.value !== confirmPassword.value) {
+    message.value = 'New password and confirm password do not match'
+    messageType.value = 'error'
+    return
+  }
   try {
     await axios.put('/ui/user/password', {
       current_password: currentPassword.value,
       new_password: newPassword.value,
     })
-
     message.value = 'Password change successful'
     messageType.value = 'success'
     setTimeout(() => {

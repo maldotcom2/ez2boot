@@ -34,7 +34,7 @@ const messageType = ref('')
 
 async function createFirstUser() {
   if (password.value !== confirmPassword.value) {
-    message.value = 'password and confirm password do not match'
+    message.value = 'Password and confirm password do not match'
     messageType.value = 'error'
     return
   }

@@ -56,7 +56,7 @@ function about() {
 
 async function logout() {
   try {
-    await axios.post('ui/user/logout')
+    await axios.post('/ui/user/logout')
     user.$reset() // purge User store
     version.$reset() // purge Version store
     router.push('/login')

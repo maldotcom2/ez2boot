@@ -102,15 +102,9 @@ async function searchLdap() {
   ldapResult.value = null
 
   try {
-    const response = await axios.post(
-      'ui/auth/ldap/users/search',
-      {
-        query: ldapQuery.value,
-      },
-      {
-        withCredentials: true, // Cookies
-      },
-    )
+    const response = await axios.post('/ui/auth/ldap/users/search', {
+      query: ldapQuery.value,
+    })
 
     if (response.data.success) {
       ldapResult.value = response.data.data
