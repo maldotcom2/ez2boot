@@ -205,3 +205,40 @@ func TestServerSessionWorker_Success(t *testing.T) {
 		}
 	}
 }
+
+func TestUserSessionWorker_Success(t *testing.T) {
+    env := testutil.NewTestEnv(t)
+
+    ctx, cancel := context.WithCancel(context.Background())
+    defer cancel()
+
+    env.Cfg.InternalClock = 1 * time.Second
+
+    // Create user
+    adminEmail := "admin@example.com"
+    adminHash := "$argon2id$v=19$m=131072,t=4,p=1$bBVby41uAKJ7KghSdCEt8g$80aCufSfLP2tAZ9bxAjbs8mArxgjmgrP3UkPn8MKCJY"
+    testutil.InsertUser(t, env.DB, adminEmail, &adminHash, true, true, true, true, "local")
+
+    // Insert expired user session
+	_, err := env.DB.Exec("INSERT INTO user_sessions (token_hash, session_expiry, user_id) VALUES ($1, $2, $3)",
+    "test-token-hash", time.Now().Add(-1*time.Hour).Unix(), 1)
+    if err != nil {
+        t.Fatalf("failed to insert user session: %v", err)
+    }
+
+    // Start worker
+    worker.StartExpiredUserSessionCleanup(*env.Worker, ctx)
+
+    // Allow time for worker to progress
+    time.Sleep(1500 * time.Millisecond)
+
+    // Verify session is deleted
+    var count int
+    err = env.DB.QueryRow("SELECT COUNT(*) FROM user_sessions WHERE token_hash = 'test-token-hash'").Scan(&count)
+    if err != nil {
+        t.Fatalf("failed to query user sessions: %v", err)
+    }
+    if count != 0 {
+        t.Errorf("want expired session deleted, got %d rows", count)
+    }
+}
