@@ -72,7 +72,7 @@ async function getNotificationTypes() {
   message.value = ''
   messageType.value = ''
   try {
-    const response = await axios.get('ui/notification/types')
+    const response = await axios.get('/ui/notification/types')
     if (response.data.success) {
       supportedTypes.value = response.data.data
       if (supportedTypes.value.length > 0) {

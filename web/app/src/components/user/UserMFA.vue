@@ -47,7 +47,7 @@ async function enrolMFA() {
   messageType.value = ''
 
   try {
-    const response = await axios.post('ui/user/mfa')
+    const response = await axios.post('/ui/user/mfa')
     if (response.data.success) {
       qrCode.value = response.data.data
     }
@@ -71,7 +71,7 @@ async function confirmMFA() {
   messageType.value = ''
 
   try {
-    await axios.post('ui/user/mfa/confirm', {
+    await axios.post('/ui/user/mfa/confirm', {
       code: mfaCode.value,
     })
     message.value = 'Successfully enrolled MFA'
@@ -99,7 +99,7 @@ async function deleteMFA() {
   messageType.value = ''
 
   try {
-    await axios.post('ui/user/mfa/delete', {
+    await axios.post('/ui/user/mfa/delete', {
       code: mfaCode.value,
     })
     mfaCode.value = ''
