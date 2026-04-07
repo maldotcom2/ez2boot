@@ -1,9 +1,9 @@
 <template>
   <div class="channel-config">
     <label for="token">Token</label>
-    <input id="token" v-model="config.token"/>
+    <input id="token" v-model="config.token" />
     <label for="chat-id">Chat ID</label>
-    <input id="chat-id" v-model="config.chat_id"/>
+    <input id="chat-id" v-model="config.chat_id" />
   </div>
 </template>
 
@@ -13,8 +13,8 @@ import { toRef } from 'vue'
 const props = defineProps({
   modelValue: {
     type: Object,
-    required: true
-  }
+    required: true,
+  },
 })
 
 defineEmits(['update:modelValue'])
@@ -22,6 +22,4 @@ defineEmits(['update:modelValue'])
 const config = toRef(props, 'modelValue')
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

@@ -1,4 +1,6 @@
-html, body, #app {
+html,
+body,
+#app {
   height: 100%;
   margin: 0;
   padding: 0;
@@ -7,29 +9,29 @@ html, body, #app {
 }
 
 :root {
-  --background:rgb(20, 28, 43);
-  --container-modal:rgb(36, 44, 57);
-  --low-glare:rgb(228, 228, 228);
-  --btn-blue:rgb(53, 127, 255);
-  --warn-amber:rgb(222, 145, 29);
-  --btn-disabled:rgb(145,145,145);
+  --background: rgb(20, 28, 43);
+  --container-modal: rgb(36, 44, 57);
+  --low-glare: rgb(228, 228, 228);
+  --btn-blue: rgb(53, 127, 255);
+  --warn-amber: rgb(222, 145, 29);
+  --btn-disabled: rgb(145, 145, 145);
   --error-msg: rgb(160, 34, 34);
-  --success-msg: rgb(228,228,228);
+  --success-msg: rgb(228, 228, 228);
   --small-radius: 7px;
   --big-radius: 15px;
   --input-height: 30px;
 }
 
 h1 {
-    color: var(--low-glare);
-    font-size: 20px;
+  color: var(--low-glare);
+  font-size: 20px;
 }
 
 input {
-    height: var(--input-height);
-    background-color: var(--low-glare);
-    border: none;
-    border-radius: var(--small-radius);
+  height: var(--input-height);
+  background-color: var(--low-glare);
+  border: none;
+  border-radius: var(--small-radius);
 }
 
 select {
@@ -37,7 +39,7 @@ select {
 }
 
 input:focus {
-  outline: none
+  outline: none;
 }
 
 button {
@@ -83,7 +85,7 @@ button:not(:disabled):hover {
   margin-bottom: 1rem;
 }
 
-.channel-config input[type="checkbox"] {
+.channel-config input[type='checkbox'] {
   width: var(--input-height);
   margin: 0;
   display: inline-block;
@@ -97,13 +99,9 @@ button:not(:disabled):hover {
   margin-bottom: 1rem;
 }
 
-.auth-config input[type="checkbox"] {
+.auth-config input[type='checkbox'] {
   width: var(--input-height);
   margin: 0;
   display: inline-block;
   margin-bottom: 1rem;
 }
-
-
-
-

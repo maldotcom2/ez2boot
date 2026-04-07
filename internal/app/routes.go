@@ -21,7 +21,6 @@ func SetupBackendRoutes(
 	/////////////////////////// Public routes, no auth ///////////////////////////////////
 
 	publicRouter := router.PathPrefix("/ui").Subrouter()
-	publicRouter.Use(mw.CORSMiddleware)
 	publicRouter.Use(mw.PublicLimitMiddleware)
 	publicRouter.Use(mw.JsonContentTypeMiddleware)
 
@@ -39,7 +38,6 @@ func SetupBackendRoutes(
 	/////////////////////////// Admin UI subrouter and routes ////////////////////////////
 
 	adminUIRouter := router.PathPrefix("/ui").Subrouter()
-	adminUIRouter.Use(mw.CORSMiddleware)
 	adminUIRouter.Use(mw.PrivateLimitMiddleware)
 	adminUIRouter.Use(mw.JsonContentTypeMiddleware)
 	adminUIRouter.Use(mw.SessionAuthMiddleware()) // This pattern allows passing in params, can be simplified.
@@ -71,7 +69,6 @@ func SetupBackendRoutes(
 	/////////////////////////// UI subrouter and routes //////////////////////////////////
 
 	uiRouter := router.PathPrefix("/ui").Subrouter()
-	uiRouter.Use(mw.CORSMiddleware)
 	uiRouter.Use(mw.PrivateLimitMiddleware)
 	uiRouter.Use(mw.JsonContentTypeMiddleware)
 	uiRouter.Use(mw.SessionAuthMiddleware()) // This pattern allows passing in params, can be simplified.
@@ -100,7 +97,6 @@ func SetupBackendRoutes(
 	/////////////////////////// Admin API subrouter and routes ///////////////////////////
 
 	adminAPIRouter := router.PathPrefix("/api/v1").Subrouter()
-	adminAPIRouter.Use(mw.CORSMiddleware)
 	adminAPIRouter.Use(mw.PrivateLimitMiddleware)
 	adminAPIRouter.Use(mw.JsonContentTypeMiddleware)
 	adminAPIRouter.Use(mw.BasicAuthMiddleware()) // This pattern allows passing in params, can be simplified.
@@ -132,7 +128,6 @@ func SetupBackendRoutes(
 	/////////////////////////// API subrouter and routes /////////////////////////////////
 
 	apiRouter := router.PathPrefix("/api/v1").Subrouter()
-	apiRouter.Use(mw.CORSMiddleware)
 	apiRouter.Use(mw.PrivateLimitMiddleware)
 	apiRouter.Use(mw.JsonContentTypeMiddleware)
 	apiRouter.Use(mw.BasicAuthMiddleware()) // This pattern allows passing in params, can be simplified.

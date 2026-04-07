@@ -176,8 +176,7 @@ async function fetchAuditEvents(cursor = null) {
     }
 
     const response = await axios.get('/ui/audit/events', {
-      params,
-      withCredentials: true
+      params
     })
 
     if (response.data.success) {

@@ -18,7 +18,7 @@ export const useVersionStore = defineStore('version', {
       if (this.loaded) return // Stops re-fetch
 
       try {
-        const response = await axios.get('ui/version', { withCredentials: true })
+        const response = await axios.get('/ui/version')
         this.version = response.data.data.version
         this.buildDate = response.data.data.build_date
         this.updateAvailable = response.data.data.update_available
@@ -30,6 +30,6 @@ export const useVersionStore = defineStore('version', {
         this.error = err?.response?.data?.error || err.message
         throw err
       }
-    }
-  }
+    },
+  },
 })

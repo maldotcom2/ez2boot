@@ -1,7 +1,7 @@
 <template>
-  <div class="page" >
+  <div class="page">
     <header>
-        <UserNav />
+      <UserNav />
     </header>
     <div>
       <ServerSummary />
@@ -18,13 +18,12 @@ import { useUserStore } from '@/stores/user'
 const user = useUserStore()
 
 onMounted(async () => {
-    try {
-      await user.loadUser()
-    } catch (err) {
-      //
-    }
+  try {
+    await user.loadUser()
+  } catch (err) {
+    //
+  }
 })
-
 </script>
 
 <style scoped>
@@ -38,5 +37,4 @@ header {
   box-shadow: 0 1px 0 0 var(--low-glare);
   z-index: 10;
 }
-
 </style>
