@@ -67,7 +67,9 @@
               <!-- End Session enabled for current user-->
               <button
                 @click="endServerSession(server.server_group)"
-                :disabled="server.current_user !== user.email && !user.isAdmin"
+                :disabled="
+                  !server.current_user || (server.current_user !== user.email && !user.isAdmin)
+                "
               >
                 End Session
               </button>
