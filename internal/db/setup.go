@@ -1,11 +1,39 @@
 package db
 
 import (
+	"fmt"
+	"time"
+
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// First time table setup
+type Migration struct {
+    Version int
+    SQL     string
+}
+
+var migrations = []Migration{
+	// Add numbered migration statements as needed eg:
+    //{Version: 1, SQL: `ALTER TABLE...`},
+}
+
 func (r *Repository) SetupDB() error {
+	if err := r.createTables(); err != nil {
+		return err
+	}
+
+	if err := r.createTriggers(); err != nil {
+		return err
+	}
+
+	if err := r.runMigrations(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Repository) createTables() error {
 	// Create audit table
 	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, actor_user_id INTEGER NOT NULL, actor_email TEXT NOT NULL, target_user_id INTEGER, target_email TEXT, action TEXT NOT NULL, resource TEXT NOT NULL, success BOOLEAN NOT NULL CHECK (success IN (0, 1)), reason TEXT, metadata TEXT, time_stamp INTEGER NOT NULL)"); err != nil {
 		return err
@@ -22,7 +50,7 @@ func (r *Repository) SetupDB() error {
 	}
 
 	// Create user table
-	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT UNIQUE NOT NULL, password_hash TEXT, is_active INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1)), is_admin INTEGER NOT NULL DEFAULT 0 CHECK (is_admin IN (0, 1)), api_enabled INTEGER NOT NULL DEFAULT 0 CHECK (api_enabled IN (0, 1)), ui_enabled INTEGER NOT NULL DEFAULT 1 CHECK (ui_enabled IN (0, 1)), identity_provider TEXT NOT NULL, last_login INTEGER)"); err != nil {
+	if _, err := r.DB.Exec("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT UNIQUE NOT NULL, password_hash TEXT, is_active INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1)), is_admin INTEGER NOT NULL DEFAULT 0 CHECK (is_admin IN (0, 1)), api_enabled INTEGER NOT NULL DEFAULT 0 CHECK (api_enabled IN (0, 1)), ui_enabled INTEGER NOT NULL DEFAULT 1 CHECK (ui_enabled IN (0, 1)), identity_provider TEXT NOT NULL, mfa_secret TEXT, mfa_confirmed INTEGER NOT NULL DEFAULT 0 CHECK (mfa_confirmed IN (0, 1)), last_login INTEGER)"); err != nil {
 		return err
 	}
 
@@ -61,6 +89,15 @@ func (r *Repository) SetupDB() error {
 		return err
 	}
 
+	// create table for migrations
+	if _, err := r.DB.Exec(`CREATE TABLE IF NOT EXISTS migrations (version INTEGER PRIMARY KEY, applied_at INTEGER NOT NULL)`); err != nil {
+        return err
+    }
+
+	return nil
+}
+
+func (r *Repository) createTriggers() error {
 	// delete active server sessions if all the associated servers are removed
 	if _, err := r.DB.Exec(`CREATE TRIGGER IF NOT EXISTS cleanup_server_session AFTER DELETE ON servers
 							BEGIN
@@ -73,9 +110,32 @@ func (r *Repository) SetupDB() error {
 		return err
 	}
 
-	// TODO proper migration
-	r.DB.Exec("ALTER TABLE users ADD COLUMN mfa_secret TEXT")
-	r.DB.Exec("ALTER TABLE users ADD COLUMN mfa_confirmed INTEGER NOT NULL DEFAULT 0 CHECK (mfa_confirmed IN (0, 1))")
+	return nil
+}
+
+// Check current migration state and run anything missing
+func (r *Repository) runMigrations() error {
+	for _, m := range migrations {
+        var exists int
+        err := r.DB.QueryRow("SELECT COUNT(*) FROM migrations WHERE version = $1", m.Version).Scan(&exists)
+        if err != nil {
+            return err
+        }
+
+        if exists > 0 {
+            continue // already applied
+        }
+
+        if _, err := r.DB.Exec(m.SQL); err != nil {
+            return fmt.Errorf("migration %d failed: %w", m.Version, err)
+        }
+
+        if _, err := r.DB.Exec("INSERT INTO migrations (version, applied_at) VALUES ($1, $2)", m.Version, time.Now().Unix()); err != nil {
+            return fmt.Errorf("failed to record migration %d: %w", m.Version, err)
+        }
+
+        r.Logger.Info("Applied migration", "version", m.Version, "domain", "db")
+    }
 
 	return nil
 }
