@@ -7,10 +7,11 @@ import (
 	"ez2boot/internal/ctxutil"
 	"ez2boot/internal/shared"
 	"ez2boot/internal/util"
+	"fmt"
 	"time"
 )
 
-func (s *Service) login(u UserLogin) (token string, mfaRequired bool, err error) {
+func (s *Service) login(u UserLoginRequest) (token string, mfaRequired bool, err error) {
 	var userID int64
 
 	defer func() {
@@ -35,8 +36,8 @@ func (s *Service) login(u UserLogin) (token string, mfaRequired bool, err error)
 	}()
 
 	// Input validation
-	if u.Email == "" || u.Password == "" {
-		return "", false, shared.ErrEmailOrPasswordMissing
+	if err := validateLogin(u); err != nil {
+		return "", false, err
 	}
 
 	// Authenticate user
@@ -69,7 +70,7 @@ func (s *Service) login(u UserLogin) (token string, mfaRequired bool, err error)
 				return "", false, ldapErr
 			}
 
-			return "", false, shared.ErrAuthenticationFailed
+			return "", false, fmt.Errorf("%w: %v", shared.ErrAuthenticationFailed, ldapErr)
 		}
 
 	case "oidc":

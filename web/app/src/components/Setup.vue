@@ -1,5 +1,5 @@
 <template>
-  <div class="centre-container" >
+  <div class="centre-container">
     <form class="setup-form" @submit.prevent="createFirstUser">
       <h1>Create initial user</h1>
       <label>
@@ -14,8 +14,8 @@
         Confirm Password
         <input v-model="confirmPassword" type="password" />
       </label>
-      <button type=submit :disabled="!email || !password || !confirmPassword">Create</button>
-      <p class="result" :class="messageType">{{ message || '\u00A0' }}</p> 
+      <button type="submit" :disabled="!email || !password || !confirmPassword">Create</button>
+      <p class="result" :class="messageType">{{ message || '\u00A0' }}</p>
     </form>
   </div>
 </template>
@@ -34,27 +34,23 @@ const messageType = ref('')
 
 async function createFirstUser() {
   if (password.value !== confirmPassword.value) {
-    message.value = 'password and confirm password do not match'
+    message.value = 'Password and confirm password do not match'
     messageType.value = 'error'
     return
   }
   try {
-    const response = await axios.post('ui/setup',
-      {
-        email: email.value,
-        password: password.value
-      }
-    )
-
+    await axios.post('/ui/setup', {
+      email: email.value,
+      password: password.value,
+    })
     message.value = 'User created'
     messageType.value = 'success'
     setTimeout(() => {
-        router.push({
+      router.push({
         path: '/login',
-        query: { message: 'user-created' }
+        query: { message: 'user-created' },
       })
     }, 2000)
-
   } catch (err) {
     messageType.value = 'error'
     if (err.response) {
@@ -69,7 +65,6 @@ async function createFirstUser() {
     }
   }
 }
-
 </script>
 
 <style scoped>

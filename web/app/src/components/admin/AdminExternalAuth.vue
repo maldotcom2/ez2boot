@@ -14,7 +14,11 @@
       <p class="result" :class="messageType">{{ message || '\u00A0' }}</p>
     </aside>
     <main class="config-panel">
-      <component v-if="selectedType" :is="formComponents[selectedType]" v-model="authConfig[selectedType]"/>
+      <component
+        v-if="selectedType"
+        :is="formComponents[selectedType]"
+        v-model="authConfig[selectedType]"
+      />
     </main>
   </div>
 </template>
@@ -34,12 +38,12 @@ const loadedTypes = reactive(new Set()) // Track auth types with configs
 
 const authTypes = [
   { type: 'ldap', label: 'LDAP' },
-  { type: 'oidc', label: 'OIDC'},
+  { type: 'oidc', label: 'OIDC' },
 ]
 
 const formComponents = {
   ldap: LdapForm,
-  oidc: OidcForm
+  oidc: OidcForm,
 }
 
 // For enabling delete button
@@ -71,7 +75,7 @@ const apiRoutes = {
   test: {
     ldap: '/ui/auth/ldap/users/search',
     oidc: '/ui/auth/oidc/test',
-  }
+  },
 }
 
 async function loadConfig() {
@@ -119,7 +123,12 @@ async function saveConfig() {
 async function deleteConfig() {
   message.value = ''
   messageType.value = ''
-  if (!confirm(`Are you sure you want to delete the ${selectedType.value.toUpperCase()} configuration?`)) return
+  if (
+    !confirm(
+      `Are you sure you want to delete the ${selectedType.value.toUpperCase()} configuration?`,
+    )
+  )
+    return
   try {
     await axios.delete(apiRoutes[selectedType.value])
     authConfig[selectedType.value] = {}
@@ -148,14 +157,9 @@ async function testLdap() {
   message.value = ''
   messageType.value = ''
   try {
-    await axios.post('/ui/auth/ldap/users/search',
-    {
-      query: 'test'
-    },
-    { 
-      withCredentials: true 
+    await axios.post('/ui/auth/ldap/users/search', {
+      query: 'test',
     })
-
     message.value = 'LDAP Connection successful'
     messageType.value = 'success'
   } catch (err) {
@@ -200,7 +204,6 @@ async function testOidc() {
 onMounted(async () => {
   selectedType.value = 'ldap'
 })
-
 </script>
 
 <style scoped>
@@ -271,7 +274,7 @@ select {
   color: var(--success-msg);
 }
 
-.config-panel input[type="checkbox"] {
+.config-panel input[type='checkbox'] {
   width: var(--input-height);
   margin: 0;
   display: inline-block;
@@ -279,7 +282,7 @@ select {
 }
 
 .checkbox-row input {
-  width: auto;  /* override global width: 100% */
+  width: auto; /* override global width: 100% */
 }
 
 .config-panel input {
@@ -287,5 +290,4 @@ select {
   display: block;
   margin-bottom: 1rem;
 }
-
 </style>

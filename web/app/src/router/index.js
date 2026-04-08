@@ -8,13 +8,13 @@ import About from '@/components/About.vue'
 import axios from 'axios'
 
 const routes = [
-  { path: '/', redirect: '/dashboard'}, // default route
-  { path: '/setup', component: Setup}, // only for setup bootstrap
-  { path: '/login', component: Login},
-  { path: '/adminpanel', component: AdminPanel, meta: {requiresAdmin: true, requiresAuth: true }}, // Protected and Admin only
-  { path: '/dashboard', component: Dashboard, meta: { requiresAuth: true }}, // Protected route
-  { path: '/settings', component: UserSettings, meta: { requiresAuth: true }}, // Protected route
-  { path: '/about', component: About, meta: { requiresAuth: true }}, // Protected route
+  { path: '/', redirect: '/dashboard' }, // default route
+  { path: '/setup', component: Setup }, // only for setup bootstrap
+  { path: '/login', component: Login },
+  { path: '/adminpanel', component: AdminPanel, meta: { requiresAdmin: true, requiresAuth: true } }, // Protected and Admin only
+  { path: '/dashboard', component: Dashboard, meta: { requiresAuth: true } }, // Protected route
+  { path: '/settings', component: UserSettings, meta: { requiresAuth: true } }, // Protected route
+  { path: '/about', component: About, meta: { requiresAuth: true } }, // Protected route
 ]
 
 // Create router
@@ -25,12 +25,12 @@ const router = createRouter({
 
 // User session validity
 async function checkSession() {
-  await axios.get('/ui/user/session', { withCredentials: true })
+  await axios.get('/ui/user/session')
 }
 
 // Check if user is admin
 async function checkAdmin() {
-  const response = await axios.get('/ui/user/auth', { withCredentials: true })
+  const response = await axios.get('/ui/user/auth')
   return response.data.data.is_admin
 }
 
@@ -41,9 +41,9 @@ async function checkMode() {
 }
 
 router.beforeEach(async (to, from, next) => {
-   const setupMode = await checkMode()
+  const setupMode = await checkMode()
 
-   // Setup only
+  // Setup only
   if (setupMode && to.path !== '/setup') {
     return next('/setup')
   }
@@ -52,14 +52,13 @@ router.beforeEach(async (to, from, next) => {
   if (!setupMode && to.path === '/setup') {
     return next('/dashboard')
   }
-  
+
   // Skip for unprotected routes
   if (!to.meta.requiresAuth) {
     return next()
   }
 
   try {
-
     // Check if session is still valid
     await checkSession()
 
@@ -74,7 +73,6 @@ router.beforeEach(async (to, from, next) => {
     next() // All checks passed
   } catch (err) {
     if (err.response?.status === 401) return next('/login')
-    console.error('Auth check failed', err)
     next('/login')
   }
 })

@@ -1,7 +1,9 @@
 <template>
   <aside class="menu">
     <button @click="showUserNotifications">Notifications</button>
-    <button v-if="user.identityProvider === 'local'" @click="showChangePassword">Change Password</button>
+    <button v-if="user.identityProvider === 'local'" @click="showChangePassword">
+      Change Password
+    </button>
     <button v-if="user.identityProvider !== 'oidc'" @click="showMFA">MFA</button>
   </aside>
 </template>
@@ -13,7 +15,7 @@ const user = useUserStore()
 
 // Props
 const props = defineProps({
-  modelValue: Object
+  modelValue: Object,
 })
 
 // Emits for v-model
@@ -35,7 +37,6 @@ function showChangePassword() {
 function showMFA() {
   emit('update:modelValue', UserMFA)
 }
-
 </script>
 
 <style scoped>

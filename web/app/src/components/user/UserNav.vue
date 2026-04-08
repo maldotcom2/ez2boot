@@ -4,7 +4,9 @@
       <img :src="banner" class="nav-banner" alt="ez2boot" @click="dashboard" />
     </div>
     <div class="nav-right">
-      <span class="update-nag" v-if="version.updateAvailable"><a :href="version.releaseURL" target="_blank">Update Available!</a></span>
+      <span class="update-nag" v-if="version.updateAvailable"
+        ><a :href="version.releaseURL" target="_blank">Update Available!</a></span
+      >
       <p>{{ user.email }}</p>
       <button @click="toggleUserDropdown">Menu</button>
       <div v-if="isOpen" class="dropdown">
@@ -16,6 +18,7 @@
       </div>
     </div>
   </div>
+  <div v-if="isOpen" class="dropdown-backdrop" @click.self="isOpen = false"></div>
 </template>
 
 <script setup>
@@ -37,54 +40,53 @@ function toggleUserDropdown() {
 }
 
 function admin() {
-  router.push("/adminpanel")
+  router.push('/adminpanel')
 }
 
 function dashboard() {
-  router.push("/dashboard")
+  router.push('/dashboard')
 }
 
 function settings() {
-  router.push("/settings")
+  router.push('/settings')
 }
 
 function about() {
-  router.push("/about")
+  router.push('/about')
 }
 
 async function logout() {
   try {
-    const response = await axios.post('ui/user/logout',{withCredentials: true})
+    await axios.post('/ui/user/logout')
     user.$reset() // purge User store
     version.$reset() // purge Version store
     router.push('/login')
-
   } catch (err) {
     if (err.response) {
-        // Get server response
-        error.value = `Login failed: ${err.response.data.error || err.response.statusText}`
+      // Get server response
+      error.value = `Logout failed: ${err.response.data.error || err.response.statusText}`
     } else if (err.request) {
-        // No response
-        error.value = 'No response from server'
+      // No response
+      error.value = 'No response from server'
     } else {
-        // other errors
-        error.value = err.message
+      // other errors
+      error.value = err.message
     }
   }
 }
 
 onMounted(async () => {
-    try {
-      await user.loadUser()
-    } catch (err) {
-      console.error("Failed to load user store", user.error)
-    }
+  try {
+    await user.loadUser()
+  } catch (err) {
+    console.error('Failed to load user store', user.error)
+  }
 
-    try {
-      await version.getVersion()
-    } catch (err) {
-      console.error("Failed to load version store", version.error)
-    }
+  try {
+    await version.getVersion()
+  } catch (err) {
+    console.error('Failed to load version store', version.error)
+  }
 })
 </script>
 
@@ -98,7 +100,7 @@ onMounted(async () => {
 
 .nav-banner {
   height: 80px;
-  width: auto;  
+  width: auto;
   display: block;
   cursor: pointer;
 }
@@ -139,6 +141,16 @@ onMounted(async () => {
   flex-direction: column;
   min-width: 130px;
   border-radius: var(--small-radius);
+  z-index: 1000;
+}
+
+.dropdown-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 999;
 }
 
 .dropdown button {

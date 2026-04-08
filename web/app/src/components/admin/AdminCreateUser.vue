@@ -3,20 +3,26 @@
     <div class="add-user-container">
       <p class="prompt">Create User</p>
       <div class="toggle">
-        <button @click="mode = 'local', resetState()">Local</button>
-        <button @click="mode = 'ldap', resetState()" :disabled="!ldapExists">LDAP</button>
+        <button @click="((mode = 'local'), resetState())">Local</button>
+        <button @click="((mode = 'ldap'), resetState())" :disabled="!ldapExists">LDAP</button>
       </div>
       <form v-if="mode === 'local'" @submit.prevent="createUser">
         <input v-model="email" placeholder="Email" />
         <input v-model="password" type="password" placeholder="Password" />
         <input v-model="confirmPassword" type="password" placeholder="Confirm Password" />
-        <button type="submit" :disabled="!passwordsMatch || !email || !password || !confirmPassword">Create</button>
+        <button
+          type="submit"
+          :disabled="!passwordsMatch || !email || !password || !confirmPassword"
+        >
+          Create
+        </button>
       </form>
       <form v-else @submit.prevent="searchLdap">
-        <input v-model="ldapQuery" placeholder="Search by email" />
+        <input v-model="ldapQuery" placeholder="Search by UPN" />
         <button type="submit" :disabled="!ldapQuery">Search</button>
         <div v-if="ldapResult" class="ldap-result">
-          <p class="ldap-email">{{ ldapResult.Email }}</p>
+          <p class="ldap-name">{{ ldapResult.display_name }}</p>
+          <p class="ldap-email">{{ ldapResult.email }}</p>
         </div>
         <button v-if="ldapResult" @click="provisionLdapUser">Add User</button>
       </form>
@@ -68,21 +74,13 @@ async function createUser() {
   messageType.value = ''
 
   try {
-    const response = await axios.post('ui/user',
-      {
-        email: email.value,
-        password: password.value
-      },
-      {
-        withCredentials: true // Cookies
-      }
-    )
-
-    if (response.data.success) {
-      message.value = 'User created'
-      messageType.value = 'success'
-      emit('switch-pane', AdminUserMgmt)
-    }
+    await axios.post('/ui/user', {
+      email: email.value,
+      password: password.value,
+    })
+    message.value = 'User created'
+    messageType.value = 'success'
+    emit('switch-pane', AdminUserMgmt)
   } catch (err) {
     messageType.value = 'error'
     if (err.response) {
@@ -104,20 +102,16 @@ async function searchLdap() {
   ldapResult.value = null
 
   try {
-    const response = await axios.post('ui/auth/ldap/users/search',
-      {
-        query: ldapQuery.value
-      },
-      {
-        withCredentials: true // Cookies
-      })
+    const response = await axios.post('/ui/auth/ldap/users/search', {
+      query: ldapQuery.value,
+    })
 
     if (response.data.success) {
       ldapResult.value = response.data.data
     }
   } catch (err) {
     messageType.value = 'error'
-      if (err.response?.status === 404) {
+    if (err.response?.status === 404) {
       message.value = 'User not found in directory'
     } else if (err.response) {
       // Get server response
@@ -136,14 +130,9 @@ async function provisionLdapUser() {
   message.value = ''
   messageType.value = ''
   try {
-    await axios.post('/ui/user/ldap',
-    { 
-      email: ldapResult.value.Email 
-    },
-    { 
-      withCredentials: true // Cookies
+    await axios.post('/ui/user/ldap', {
+      email: ldapResult.value.email,
     })
-
     message.value = 'User added'
     messageType.value = 'success'
     emit('switch-pane', AdminUserMgmt)
@@ -163,7 +152,6 @@ async function provisionLdapUser() {
     }
   }
 }
-
 
 // Check if an LDAP config exists for user provisioning
 async function checkLdap() {
@@ -191,7 +179,6 @@ async function checkLdap() {
 onMounted(async () => {
   await checkLdap()
 })
-
 </script>
 
 <style scoped>
@@ -217,7 +204,7 @@ onMounted(async () => {
   outline: auto;
 }
 
-.add-user-container button{
+.add-user-container button {
   width: 100%;
 }
 
@@ -286,5 +273,4 @@ button {
 .result.success {
   color: var(--success-msg);
 }
-
 </style>

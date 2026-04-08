@@ -17,7 +17,7 @@ export const useUserStore = defineStore('user', {
       if (this.loaded) return // Stops re-fetch ^
 
       try {
-        const response = await axios.get('ui/user/auth', { withCredentials: true })
+        const response = await axios.get('/ui/user/auth')
         this.userID = response.data.data.user_id
         this.email = response.data.data.email
         this.isAdmin = response.data.data.is_admin
@@ -28,6 +28,6 @@ export const useUserStore = defineStore('user', {
         this.error = err?.response?.data?.error || err.message
         throw err
       }
-    }
-  }
+    },
+  },
 })

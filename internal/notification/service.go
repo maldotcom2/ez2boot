@@ -1,9 +1,12 @@
 package notification
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"ez2boot/internal/audit"
+	"ez2boot/internal/ctxutil"
 	"ez2boot/internal/shared"
 	"sort"
 )
@@ -76,7 +79,28 @@ func (s *Service) getUserNotificationSettings(userID int64) (NotificationConfigR
 }
 
 // Add or update personal notification options
-func (s *Service) setUserNotificationSettings(userID int64, req NotificationConfigRequest) error {
+func (s *Service) setUserNotificationSettings(userID int64, req NotificationConfigRequest, ctx context.Context) (err error) {
+	actorUserID, actorEmail := ctxutil.GetActor(ctx)
+
+	defer func() {
+		var reason string
+		if err != nil {
+			reason = err.Error()
+		}
+
+		s.Audit.Log(audit.Event{
+			ActorUserID: actorUserID,
+			ActorEmail:  actorEmail,
+			Action:      "set",
+			Resource:    "notification config",
+			Success:     err == nil,
+			Reason:      reason,
+			Metadata: map[string]any{
+				"type": req.Type,
+			},
+		})
+	}()
+
 	// Check the notification type is supported
 	handler, ok := registry[req.Type]
 	if !ok {
@@ -114,7 +138,25 @@ func (s *Service) setUserNotificationSettings(userID int64, req NotificationConf
 	return nil
 }
 
-func (s *Service) deleteUserNotificationSettings(userID int64) error {
+func (s *Service) deleteUserNotificationSettings(userID int64, ctx context.Context) (err error) {
+	actorUserID, actorEmail := ctxutil.GetActor(ctx)
+
+	defer func() {
+		var reason string
+		if err != nil {
+			reason = err.Error()
+		}
+
+		s.Audit.Log(audit.Event{
+			ActorUserID: actorUserID,
+			ActorEmail:  actorEmail,
+			Action:      "delete",
+			Resource:    "notification config",
+			Success:     err == nil,
+			Reason:      reason,
+		})
+	}()
+
 	if err := s.Repo.deleteUserNotificationSettings(userID); err != nil {
 		return err
 	}

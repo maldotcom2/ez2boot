@@ -66,11 +66,13 @@ func NewTestEnv(t *testing.T) *TestEnv {
 	}
 
 	cfg := &config.Config{
-		CloudProvider:       "aws",
-		AWSRegion:           "ap-southeast-2",
-		RateLimit:           100,
-		UserSessionDuration: 1 * time.Hour, // Prevent intermittent 401s during test
-		EncryptionPhrase:    "newphrase",
+		CloudProvider:            "aws",
+		AWSRegion:                "ap-southeast-2",
+		PublicRateLimit:          50,            // Elevate if 429's in tests
+		PrivateRateLimit:         100,           // Elevate if 429's in tests
+		UserSessionDuration:      1 * time.Hour, // Prevent intermittent 401s during test
+		MaxServerSessionDuration: 2 * time.Hour,
+		EncryptionPhrase:         "newphrase",
 	}
 
 	router, services, wkr, err := app.NewApp("dev", "unknown", cfg, baseRepo, logger)
@@ -119,11 +121,20 @@ func InsertServer(t *testing.T, db *sql.DB, uniqueID string, name string, state 
 	}
 }
 
+func UpdateServerState(t *testing.T, db *sql.DB, serverGroup string, state string) {
+	t.Helper()
+
+	_, err := db.Exec("UPDATE servers SET state = $1 WHERE server_group = $2", state, serverGroup)
+	if err != nil {
+		t.Fatalf("failed to update server: %v", err)
+	}
+}
+
 // Logs in a UI user and returns cookie - use in tests other than login flow
 func LoginAndGetCookies(t *testing.T, router http.Handler, email, password string) []*http.Cookie {
 	t.Helper()
 
-	payload := auth.UserLogin{
+	payload := auth.UserLoginRequest{
 		Email:    email,
 		Password: password,
 	}
@@ -157,6 +168,15 @@ func InsertServerSession(t *testing.T, db *sql.DB, userID int64, serverGroup str
 	// Set server session
 	if _, err := db.Exec("INSERT INTO server_sessions (user_id, server_group, expiry, warning_notified, on_notified) VALUES ($1, $2, $3, $4, $5)", userID, serverGroup, expiry, 0, 0); err != nil {
 		t.Fatal("failed to insert new server session")
+	}
+}
+
+func UpdateServerSession(t *testing.T, db *sql.DB, serverGroup string, expiry int64) {
+	t.Helper()
+
+	_, err := db.Exec("UPDATE server_sessions SET expiry = $1 WHERE server_group = $2", expiry, serverGroup)
+	if err != nil {
+		t.Fatalf("failed to update server session: %v", err)
 	}
 }
 

@@ -324,7 +324,7 @@ func TestLogin_LDAPSuccess(t *testing.T) {
 
 	testutil.InsertUser(t, env.DB, "example@example.com", nil, true, false, false, true, "ldap")
 
-	body, _ := json.Marshal(auth.UserLogin{
+	body, _ := json.Marshal(auth.UserLoginRequest{
 		Email:    "example@example.com",
 		Password: "anypassword",
 	})
@@ -355,7 +355,7 @@ func TestLogin_LDAPConnectionFailure(t *testing.T) {
 
 	testutil.InsertUser(t, env.DB, "example@example.com", nil, true, false, false, true, "ldap")
 
-	body, _ := json.Marshal(auth.UserLogin{
+	body, _ := json.Marshal(auth.UserLoginRequest{
 		Email:    "example@example.com",
 		Password: "anypassword",
 	})

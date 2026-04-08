@@ -25,8 +25,6 @@ func (s *StubLdapSearcher) SearchUser(req ldap.LdapSearchRequest) (ldap.LdapSear
 }
 
 // OIDC
-
-// OIDC
 type StubOidcProvider struct {
 	ExchangeFunc      func(ctx context.Context, code string) (*oauth2.Token, error)
 	AuthCodeURLFunc   func(state string) string
@@ -44,3 +42,21 @@ func (s *StubOidcProvider) AuthCodeURL(state string) string {
 func (s *StubOidcProvider) VerifyIDToken(ctx context.Context, token *oauth2.Token) (map[string]any, error) {
 	return s.VerifyIDTokenFunc(ctx, token)
 }
+
+// Notifications
+type StubNotificationChannel struct {
+    SendFunc func(msg string, title string, cfg string) error
+    Calls    []string // track what was sent
+}
+
+func (s *StubNotificationChannel) Type() string  { return "stub" }
+func (s *StubNotificationChannel) Label() string { return "Stub" }
+func (s *StubNotificationChannel) Send(msg string, title string, cfg string) error {
+    s.Calls = append(s.Calls, title)
+    if s.SendFunc != nil {
+        return s.SendFunc(msg, title, cfg)
+    }
+    return nil
+}
+func (s *StubNotificationChannel) Validate(cfg map[string]any) error { return nil }
+func (s *StubNotificationChannel) ToConfig(cfg map[string]any) (string, error) { return "{}", nil }

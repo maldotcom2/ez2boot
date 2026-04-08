@@ -35,3 +35,11 @@ func validatePassword(email string, password string) error {
 
 	return nil
 }
+
+func validateMFACode(code string) error {
+	if len(code) != 6 {
+		return shared.ErrInvalidMFACode
+	}
+
+	return nil
+}

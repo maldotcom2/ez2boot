@@ -19,17 +19,37 @@ func (s *Service) getServerSessionSummary() ([]ServerSessionSummaryResponse, err
 	return summary, nil
 }
 
-func (s *Service) newServerSession(session ServerSessionRequest, ctx context.Context) (time.Time, error) {
+func (s *Service) newServerSession(session ServerSessionRequest, ctx context.Context) (_ ServerSessionResponse, err error) {
 	actorUserID, actorEmail := ctxutil.GetActor(ctx)
 
+	defer func() {
+		var reason string
+		if err != nil {
+			reason = err.Error()
+		}
+
+		s.Audit.Log(audit.Event{
+			ActorUserID: actorUserID,
+			ActorEmail:  actorEmail,
+			Action:      "new",
+			Resource:    "server session",
+			Success:     err == nil,
+			Reason:      reason,
+			Metadata: map[string]any{
+				"server_group": session.ServerGroup,
+				"duration":     session.Duration,
+			},
+		})
+	}()
+
 	if err := s.validateServerSession(session); err != nil {
-		return time.Time{}, err
+		return ServerSessionResponse{}, err
 	}
 
 	// Get expiry as epoch
 	sessionExpiry, err := util.GetExpiryFromDuration(session.Duration)
 	if err != nil {
-		return time.Time{}, err
+		return ServerSessionResponse{}, err
 	}
 
 	// Add expiry
@@ -37,33 +57,47 @@ func (s *Service) newServerSession(session ServerSessionRequest, ctx context.Con
 
 	err = s.Repo.newServerSession(session)
 	if err != nil {
-		return time.Time{}, err
+		return ServerSessionResponse{}, err
 	}
 
-	s.Audit.Log(audit.Event{
-		ActorUserID: actorUserID,
-		ActorEmail:  actorEmail,
-		Action:      "new",
-		Resource:    "server session",
-		Success:     true,
-		Metadata: map[string]any{
-			"server_group": session.ServerGroup,
-		},
-	})
-
-	// Time in time format
-	return time.Unix(sessionExpiry, 0).UTC(), nil
+	return ServerSessionResponse{
+		ServerGroup: session.ServerGroup,
+		Duration:    session.Duration,
+		Expiry:      time.Unix(sessionExpiry, 0).UTC(),
+	}, nil
 }
 
-func (s *Service) updateServerSession(session ServerSessionRequest, ctx context.Context) (time.Time, error) {
+func (s *Service) updateServerSession(session ServerSessionRequest, ctx context.Context) (_ ServerSessionResponse, err error) {
+	actorUserID, actorEmail := ctxutil.GetActor(ctx)
+
+	defer func() {
+		var reason string
+		if err != nil {
+			reason = err.Error()
+		}
+
+		s.Audit.Log(audit.Event{
+			ActorUserID: actorUserID,
+			ActorEmail:  actorEmail,
+			Action:      "update",
+			Resource:    "server session",
+			Success:     err == nil,
+			Reason:      reason,
+			Metadata: map[string]any{
+				"server_group": session.ServerGroup,
+				"duration":     session.Duration,
+			},
+		})
+	}()
+
 	if err := s.validateServerSession(session); err != nil {
-		return time.Time{}, err
+		return ServerSessionResponse{}, err
 	}
 
 	// Get new expiry as epoch
 	newExpiry, err := util.GetExpiryFromDuration(session.Duration)
 	if err != nil {
-		return time.Time{}, err
+		return ServerSessionResponse{}, err
 	}
 
 	// Add expiry
@@ -71,23 +105,62 @@ func (s *Service) updateServerSession(session ServerSessionRequest, ctx context.
 
 	err = s.Repo.updateServerSession(session)
 	if err != nil {
-		return time.Time{}, err
+		return ServerSessionResponse{}, err
 	}
 
-	actorUserID, actorEmail := ctxutil.GetActor(ctx)
-	s.Audit.Log(audit.Event{
-		ActorUserID: actorUserID,
-		ActorEmail:  actorEmail,
-		Action:      "update",
-		Resource:    "server session",
-		Success:     true,
-		Metadata: map[string]any{
-			"server_group": session.ServerGroup,
-		},
-	})
+	return ServerSessionResponse{
+		ServerGroup: session.ServerGroup,
+		Duration:    session.Duration,
+		Expiry:      time.Unix(newExpiry, 0).UTC(),
+	}, nil
+}
 
-	// Time in time format
-	return time.Unix(newExpiry, 0).UTC(), nil
+func (s *Service) updateServerSessionAdmin(session ServerSessionRequest, ctx context.Context) (_ ServerSessionResponse, err error) {
+	actorUserID, actorEmail := ctxutil.GetActor(ctx)
+
+	defer func() {
+		var reason string
+		if err != nil {
+			reason = err.Error()
+		}
+
+		s.Audit.Log(audit.Event{
+			ActorUserID: actorUserID,
+			ActorEmail:  actorEmail,
+			Action:      "update",
+			Resource:    "server session",
+			Success:     err == nil,
+			Reason:      reason,
+			Metadata: map[string]any{
+				"server_group": session.ServerGroup,
+				"duration":     session.Duration,
+			},
+		})
+	}()
+
+	if err := s.validateServerSession(session); err != nil {
+		return ServerSessionResponse{}, err
+	}
+
+	// Get new expiry as epoch
+	newExpiry, err := util.GetExpiryFromDuration(session.Duration)
+	if err != nil {
+		return ServerSessionResponse{}, err
+	}
+
+	// Add expiry
+	session.Expiry = newExpiry
+
+	err = s.Repo.updateServerSessionAdmin(session)
+	if err != nil {
+		return ServerSessionResponse{}, err
+	}
+
+	return ServerSessionResponse{
+		ServerGroup: session.ServerGroup,
+		Duration:    session.Duration,
+		Expiry:      time.Unix(newExpiry, 0).UTC(),
+	}, nil
 }
 
 // High level for processing server sessions in each state - called by go routine worker

@@ -1,13 +1,17 @@
 <template>
   <div class="auth-config">
-    <label for="issuer-url">Issuer URL</label> 
-    <input id="issuer-url" placeholder="https://login.microsoftonline.com/.../v2.0" v-model="config.issuer_url"/>
+    <label for="issuer-url">Issuer URL</label>
+    <input
+      id="issuer-url"
+      placeholder="https://login.microsoftonline.com/.../v2.0"
+      v-model="config.issuer_url"
+    />
     <label for="client-id">Client ID</label>
-    <input id="client-id" v-model="config.client_id"/>
+    <input id="client-id" v-model="config.client_id" />
     <label for="client-secret">Client Secret</label>
-    <input id="client-secret" type=password v-model="config.client_secret"/>
+    <input id="client-secret" type="password" v-model="config.client_secret" />
     <label for="App URL">App URL</label>
-    <input id="App URL" placeholder="ez2boot.mycompany.com" v-model="config.app_url"/>
+    <input id="App URL" placeholder="https://ez2boot.mycompany.com" v-model="config.app_url" />
   </div>
 </template>
 
@@ -17,8 +21,8 @@ import { toRef } from 'vue'
 const props = defineProps({
   modelValue: {
     type: Object,
-    required: true
-  }
+    required: true,
+  },
 })
 
 defineEmits(['update:modelValue'])

@@ -70,6 +70,16 @@ func GetEnvVars() (*Config, error) {
 		return nil, err
 	}
 
+	maxServerSessionDurationStr := os.Getenv("MAX_SERVER_SESSION_DURATION")
+	if maxServerSessionDurationStr == "" {
+		maxServerSessionDurationStr = "87600h" //default
+	}
+
+	maxServerSessionDuration, err := GetDurationFromString(maxServerSessionDurationStr)
+	if err != nil {
+		return nil, err
+	}
+
 	logLevelStr := os.Getenv("LOG_LEVEL")
 	if logLevelStr == "" {
 		logLevelStr = "info" //default
@@ -79,12 +89,22 @@ func GetEnvVars() (*Config, error) {
 
 	encryptionPhrase := os.Getenv("ENCRYPTION_PHRASE") // "" default
 
-	rateLimitStr := os.Getenv("RATE_LIMIT")
-	if rateLimitStr == "" {
-		rateLimitStr = "20" //default
+	publicrateLimitStr := os.Getenv("PUBLIC_RATE_LIMIT")
+	if publicrateLimitStr == "" {
+		publicrateLimitStr = "5" //default
 	}
 
-	rateLimit, err := strconv.Atoi(rateLimitStr)
+	publicrateLimit, err := strconv.Atoi(publicrateLimitStr)
+	if err != nil {
+		return nil, err
+	}
+
+	privaterateLimitStr := os.Getenv("PRIVATE_RATE_LIMIT")
+	if privaterateLimitStr == "" {
+		privaterateLimitStr = "50" //default
+	}
+
+	privaterateLimit, err := strconv.Atoi(privaterateLimitStr)
 	if err != nil {
 		return nil, err
 	}
@@ -118,21 +138,23 @@ func GetEnvVars() (*Config, error) {
 	sameSiteMode := ParseSameSiteMode(sameSiteModeStr)
 
 	cfg := &Config{
-		TrustProxyHeaders:   trustProxyHeaders,
-		CloudProvider:       cloudProvider,
-		Port:                port,
-		ScrapeInterval:      scrapeInterval,
-		InternalClock:       internalClock,
-		TagKey:              tagKey,
-		AWSRegion:           awsRegion,
-		UserSessionDuration: userSessionDuration,
-		LogLevel:            logLevel,
-		EncryptionPhrase:    encryptionPhrase,
-		RateLimit:           rateLimit,
-		ShowBetaVersions:    showBetaVersions,
-		AzureSubscriptionID: azureSubscriptionID,
-		SecureCookie:        secureCookie,
-		SameSiteMode:        sameSiteMode,
+		TrustProxyHeaders:        trustProxyHeaders,
+		CloudProvider:            cloudProvider,
+		Port:                     port,
+		ScrapeInterval:           scrapeInterval,
+		InternalClock:            internalClock,
+		TagKey:                   tagKey,
+		AWSRegion:                awsRegion,
+		UserSessionDuration:      userSessionDuration,
+		MaxServerSessionDuration: maxServerSessionDuration,
+		LogLevel:                 logLevel,
+		EncryptionPhrase:         encryptionPhrase,
+		PublicRateLimit:          publicrateLimit,
+		PrivateRateLimit:         privaterateLimit,
+		ShowBetaVersions:         showBetaVersions,
+		AzureSubscriptionID:      azureSubscriptionID,
+		SecureCookie:             secureCookie,
+		SameSiteMode:             sameSiteMode,
 	}
 
 	return cfg, nil

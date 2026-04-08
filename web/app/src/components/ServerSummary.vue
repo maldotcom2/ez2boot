@@ -3,6 +3,7 @@
     <div class="user-btn-container">
       <button @click="loadServerSessions">Refresh</button>
     </div>
+    <p class="result" :class="messageType">{{ message || '\u00A0' }}</p>
     <table class="server-table">
       <thead>
         <tr>
@@ -20,26 +21,58 @@
           <td>
             <div class="status-container">
               <span :class="'status-dot ' + getGroupState(server.servers)"></span>
-              <button @click="openServerModal($event, server.servers, server.server_group)">Details</button>
+              <button @click="openServerModal($event, server.servers, server.server_group)">
+                Details
+              </button>
             </div>
           </td>
-          <td>{{ server.expiry ? formatTimeRemaining(Math.floor((server.expiry - Math.floor(Date.now() / 1000)) / 60)): '-' }}</td>
+          <td>
+            {{
+              server.expiry
+                ? formatTimeRemaining(
+                    Math.floor((server.expiry - Math.floor(Date.now() / 1000)) / 60),
+                  )
+                : '-'
+            }}
+          </td>
           <td>{{ server.expiry ? new Date(server.expiry * 1000).toLocaleString() : '-' }}</td>
           <td>{{ server.current_user || '-' }}</td>
           <td>
             <div class="controls-container">
-              <input v-model.number="duration[server.server_group]" type="number" min="1" max="24" step="1" placeholder="hours" :disabled="server.current_user && server.current_user !== user.email" />
-                <!-- Start Session enabled if nobody is using it -->
-              <button @click="startServerSession(server.server_group)"
-              :disabled="!!server.current_user || !duration[server.server_group]">Start Session</button>
+              <input
+                v-model.number="duration[server.server_group]"
+                type="number"
+                min="1"
+                max="24"
+                step="1"
+                placeholder="hours"
+                :disabled="server.current_user && server.current_user !== user.email"
+              />
+              <!-- Start Session enabled if nobody is using it -->
+              <button
+                @click="startServerSession(server.server_group)"
+                :disabled="!!server.current_user || !duration[server.server_group]"
+              >
+                Start Session
+              </button>
 
               <!-- Extend Session enabled for current user -->
-              <button @click="updateServerSession(server.server_group)"
-              :disabled="server.current_user !== user.email || !duration[server.server_group]">Update Session</button>
+              <button
+                @click="updateServerSession(server.server_group)"
+                :disabled="server.current_user !== user.email || !duration[server.server_group]"
+              >
+                Update Session
+              </button>
 
               <!-- End Session enabled for current user-->
-              <button @click="endServerSession(server.server_group)"
-              :disabled="server.current_user !== user.email">End Session</button>
+              <button
+                @click="endServerSession(server.server_group)"
+                :disabled="
+                  !server.current_user || (server.current_user !== user.email && !user.isAdmin)
+                "
+              >
+                End Session
+              </button>
             </div>
           </td>
         </tr>
@@ -48,18 +81,18 @@
   </div>
 
   <!-- Server details modal -->
-<div v-if="showModal" class="modal-backdrop" @click.self="closeModal">
-  <div class="detail-modal" :style="{ top: modalPosition.top, left: modalPosition.left }">
-    <span>Servers in {{ modalGroup }}</span>
-    <ul>
-      <li v-for="s in modalServers" :key="s.name" class="detail-modal-item">
-        <span :class="['status-dot', s.state]"></span>
-        {{ s.name }}
-      </li>
-    </ul>
-    <button @click="closeModal">Close</button>
+  <div v-if="showModal" class="modal-backdrop" @click.self="closeModal">
+    <div class="detail-modal" :style="{ top: modalPosition.top, left: modalPosition.left }">
+      <span>Servers in {{ modalGroup }}</span>
+      <ul>
+        <li v-for="s in modalServers" :key="s.name" class="detail-modal-item">
+          <span :class="['status-dot', s.state]"></span>
+          {{ s.name }}
+        </li>
+      </ul>
+      <button @click="closeModal">Close</button>
+    </div>
   </div>
-</div>
 </template>
 
 <script setup>
@@ -71,91 +104,98 @@ const user = useUserStore()
 const servers = ref([])
 const duration = ref({})
 const showModal = ref(false)
-const modalPosition = ref({ top: '0px', left: '0px' });
+const modalPosition = ref({ top: '0px', left: '0px' })
 const modalServers = ref([])
 const modalGroup = ref('')
+const message = ref('')
+const messageType = ref('')
 
 // Load table data from specialised endpoint
 async function loadServerSessions() {
   try {
     const response = await axios.get('/ui/sessions/summary')
-    if (response.data.success) {
-        servers.value = response.data.data
-    }
+    servers.value = response.data.data
     duration.value = {} // empty the input
-
-    } catch (err) {
-    console.error('Error loading server sessions:', err)
+  } catch (err) {
+    messageType.value = 'error'
+    if (err.response) {
+      message.value = err.response.data.error || err.response.statusText
+    } else if (err.request) {
+      message.value = 'No response from server'
+    } else {
+      message.value = err.message
+    }
   }
 }
 
 // Start a new server session
 async function startServerSession(serverGroup) {
   if (!validateDuration(duration.value[serverGroup])) {
-    console.error("duration input invalid");
+    alert('Duration input invalid')
     return
   }
 
   try {
-    const response = await axios.post('/ui/session', {
+    await axios.post('/ui/session', {
       server_group: serverGroup,
-      duration: `${duration.value[serverGroup]}h`
+      duration: `${duration.value[serverGroup]}h`,
     })
-
-    if (response.data.success) {
-      duration.value[serverGroup] = ''
-      loadServerSessions() // refresh table after creating session
-    }
+    duration.value[serverGroup] = ''
+    loadServerSessions() // refresh table after creating session
   } catch (err) {
-    console.error('Error starting server session:', err)
+    if (err.response?.data?.error) {
+      alert(err.response.data.error)
+    } else {
+      alert('Failed to start server session')
+    }
   }
 }
 
 // Update server session
 async function updateServerSession(serverGroup) {
   if (!validateDuration(duration.value[serverGroup])) {
+    alert('Duration input invalid')
     return
   }
 
   try {
-    const response = await axios.put('/ui/session', {
+    await axios.put('/ui/session', {
       server_group: serverGroup,
-      duration: `${duration.value[serverGroup]}h`
+      duration: `${duration.value[serverGroup]}h`,
     })
-
-    if (response.data.success) {
-      loadServerSessions() // refresh table after creating session
-    }
+    loadServerSessions() // refresh table after creating session
   } catch (err) {
-    console.error('Error updating server session:', err)
+    if (err.response?.data?.error) {
+      alert(err.response.data.error)
+    } else {
+      alert('Failed to update server session')
+    }
   }
 }
 
 async function endServerSession(serverGroup) {
   try {
-    const response = await axios.put('/ui/session', {
+    const path = user.isAdmin ? '/ui/admin/session' : '/ui/session'
+    await axios.put(path, {
       server_group: serverGroup,
-      duration: '0h'
+      duration: '0h',
     })
-
-    if (response.data.success) {
-      loadServerSessions() // refresh table after creating session
-    }
+    loadServerSessions() // refresh table after creating session
   } catch (err) {
-    console.error('Error updating server session:', err)
+    if (err.response?.data?.error) {
+      alert(err.response.data.error)
+    } else {
+      alert('Failed to update server session')
+    }
   }
 }
 
 function formatTimeRemaining(minutesRemaining) {
   if (minutesRemaining <= 1) {
     return '< 1 minute'
-  }
-
-  else if (minutesRemaining < 0) {
+  } else if (minutesRemaining < 0) {
     return 'expired'
-  }
-
-  else return `${minutesRemaining} minutes`
+  } else return `${minutesRemaining} minutes`
 }
 
 function validateDuration(value) {
@@ -168,9 +208,9 @@ function openServerModal(event, servers, groupName) {
   showModal.value = true
 
   // Calculate position
-  const rect = event.target.getBoundingClientRect();
-  modalPosition.value.top = `${rect.top}px`; // top relative to viewport
-  modalPosition.value.left = `${rect.right + 10}px`; // 10px to the right
+  const rect = event.target.getBoundingClientRect()
+  modalPosition.value.top = `${rect.top}px` // top relative to viewport
+  modalPosition.value.left = `${rect.right + 10}px` // 10px to the right
 }
 
 function closeModal() {
@@ -180,12 +220,9 @@ function closeModal() {
 }
 
 function getGroupState(serversList) {
-  if (serversList.every(s => s.state === 'on')) 
-    return 'on';
-  else if (serversList.every(s => s.state === 'off')) 
-    return 'off';
-  else
-    return 'transitioning';
+  if (serversList.every((s) => s.state === 'on')) return 'on'
+  else if (serversList.every((s) => s.state === 'off')) return 'off'
+  else return 'transitioning'
 }
 
 // Load table on page load
@@ -193,15 +230,14 @@ onMounted(async () => {
   try {
     await user.loadUser()
   } catch (err) {
-    console.error("Failed to load user", user.error)
+    console.error('Failed to load user', user.error)
   }
 
   try {
     await loadServerSessions()
   } catch (err) {
-    console.error("Failed to load server sessions")
+    console.error('Failed to load server sessions')
   }
-  
 })
 </script>
 
@@ -233,13 +269,24 @@ onMounted(async () => {
   text-align: left;
 }
 
-.server-table th:nth-child(1) { width: 10%; } /* Group Name */
-.server-table th:nth-child(2) { width: 10%; } /* State */
-.server-table th:nth-child(3) { width: 10%; } /* Time Remaining */
-.server-table th:nth-child(4) { width: 15%; } /* Expiry */
-.server-table th:nth-child(5) { width: 15%; } /* Current User */
-.server-table th:nth-child(6) { width: 50%; } /* Actions */
-
+.server-table th:nth-child(1) {
+  width: 10%;
+} /* Group Name */
+.server-table th:nth-child(2) {
+  width: 10%;
+} /* State */
+.server-table th:nth-child(3) {
+  width: 10%;
+} /* Time Remaining */
+.server-table th:nth-child(4) {
+  width: 15%;
+} /* Expiry */
+.server-table th:nth-child(5) {
+  width: 15%;
+} /* Current User */
+.server-table th:nth-child(6) {
+  width: 50%;
+} /* Actions */
 
 .user-btn-container {
   display: flex;
@@ -295,7 +342,7 @@ onMounted(async () => {
   padding: 0;
   margin: 0;
   margin-top: 10px;
-  list-style: none; 
+  list-style: none;
   text-align: left;
 }
 
@@ -332,4 +379,17 @@ onMounted(async () => {
   background-color: #ffc107;
 }
 
+.result {
+  min-height: 1.2rem;
+  font-size: 1rem;
+  text-align: right;
+}
+
+.result.error {
+  color: var(--error-msg);
+}
+
+.result.success {
+  color: var(--success-msg);
+}
 </style>
