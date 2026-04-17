@@ -398,23 +398,8 @@ func (s *Service) GetEmailFromUserID(userID int64) (string, error) {
 	return s.Repo.getEmailFromUserID(userID)
 }
 
-func (s *Service) enrolMFA(userID int64, email string) (_ []byte, err error) {
-	defer func() {
-		var reason string
-		if err != nil {
-			reason = err.Error()
-		}
-
-		s.Audit.Log(audit.Event{
-			ActorUserID: userID,
-			ActorEmail:  email,
-			Action:      "enrol mfa",
-			Resource:    "user",
-			Success:     err == nil,
-			Reason:      reason,
-		})
-	}()
-
+// Gets enrolment QR code
+func (s *Service) enrolMFA(userID int64, email string) ([]byte, error) {
 	user, err := s.GetUserAuthorisation(userID)
 	if err != nil {
 		return nil, err
@@ -470,7 +455,7 @@ func (s *Service) confirmMFA(req MFARequest, ctx context.Context) (err error) {
 		s.Audit.Log(audit.Event{
 			ActorUserID: actorUserID,
 			ActorEmail:  actorEmail,
-			Action:      "confirm mfa",
+			Action:      "enrol mfa",
 			Resource:    "user",
 			Success:     err == nil,
 			Reason:      reason,
