@@ -9,6 +9,9 @@
       <div class="actions">
         <button type="button" @click="saveUserNotification" :disabled="!isDirty">Save</button>
         <button type="button" @click="deleteUserNotification" :disabled="!canDelete">Delete</button>
+        <button type="button" @click="testUserNotification" :disabled="!canDelete || isDirty">
+          Test
+        </button>
       </div>
       <p class="result" :class="messageType">{{ message || '\u00A0' }}</p>
     </aside>
@@ -195,6 +198,30 @@ async function deleteUserNotification() {
     if (err.response) {
       // Get server response
       message.value = `Failed to delete settings: ${err.response.data.error || err.response.statusText}`
+    } else if (err.request) {
+      // No response
+      message.value = 'No response from server'
+    } else {
+      // other errors
+      message.value = err.message
+    }
+  }
+}
+
+// Test notification
+async function testUserNotification() {
+  message.value = ''
+  messageType.value = ''
+
+  try {
+    await axios.post('/ui/user/notification/test')
+    message.value = 'Test notification queued for sending'
+    messageType.value = 'success'
+  } catch (err) {
+    messageType.value = 'error'
+    if (err.response) {
+      // Get server response
+      message.value = `Failed to queue notification: ${err.response.data.error || err.response.statusText}`
     } else if (err.request) {
       // No response
       message.value = 'No response from server'

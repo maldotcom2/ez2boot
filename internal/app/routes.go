@@ -89,6 +89,7 @@ func SetupBackendRoutes(
 	uiRouter.HandleFunc("/user/notification", handlers.NotificationHandler.GetUserNotificationSettings()).Methods("GET")
 	uiRouter.HandleFunc("/user/notification", handlers.NotificationHandler.SetUserNotificationSettings()).Methods("POST")
 	uiRouter.HandleFunc("/user/notification", handlers.NotificationHandler.DeleteUserNotificationSettings()).Methods("DELETE")
+	uiRouter.HandleFunc("/user/notification/test", handlers.NotificationHandler.QueueTestNotification()).Methods("POST")
 	uiRouter.HandleFunc("/notification/types", handlers.NotificationHandler.GetNotificationTypes()).Methods("GET")
 
 	// Version
@@ -142,6 +143,7 @@ func SetupBackendRoutes(
 	apiRouter.HandleFunc("/user/notification", handlers.NotificationHandler.GetUserNotificationSettings()).Methods("GET")
 	apiRouter.HandleFunc("/user/notification", handlers.NotificationHandler.SetUserNotificationSettings()).Methods("POST")
 	apiRouter.HandleFunc("/user/notification", handlers.NotificationHandler.DeleteUserNotificationSettings()).Methods("DELETE")
+	apiRouter.HandleFunc("/user/notification/test", handlers.NotificationHandler.QueueTestNotification()).Methods("POST")
 	apiRouter.HandleFunc("/notification/types", handlers.NotificationHandler.GetNotificationTypes()).Methods("GET")
 	// Version
 	apiRouter.HandleFunc("/version", handlers.UtilHandler.GetVersion()).Methods("GET")
