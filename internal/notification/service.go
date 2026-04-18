@@ -164,6 +164,27 @@ func (s *Service) deleteUserNotificationSettings(userID int64, ctx context.Conte
 	return nil
 }
 
+func (s *Service) queueTestNotification(userID int64) error {
+	n := NewNotification{
+		UserID: userID,
+		Msg: "Test Notification",
+		Title: "Test",
+	}
+
+	tx, err := s.Repo.Base.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	if err = s.QueueNotification(tx, n); err != nil {
+		return err
+	}
+
+	tx.Commit()
+
+	return nil
+}
+
 // Return encrypted data for re-encryption
 func (s *Service) GetAllUserNotificationSettings() ([]NotificationSetting, error) {
 	return s.Repo.getAllUserNotificationSettings()
