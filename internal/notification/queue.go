@@ -104,9 +104,5 @@ func (s *Service) ProcessNotifications(ctx context.Context) error {
 // Add new notification to queue
 func (s *Service) QueueNotification(tx *sql.Tx, n NewNotification) error {
 	n.Time = time.Now().Unix()
-	if err := s.Repo.queueNotification(tx, n); err != nil {
-		return err
-	}
-
-	return nil
+	return s.Repo.queueNotification(tx, n)
 }

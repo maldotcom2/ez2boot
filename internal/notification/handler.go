@@ -103,3 +103,20 @@ func (h *Handler) DeleteUserNotificationSettings() http.HandlerFunc {
 		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
 	}
 }
+
+func (h *Handler) QueueTestNotification() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		userID, email := ctxutil.GetActor(ctx)
+
+		if err := h.Service.queueTestNotification(userID); err != nil {
+			h.Logger.Error("Failed to queue test notification", "user", email, "domain", "notification", "error", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: false, Error: "Failed to queue test notification"})
+			return
+		}
+
+		h.Logger.Info("Test notification queued", "user", email, "domain", "notification")
+		json.NewEncoder(w).Encode(shared.ApiResponse[any]{Success: true})
+	}
+}
