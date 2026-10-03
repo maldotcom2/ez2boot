@@ -9,8 +9,8 @@ import (
 )
 
 // @Summary 		Rotate encryption phrase
-// @Description 	Allows an administrator to trigger an automated decrypt and re-encrypt of sensitive data fields within the database. Requires updating env var after.
-// @Tags 			encryption, admin
+// @Description 	[Admin] trigger an automated decrypt and re-encrypt of sensitive data fields within the database with a supplied phrase. Requires updating env var after.
+// @Tags 			encryption
 // @Accept 			json
 // @Param			request body RotateEncryptionPhraseRequest true "Request body"
 // @Success 		200 {object} bool

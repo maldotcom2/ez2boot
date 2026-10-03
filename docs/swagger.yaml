@@ -254,7 +254,7 @@ paths:
     put:
       consumes:
       - application/json
-      description: Allows an administrator user to modify a server session.
+      description: '[Admin] modify a server session.'
       parameters:
       - description: Request body
         in: body
@@ -276,10 +276,9 @@ paths:
       summary: Update server session admin
       tags:
       - session
-      - admin
   /audit/events:
     get:
-      description: Allows an administrator to retrieve audit events
+      description: '[Admin] retrieve audit events'
       responses:
         "200":
           description: OK
@@ -294,11 +293,10 @@ paths:
       summary: Get audit events
       tags:
       - audit
-      - admin
   /auth/ldap:
     delete:
-      description: Allow an administrator to delete an LDAP config. No payload or
-        selector, as there can be only one configuration.
+      description: '[Admin] delete an LDAP config. No payload or selector, as there
+        can be only one configuration.'
       responses:
         "200":
           description: OK
@@ -309,9 +307,8 @@ paths:
       summary: Delete LDAP config
       tags:
       - ldap
-      - admin
     get:
-      description: Allow an administrator to get the current LDAP config
+      description: '[Admin] get the current LDAP config'
       responses:
         "200":
           description: OK
@@ -326,11 +323,10 @@ paths:
       summary: Get LDAP config
       tags:
       - ldap
-      - admin
     post:
       consumes:
       - application/json
-      description: Allow an administrator to set an LDAP config
+      description: '[Admin] set an LDAP config'
       parameters:
       - description: Request body
         in: body
@@ -352,13 +348,12 @@ paths:
       summary: Set LDAP config
       tags:
       - ldap
-      - admin
   /auth/ldap/users/search:
     post:
       consumes:
       - application/json
-      description: Allow an administrator to search the LDAP service for a user during
-        provisioning. Matches where UPN starts with query and returns one match only.
+      description: '[Admin] search the LDAP service for a user during provisioning.
+        Matches where UPN starts with query and returns one match only.'
       parameters:
       - description: Request body
         in: body
@@ -388,11 +383,10 @@ paths:
       summary: Search for LDAP user
       tags:
       - ldap
-      - admin
   /auth/oidc:
     delete:
-      description: Allow an administrator to delete an OIDC config. No payload or
-        selector, as there can be only one configuration.
+      description: '[Admin] delete an OIDC config. No payload or selector, as there
+        can be only one configuration.'
       responses:
         "200":
           description: OK
@@ -403,11 +397,10 @@ paths:
       summary: Delete OIDC config
       tags:
       - oidc
-      - admin
     post:
       consumes:
       - application/json
-      description: Allow an administrator to set an OIDC config
+      description: '[Admin] set an OIDC config'
       parameters:
       - description: Request body
         in: body
@@ -429,9 +422,8 @@ paths:
       summary: Set OIDC config
       tags:
       - oidc
-      - admin
     put:
-      description: Allow an administrator to get the current OIDC config
+      description: '[Admin] get the current OIDC config'
       responses:
         "200":
           description: OK
@@ -446,10 +438,9 @@ paths:
       summary: Get OIDC config
       tags:
       - oidc
-      - admin
   /auth/oidc/test:
     post:
-      description: Allow an administrator to test the OIDC connection
+      description: '[Admin] test the OIDC connection'
       responses:
         "200":
           description: OK
@@ -464,13 +455,13 @@ paths:
       summary: Test OIDC connection
       tags:
       - oidc
-      - admin
   /encryption/passphrase:
     put:
       consumes:
       - application/json
-      description: Allows an administrator to trigger an automated decrypt and re-encrypt
-        of sensitive data fields within the database. Requires updating env var after.
+      description: '[Admin] trigger an automated decrypt and re-encrypt of sensitive
+        data fields within the database with a supplied phrase. Requires updating
+        env var after.'
       parameters:
       - description: Request body
         in: body
@@ -492,7 +483,6 @@ paths:
       summary: Rotate encryption phrase
       tags:
       - encryption
-      - admin
   /notification/types:
     get:
       description: Get all supported notification types
@@ -512,7 +502,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Allows authenticated user to create a new server session
+      description: Create a new server session
       parameters:
       - description: Request body
         in: body
@@ -537,7 +527,7 @@ paths:
     put:
       consumes:
       - application/json
-      description: Allows authenticated user to modify their own server session.
+      description: Modify own server session.
       parameters:
       - description: Request body
         in: body
@@ -565,7 +555,7 @@ paths:
       - application/json
       description: Oneshot endpoint allowing the creation of initial admin user when
         starting the app for the first time or when all users have been deleted from
-        the database.
+        the database. Endpoint is inaccessible during normal operation.
       parameters:
       - description: Request body
         in: body
@@ -586,6 +576,10 @@ paths:
           description: Forbidden
           schema:
             type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
       summary: Creating first time user
       tags:
       - user
@@ -593,8 +587,8 @@ paths:
     delete:
       consumes:
       - application/json
-      description: Delete target user. Will return conflict if there are active server
-        sessions. End the sessions before deleting.
+      description: '[Admin] Will return conflict if there are active server sessions.
+        End the sessions before deleting.'
       parameters:
       - description: Request body
         in: body
@@ -620,11 +614,10 @@ paths:
       summary: Delete target user
       tags:
       - user
-      - admin
     post:
       consumes:
       - application/json
-      description: Create new user
+      description: '[Admin] Create new user'
       parameters:
       - description: Request body
         in: body
@@ -650,7 +643,6 @@ paths:
       summary: Create new user
       tags:
       - user
-      - admin
   /user/auth:
     get:
       description: Get authorisation for current user
@@ -667,8 +659,8 @@ paths:
     put:
       consumes:
       - application/json
-      description: Update authorisation for all target users. All changes must succeed
-        otherwise change is rolled back and error is raised.
+      description: '[Admin] update authorisation for all target users. All changes
+        must succeed otherwise change is rolled back and error is raised.'
       parameters:
       - description: Request body
         in: body
@@ -692,13 +684,12 @@ paths:
       summary: Update user auth
       tags:
       - user
-      - admin
   /user/ldap:
     post:
       consumes:
       - application/json
-      description: Allow an administrator to create an LDAP user. Assumes an LDAP
-        config is present.
+      description: '[Admin] provision an LDAP user. Assumes an LDAP config is present
+        and the user exists in the IDP.'
       parameters:
       - description: Request body
         in: body
@@ -728,10 +719,9 @@ paths:
       summary: Create LDAP user
       tags:
       - ldap
-      - admin
   /user/notification:
     delete:
-      description: Allows authenticated user to delete notification config
+      description: Delete own notification config
       responses:
         "200":
           description: OK
@@ -743,7 +733,7 @@ paths:
       tags:
       - notification
     get:
-      description: Get notification config for current user
+      description: Get own notification config
       responses:
         "200":
           description: OK
@@ -757,7 +747,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Allows authenticated user to set notification config
+      description: Set own notification config
       parameters:
       - description: Request body
         in: body
@@ -781,8 +771,7 @@ paths:
       - notification
   /user/notification/test:
     post:
-      description: Allows authenticated user to test notification config and receive
-        a message
+      description: Test own notification config and receive a message
       responses:
         "200":
           description: OK
@@ -797,7 +786,7 @@ paths:
     put:
       consumes:
       - application/json
-      description: Allows local user to change their own password
+      description: Change own password
       parameters:
       - description: Request body
         in: body
@@ -825,8 +814,7 @@ paths:
       - user
   /users:
     get:
-      description: Allows an administrator to retrieve all users in the system including
-        attributes
+      description: '[Admin] retrieve all users in the system including attributes'
       responses:
         "200":
           description: OK
@@ -838,11 +826,10 @@ paths:
       - BasicAuth: []
       summary: Get all users
       tags:
-      - users
-      - admin
+      - user
   /version:
     get:
-      description: Allow authenticated user to get current version of ez2boot
+      description: Get current version of ez2boot
       responses:
         "200":
           description: OK

@@ -22,7 +22,7 @@ func (h *Handler) GetNotificationTypes() http.HandlerFunc {
 }
 
 // @Summary 		Get notification config
-// @Description 	Get notification config for current user
+// @Description 	Get own notification config
 // @Tags 			notification
 // @Success 		200 {object} NotificationConfigResponse
 // @Router       	/user/notification [get]
@@ -46,7 +46,7 @@ func (h *Handler) GetUserNotificationSettings() http.HandlerFunc {
 }
 
 // @Summary 		Set notification config
-// @Description 	Allows authenticated user to set notification config
+// @Description 	Set own notification config
 // @Tags 			notification
 // @Accept 			json
 // @Param			request body NotificationConfigRequest true "Request body"
@@ -108,7 +108,7 @@ func (h *Handler) SetUserNotificationSettings() http.HandlerFunc {
 }
 
 // @Summary 		Delete notification config
-// @Description 	Allows authenticated user to delete notification config
+// @Description 	Delete own notification config
 // @Tags 			notification
 // @Success 		200 {object} bool
 // @Router       	/user/notification [delete]
@@ -131,7 +131,7 @@ func (h *Handler) DeleteUserNotificationSettings() http.HandlerFunc {
 }
 
 // @Summary 		Test notification config
-// @Description 	Allows authenticated user to test notification config and receive a message
+// @Description 	Test own notification config and receive a message
 // @Tags 			notification
 // @Success 		200 {object} bool
 // @Router       	/user/notification/test [post]

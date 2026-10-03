@@ -7,7 +7,7 @@ import (
 )
 
 // @Summary 		Get version
-// @Description 	Allow authenticated user to get current version of ez2boot
+// @Description 	Get current version of ez2boot
 // @Tags 			util
 // @Success 		200 {object} VersionResponse
 // @Router       	/version [get]

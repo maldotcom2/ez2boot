@@ -27,7 +27,7 @@ func (h *Handler) GetServerSessionSummary() http.HandlerFunc {
 }
 
 // @Summary 		New server session
-// @Description 	Allows authenticated user to create a new server session
+// @Description 	Create a new server session
 // @Tags 			session
 // @Accept 			json
 // @Param			request body ServerSessionRequest true "Request body"
@@ -88,7 +88,7 @@ func (h *Handler) NewServerSession() http.HandlerFunc {
 }
 
 // @Summary 		Update server session
-// @Description 	Allows authenticated user to modify their own server session.
+// @Description 	Modify own server session.
 // @Tags 			session
 // @Accept 			json
 // @Param			request body ServerSessionRequest true "Request body"
@@ -155,8 +155,8 @@ func (h *Handler) UpdateServerSession() http.HandlerFunc {
 }
 
 // @Summary 		Update server session admin
-// @Description 	Allows an administrator user to modify a server session.
-// @Tags 			session, admin
+// @Description 	[Admin] Override and modify an existing server session for any user.
+// @Tags 			session
 // @Accept 			json
 // @Param			request body ServerSessionRequest true "Request body"
 // @Success 		200 {object} ServerSessionResponse

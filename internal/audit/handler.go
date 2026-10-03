@@ -10,8 +10,8 @@ import (
 )
 
 // @Summary 		Get audit events
-// @Description 	Allows an administrator to retrieve audit events
-// @Tags 			audit, admin
+// @Description 	[Admin] retrieve audit events
+// @Tags 			audit
 // @Success 		200 {object} AuditLogResponse
 // @Failure      	400 {object} string
 // @Router       	/audit/events [get]

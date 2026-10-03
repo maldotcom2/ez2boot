@@ -22,13 +22,12 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Allows an administrator user to modify a server session.",
+                "description": "[Admin] modify a server session.",
                 "consumes": [
                     "application/json"
                 ],
                 "tags": [
-                    "session",
-                    "admin"
+                    "session"
                 ],
                 "summary": "Update server session admin",
                 "parameters": [
@@ -65,10 +64,9 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Allows an administrator to retrieve audit events",
+                "description": "[Admin] retrieve audit events",
                 "tags": [
-                    "audit",
-                    "admin"
+                    "audit"
                 ],
                 "summary": "Get audit events",
                 "responses": {
@@ -94,10 +92,9 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Allow an administrator to get the current LDAP config",
+                "description": "[Admin] get the current LDAP config",
                 "tags": [
-                    "ldap",
-                    "admin"
+                    "ldap"
                 ],
                 "summary": "Get LDAP config",
                 "responses": {
@@ -121,13 +118,12 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Allow an administrator to set an LDAP config",
+                "description": "[Admin] set an LDAP config",
                 "consumes": [
                     "application/json"
                 ],
                 "tags": [
-                    "ldap",
-                    "admin"
+                    "ldap"
                 ],
                 "summary": "Set LDAP config",
                 "parameters": [
@@ -162,10 +158,9 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Allow an administrator to delete an LDAP config. No payload or selector, as there can be only one configuration.",
+                "description": "[Admin] delete an LDAP config. No payload or selector, as there can be only one configuration.",
                 "tags": [
-                    "ldap",
-                    "admin"
+                    "ldap"
                 ],
                 "summary": "Delete LDAP config",
                 "responses": {
@@ -185,13 +180,12 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Allow an administrator to search the LDAP service for a user during provisioning. Matches where UPN starts with query and returns one match only.",
+                "description": "[Admin] search the LDAP service for a user during provisioning. Matches where UPN starts with query and returns one match only.",
                 "consumes": [
                     "application/json"
                 ],
                 "tags": [
-                    "ldap",
-                    "admin"
+                    "ldap"
                 ],
                 "summary": "Search for LDAP user",
                 "parameters": [
@@ -240,10 +234,9 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Allow an administrator to get the current OIDC config",
+                "description": "[Admin] get the current OIDC config",
                 "tags": [
-                    "oidc",
-                    "admin"
+                    "oidc"
                 ],
                 "summary": "Get OIDC config",
                 "responses": {
@@ -267,13 +260,12 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Allow an administrator to set an OIDC config",
+                "description": "[Admin] set an OIDC config",
                 "consumes": [
                     "application/json"
                 ],
                 "tags": [
-                    "oidc",
-                    "admin"
+                    "oidc"
                 ],
                 "summary": "Set OIDC config",
                 "parameters": [
@@ -308,10 +300,9 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Allow an administrator to delete an OIDC config. No payload or selector, as there can be only one configuration.",
+                "description": "[Admin] delete an OIDC config. No payload or selector, as there can be only one configuration.",
                 "tags": [
-                    "oidc",
-                    "admin"
+                    "oidc"
                 ],
                 "summary": "Delete OIDC config",
                 "responses": {
@@ -331,10 +322,9 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Allow an administrator to test the OIDC connection",
+                "description": "[Admin] test the OIDC connection",
                 "tags": [
-                    "oidc",
-                    "admin"
+                    "oidc"
                 ],
                 "summary": "Test OIDC connection",
                 "responses": {
@@ -360,13 +350,12 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Allows an administrator to trigger an automated decrypt and re-encrypt of sensitive data fields within the database. Requires updating env var after.",
+                "description": "[Admin] trigger an automated decrypt and re-encrypt of sensitive data fields within the database with a supplied phrase. Requires updating env var after.",
                 "consumes": [
                     "application/json"
                 ],
                 "tags": [
-                    "encryption",
-                    "admin"
+                    "encryption"
                 ],
                 "summary": "Rotate encryption phrase",
                 "parameters": [
@@ -428,7 +417,7 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Allows authenticated user to modify their own server session.",
+                "description": "Modify own server session.",
                 "consumes": [
                     "application/json"
                 ],
@@ -468,7 +457,7 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Allows authenticated user to create a new server session",
+                "description": "Create a new server session",
                 "consumes": [
                     "application/json"
                 ],
@@ -505,7 +494,7 @@ const docTemplate = `{
         },
         "/setup": {
             "post": {
-                "description": "Oneshot endpoint allowing the creation of initial admin user when starting the app for the first time or when all users have been deleted from the database.",
+                "description": "Oneshot endpoint allowing the creation of initial admin user when starting the app for the first time or when all users have been deleted from the database. Endpoint is inaccessible during normal operation.",
                 "consumes": [
                     "application/json"
                 ],
@@ -542,6 +531,12 @@ const docTemplate = `{
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 }
             }
@@ -553,13 +548,12 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Create new user",
+                "description": "[Admin] Create new user",
                 "consumes": [
                     "application/json"
                 ],
                 "tags": [
-                    "user",
-                    "admin"
+                    "user"
                 ],
                 "summary": "Create new user",
                 "parameters": [
@@ -600,13 +594,12 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Delete target user. Will return conflict if there are active server sessions. End the sessions before deleting.",
+                "description": "[Admin] Will return conflict if there are active server sessions. End the sessions before deleting.",
                 "consumes": [
                     "application/json"
                 ],
                 "tags": [
-                    "user",
-                    "admin"
+                    "user"
                 ],
                 "summary": "Delete target user",
                 "parameters": [
@@ -669,13 +662,12 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Update authorisation for all target users. All changes must succeed otherwise change is rolled back and error is raised.",
+                "description": "[Admin] update authorisation for all target users. All changes must succeed otherwise change is rolled back and error is raised.",
                 "consumes": [
                     "application/json"
                 ],
                 "tags": [
-                    "user",
-                    "admin"
+                    "user"
                 ],
                 "summary": "Update user auth",
                 "parameters": [
@@ -715,13 +707,12 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Allow an administrator to create an LDAP user. Assumes an LDAP config is present.",
+                "description": "[Admin] provision an LDAP user. Assumes an LDAP config is present and the user exists in the IDP.",
                 "consumes": [
                     "application/json"
                 ],
                 "tags": [
-                    "ldap",
-                    "admin"
+                    "ldap"
                 ],
                 "summary": "Create LDAP user",
                 "parameters": [
@@ -770,7 +761,7 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Get notification config for current user",
+                "description": "Get own notification config",
                 "tags": [
                     "notification"
                 ],
@@ -790,7 +781,7 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Allows authenticated user to set notification config",
+                "description": "Set own notification config",
                 "consumes": [
                     "application/json"
                 ],
@@ -830,7 +821,7 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Allows authenticated user to delete notification config",
+                "description": "Delete own notification config",
                 "tags": [
                     "notification"
                 ],
@@ -852,7 +843,7 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Allows authenticated user to test notification config and receive a message",
+                "description": "Test own notification config and receive a message",
                 "tags": [
                     "notification"
                 ],
@@ -874,7 +865,7 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Allows local user to change their own password",
+                "description": "Change own password",
                 "consumes": [
                     "application/json"
                 ],
@@ -922,10 +913,9 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Allows an administrator to retrieve all users in the system including attributes",
+                "description": "[Admin] retrieve all users in the system including attributes",
                 "tags": [
-                    "users",
-                    "admin"
+                    "user"
                 ],
                 "summary": "Get all users",
                 "responses": {
@@ -948,7 +938,7 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Allow authenticated user to get current version of ez2boot",
+                "description": "Get current version of ez2boot",
                 "tags": [
                     "util"
                 ],

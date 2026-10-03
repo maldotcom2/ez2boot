@@ -9,8 +9,8 @@ import (
 )
 
 // @Summary 		Get LDAP config
-// @Description 	Allow an administrator to get the current LDAP config
-// @Tags 			ldap, admin
+// @Description 	[Admin] get the current LDAP config
+// @Tags 			ldap
 // @Success 		200 {object} LdapConfigResponse
 // @Failure      	400 {object} string
 // @Router       	/auth/ldap [get]
@@ -49,8 +49,8 @@ func (h *Handler) GetLdapConfig() http.HandlerFunc {
 }
 
 // @Summary 		Set LDAP config
-// @Description 	Allow an administrator to set an LDAP config
-// @Tags 			ldap, admin
+// @Description 	[Admin] set an LDAP config
+// @Tags 			ldap
 // @Accept 			json
 // @Param			request body LdapConfigRequest true "Request body"
 // @Success 		200 {object} bool
@@ -83,8 +83,8 @@ func (h *Handler) SetLdapConfig() http.HandlerFunc {
 }
 
 // @Summary 		Delete LDAP config
-// @Description 	Allow an administrator to delete an LDAP config. No payload or selector, as there can be only one configuration.
-// @Tags 			ldap, admin
+// @Description 	[Admin] delete an LDAP config. No payload or selector, as there can be only one configuration.
+// @Tags 			ldap
 // @Success 		200 {object} bool
 // @Router       	/auth/ldap [delete]
 // @Security 		BasicAuth
@@ -108,8 +108,8 @@ func (h *Handler) DeleteLdapConfig() http.HandlerFunc {
 }
 
 // @Summary 		Search for LDAP user
-// @Description 	Allow an administrator to search the LDAP service for a user during provisioning. Matches where UPN starts with query and returns one match only.
-// @Tags 			ldap, admin
+// @Description 	[Admin] search the LDAP service for a user during provisioning. Matches where UPN starts with query and returns one match only.
+// @Tags 			ldap
 // @Accept 			json
 // @Param			request body LdapSearchRequest true "Request body"
 // @Success 		200 {object} LdapSearchResponse
@@ -168,8 +168,8 @@ func (h *Handler) SearchUser() http.HandlerFunc {
 }
 
 // @Summary 		Create LDAP user
-// @Description 	Allow an administrator to create an LDAP user. Assumes an LDAP config is present.
-// @Tags 			ldap, admin
+// @Description 	[Admin] provision an LDAP user. Assumes an LDAP config is present and the user exists in the IDP.
+// @Tags 			ldap
 // @Accept 			json
 // @Param			request body CreateLdapUserRequest true "Request body"
 // @Success 		201 {object} bool

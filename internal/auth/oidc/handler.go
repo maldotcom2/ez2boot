@@ -150,8 +150,8 @@ func (h *Handler) Callback() http.HandlerFunc {
 }
 
 // @Summary 		Test OIDC connection
-// @Description 	Allow an administrator to test the OIDC connection
-// @Tags 			oidc, admin
+// @Description 	[Admin] test the OIDC connection
+// @Tags 			oidc
 // @Success 		200 {object} bool
 // @Failure      	404 {object} string
 // @Router       	/auth/oidc/test [post]
@@ -190,8 +190,8 @@ func (h *Handler) TestOidcConnection() http.HandlerFunc {
 }
 
 // @Summary 		Get OIDC config
-// @Description 	Allow an administrator to get the current OIDC config
-// @Tags 			oidc, admin
+// @Description 	[Admin] get the current OIDC config
+// @Tags 			oidc
 // @Success 		200 {object} OidcConfigResponse
 // @Failure      	400 {object} string
 // @Router       	/auth/oidc [put]
@@ -230,8 +230,8 @@ func (h *Handler) GetOidcConfig() http.HandlerFunc {
 }
 
 // @Summary 		Set OIDC config
-// @Description 	Allow an administrator to set an OIDC config
-// @Tags 			oidc, admin
+// @Description 	[Admin] set an OIDC config
+// @Tags 			oidc
 // @Accept 			json
 // @Param			request body OidcConfigRequest true "Request body"
 // @Success 		200 {object} bool
@@ -265,8 +265,8 @@ func (h *Handler) SetOidcConfig() http.HandlerFunc {
 }
 
 // @Summary 		Delete OIDC config
-// @Description 	Allow an administrator to delete an OIDC config. No payload or selector, as there can be only one configuration.
-// @Tags 			oidc, admin
+// @Description 	[Admin] delete an OIDC config. No payload or selector, as there can be only one configuration.
+// @Tags 			oidc
 // @Success 		200 {object} bool
 // @Router       	/auth/oidc [delete]
 // @Security 		BasicAuth
