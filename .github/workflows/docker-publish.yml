@@ -13,16 +13,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-
-      - name: Generate Swagger Docs
-        run: |
-          go install github.com/swaggo/swag/cmd/swag@latest
-          swag init -g cmd/api/main.go --output docs/
-
       - name: Run tests
         run: go test ./...
 

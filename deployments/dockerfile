@@ -1,5 +1,5 @@
 # Build frontend
-FROM node:22-alpine AS frontend-build
+FROM node:24-alpine AS frontend-build
 
 WORKDIR /web
 
@@ -19,7 +19,7 @@ COPY web/app/vite.config.js ./
 RUN npm run build     
 
 # Build backend
-FROM golang:1.25.4-bookworm AS backend-build
+FROM golang:1.27.1-trixie AS backend-build
 
 WORKDIR /app
 
@@ -37,7 +37,7 @@ ARG BUILD_DATE="unknown"
 RUN go build -ldflags "-X main.version=${VERSION} -X main.buildDate=${BUILD_DATE}" -o api ./cmd/api
 
 # Final
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 
 WORKDIR /app
 
