@@ -18,6 +18,11 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: Generate Swagger Docs
+        run: |
+          go install github.com/swaggo/swag/cmd/swag@latest
+          swag init -g cmd/api/main.go --output docs/
+
       - name: Run tests
         run: go test ./...
 

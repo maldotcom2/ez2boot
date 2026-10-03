@@ -298,6 +298,10 @@ Copyright 2014 CoreOS, Inc
 This product includes software developed at CoreOS, Inc.
 (http://www.coreos.com/).
 
+## swagger
+
+swagger-ui
+Copyright 2020-2021 SmartBear Software Inc.
 
 ---
 

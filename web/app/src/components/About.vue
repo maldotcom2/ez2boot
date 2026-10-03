@@ -21,6 +21,7 @@
             }}</span
           >
         </span>
+        <a href="/swagger/index.html" target="_blank">API Docs</a>
         <a href="/LICENSE.txt" target="_blank">AGPLv3</a>
         <a href="https://github.com/maldotcom2/ez2boot/" target="_blank">Source</a>
         No warranty

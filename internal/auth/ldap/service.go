@@ -209,7 +209,7 @@ func (s *Service) SearchUser(req LdapSearchRequest) (LdapSearchResponse, error) 
 		goldap.ScopeWholeSubtree,
 		goldap.NeverDerefAliases,
 		0, 0, false,
-		fmt.Sprintf("(userPrincipalName=%s*)", // Target user requires a mail field
+		fmt.Sprintf("(userPrincipalName=%s*)",
 			goldap.EscapeFilter(req.Query),
 		),
 		[]string{"displayName", "userPrincipalName"},

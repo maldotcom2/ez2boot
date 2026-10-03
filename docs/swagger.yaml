@@ -1,0 +1,862 @@
+basePath: /api/v1
+definitions:
+  audit.AuditLogEvent:
+    properties:
+      action:
+        type: string
+      actorEmail:
+        type: string
+      actorUserID:
+        format: int64
+        type: integer
+      metadata:
+        additionalProperties: {}
+        type: object
+      reason:
+        type: string
+      resource:
+        type: string
+      success:
+        type: boolean
+      targetEmail:
+        type: string
+      targetUserID:
+        format: int64
+        type: integer
+      timeStamp:
+        format: int64
+        type: integer
+    type: object
+  audit.AuditLogResponse:
+    properties:
+      events:
+        items:
+          $ref: '#/definitions/audit.AuditLogEvent'
+        type: array
+      next_cursor:
+        type: integer
+    type: object
+  encryption.RotateEncryptionPhraseRequest:
+    properties:
+      phrase:
+        type: string
+    type: object
+  ldap.CreateLdapUserRequest:
+    properties:
+      email:
+        type: string
+    type: object
+  ldap.LdapConfigRequest:
+    properties:
+      base_dn:
+        type: string
+      bind_dn:
+        type: string
+      bind_password:
+        type: string
+      host:
+        type: string
+      port:
+        type: integer
+      skip_tls_verify:
+        type: boolean
+      use_ssl:
+        type: boolean
+    type: object
+  ldap.LdapConfigResponse:
+    properties:
+      base_dn:
+        type: string
+      bind_dn:
+        type: string
+      host:
+        type: string
+      port:
+        type: integer
+      skip_tls_verify:
+        type: boolean
+      use_ssl:
+        type: boolean
+    type: object
+  ldap.LdapSearchRequest:
+    properties:
+      query:
+        type: string
+    type: object
+  ldap.LdapSearchResponse:
+    properties:
+      display_name:
+        type: string
+      email:
+        type: string
+    type: object
+  notification.NotificationConfigRequest:
+    properties:
+      channel_config:
+        additionalProperties: {}
+        type: object
+      type:
+        type: string
+    type: object
+  notification.NotificationConfigResponse:
+    properties:
+      channel_config:
+        additionalProperties: {}
+        type: object
+      type:
+        type: string
+    type: object
+  notification.NotificationTypeResponse:
+    properties:
+      label:
+        type: string
+      type:
+        type: string
+    type: object
+  oidc.OidcConfigRequest:
+    properties:
+      app_url:
+        type: string
+      client_id:
+        type: string
+      client_secret:
+        type: string
+      issuer_url:
+        type: string
+    type: object
+  oidc.OidcConfigResponse:
+    properties:
+      app_url:
+        type: string
+      client_id:
+        type: string
+      issuer_url:
+        type: string
+    type: object
+  session.ServerSessionRequest:
+    properties:
+      duration:
+        type: string
+      server_group:
+        type: string
+    type: object
+  session.ServerSessionResponse:
+    properties:
+      duration:
+        type: string
+      expiry:
+        type: string
+      server_group:
+        type: string
+    type: object
+  user.ChangePasswordRequest:
+    properties:
+      current_password:
+        type: string
+      new_password:
+        type: string
+    type: object
+  user.CreateUserRequest:
+    properties:
+      api_enabled:
+        type: boolean
+      email:
+        type: string
+      is_active:
+        type: boolean
+      is_admin:
+        type: boolean
+      password:
+        type: string
+      ui_enabled:
+        type: boolean
+    type: object
+  user.DeleteUserRequest:
+    properties:
+      user_id:
+        type: integer
+    type: object
+  user.GetUsersResponse:
+    properties:
+      api_enabled:
+        type: boolean
+      email:
+        type: string
+      identity_provider:
+        type: string
+      is_active:
+        type: boolean
+      is_admin:
+        type: boolean
+      last_login:
+        type: integer
+      ui_enabled:
+        type: boolean
+      user_id:
+        type: integer
+    type: object
+  user.UpdateUserRequest:
+    properties:
+      api_enabled:
+        type: boolean
+      is_active:
+        type: boolean
+      is_admin:
+        type: boolean
+      ui_enabled:
+        type: boolean
+      user_id:
+        type: integer
+    type: object
+  user.UserAuthResponse:
+    properties:
+      api_enabled:
+        type: boolean
+      email:
+        type: string
+      identity_provider:
+        type: string
+      is_active:
+        type: boolean
+      is_admin:
+        type: boolean
+      mfa_confirmed:
+        type: boolean
+      ui_enabled:
+        type: boolean
+      user_id:
+        type: integer
+    type: object
+  util.VersionResponse:
+    properties:
+      build_date:
+        type: string
+      checked_at:
+        type: integer
+      latest_release:
+        type: string
+      release_url:
+        type: string
+      update_available:
+        type: boolean
+      version:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: 'All endpoints return responses wrapped in a standard envelope: {"success":
+    bool, "data": (schema shown per endpoint), "error": string}. All protected endpoints
+    can return 401 and most endpoints can return 500. These are not documented per
+    endpoint. Be sure to "Authorize" within Swagger with a user which has API permissions
+    within ez2boot - browser auth is only to view Swagger but it does not get passed
+    in the basic auth header. Additionally, to access admin endpoints the user needs
+    both API and Admin permissions.'
+  title: ez2boot API
+  version: "1.0"
+paths:
+  /admin/session:
+    put:
+      consumes:
+      - application/json
+      description: '[Admin] Override and modify an existing server session for any
+        user.'
+      parameters:
+      - description: Request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/session.ServerSessionRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/session.ServerSessionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      summary: Update server session admin
+      tags:
+      - session
+  /audit/events:
+    get:
+      description: '[Admin] retrieve paginated list of audit events, filtered by actors,
+        actions or time'
+      parameters:
+      - default: 50
+        description: Number of records to return
+        in: query
+        name: limit
+        type: integer
+      - description: Cursor pagination token represented as a Unix timestamp
+        format: int64
+        in: query
+        name: before
+        type: integer
+      - description: Filter logs by the email of the actor
+        format: email
+        in: query
+        name: actor_email
+        type: string
+      - description: Filter logs by the email of the target user
+        format: email
+        in: query
+        name: target_email
+        type: string
+      - description: Filter by action type (e.g., login, server_start)
+        in: query
+        name: action
+        type: string
+      - description: Filter by impacted cloud resource ID
+        in: query
+        name: resource
+        type: string
+      - description: Filter by event execution status (true/false)
+        in: query
+        name: success
+        type: boolean
+      - description: Filter by failure reasons or details
+        in: query
+        name: reason
+        type: string
+      - description: Search text within metadata payloads
+        in: query
+        name: metadata
+        type: string
+      - description: Fetch events after this Unix timestamp
+        format: int64
+        in: query
+        name: from
+        type: integer
+      - description: Fetch events before this Unix timestamp
+        format: int64
+        in: query
+        name: to
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/audit.AuditLogResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      summary: Get audit events
+      tags:
+      - audit
+  /auth/ldap:
+    delete:
+      description: '[Admin] delete an LDAP config. No payload or selector, as there
+        can be only one configuration. Currently this is idempotent and will return
+        successful even if there is no config.'
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: boolean
+      security:
+      - BasicAuth: []
+      summary: Delete LDAP config
+      tags:
+      - ldap
+    get:
+      description: '[Admin] get the current LDAP config'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ldap.LdapConfigResponse'
+      security:
+      - BasicAuth: []
+      summary: Get LDAP config
+      tags:
+      - ldap
+    post:
+      consumes:
+      - application/json
+      description: '[Admin] set an LDAP config'
+      parameters:
+      - description: Request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/ldap.LdapConfigRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: boolean
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      summary: Set LDAP config
+      tags:
+      - ldap
+  /auth/ldap/users/search:
+    post:
+      consumes:
+      - application/json
+      description: '[Admin] search the LDAP service for a user during provisioning.
+        Matches where UPN starts with query and returns one match only.'
+      parameters:
+      - description: Request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/ldap.LdapSearchRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ldap.LdapSearchResponse'
+        "404":
+          description: Not Found
+          schema:
+            type: string
+        "503":
+          description: Service Unavailable
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      summary: Search for LDAP user
+      tags:
+      - ldap
+  /auth/oidc:
+    delete:
+      description: '[Admin] delete an OIDC config. No payload or selector, as there
+        can be only one configuration. Currently this is idempotent and will return
+        successful even if there is no config.'
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: boolean
+      security:
+      - BasicAuth: []
+      summary: Delete OIDC config
+      tags:
+      - oidc
+    get:
+      description: '[Admin] get the current OIDC config'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/oidc.OidcConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      summary: Get OIDC config
+      tags:
+      - oidc
+    post:
+      consumes:
+      - application/json
+      description: '[Admin] set an OIDC config'
+      parameters:
+      - description: Request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/oidc.OidcConfigRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: boolean
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      summary: Set OIDC config
+      tags:
+      - oidc
+  /auth/oidc/test:
+    post:
+      description: '[Admin] test the OIDC connection'
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: boolean
+        "404":
+          description: Not Found
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      summary: Test OIDC connection
+      tags:
+      - oidc
+  /encryption/passphrase:
+    put:
+      consumes:
+      - application/json
+      description: '[Admin] trigger an automated decrypt and re-encrypt of sensitive
+        data fields within the database with a supplied phrase. Requires updating
+        env var after.'
+      parameters:
+      - description: Request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/encryption.RotateEncryptionPhraseRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: boolean
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      summary: Rotate encryption phrase
+      tags:
+      - encryption
+  /notification/types:
+    get:
+      description: Get all supported notification types
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/notification.NotificationTypeResponse'
+            type: array
+      security:
+      - BasicAuth: []
+      summary: Get notification types
+      tags:
+      - notification
+  /session:
+    post:
+      consumes:
+      - application/json
+      description: Create a new server session
+      parameters:
+      - description: Request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/session.ServerSessionRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/session.ServerSessionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      summary: New server session
+      tags:
+      - session
+    put:
+      consumes:
+      - application/json
+      description: Modify own server session.
+      parameters:
+      - description: Request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/session.ServerSessionRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/session.ServerSessionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      summary: Update server session
+      tags:
+      - session
+  /user:
+    delete:
+      consumes:
+      - application/json
+      description: '[Admin] Will return conflict if there are active server sessions.
+        End the sessions before deleting.'
+      parameters:
+      - description: Request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user.DeleteUserRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: boolean
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "409":
+          description: Conflict
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      summary: Delete target user
+      tags:
+      - user
+    post:
+      consumes:
+      - application/json
+      description: '[Admin] Create new user'
+      parameters:
+      - description: Request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user.CreateUserRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            type: boolean
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "409":
+          description: Conflict
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      summary: Create new user
+      tags:
+      - user
+  /user/auth:
+    get:
+      description: Get authorisation for current user
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user.UserAuthResponse'
+      security:
+      - BasicAuth: []
+      summary: Get user auth
+      tags:
+      - user
+    put:
+      consumes:
+      - application/json
+      description: '[Admin] update authorisation for all target users. All changes
+        must succeed otherwise change is rolled back and error is raised.'
+      parameters:
+      - description: Request body
+        in: body
+        name: request
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/user.UpdateUserRequest'
+          type: array
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: boolean
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      summary: Update user auth
+      tags:
+      - user
+  /user/ldap:
+    post:
+      consumes:
+      - application/json
+      description: '[Admin] provision an LDAP user. Assumes an LDAP config is present
+        and the user exists in the IDP.'
+      parameters:
+      - description: Request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/ldap.CreateLdapUserRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            type: boolean
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+        "409":
+          description: Conflict
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      summary: Create LDAP user
+      tags:
+      - ldap
+  /user/notification:
+    delete:
+      description: Delete own notification config. Currently this is idempotent and
+        will return successful even if there is no config.
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: boolean
+      security:
+      - BasicAuth: []
+      summary: Delete notification config
+      tags:
+      - notification
+    get:
+      description: Get own notification config
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/notification.NotificationConfigResponse'
+      security:
+      - BasicAuth: []
+      summary: Get notification config
+      tags:
+      - notification
+    post:
+      consumes:
+      - application/json
+      description: Set own notification config
+      parameters:
+      - description: Request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/notification.NotificationConfigRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: boolean
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      summary: Set notification config
+      tags:
+      - notification
+  /user/notification/test:
+    post:
+      description: Test own notification config and receive a message
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: boolean
+      security:
+      - BasicAuth: []
+      summary: Test notification config
+      tags:
+      - notification
+  /user/password:
+    put:
+      consumes:
+      - application/json
+      description: Change own password
+      parameters:
+      - description: Request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/user.ChangePasswordRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: boolean
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      summary: Change own password
+      tags:
+      - user
+  /users:
+    get:
+      description: '[Admin] retrieve all users in the system including attributes'
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/user.GetUsersResponse'
+            type: array
+      security:
+      - BasicAuth: []
+      summary: Get all users
+      tags:
+      - user
+  /version:
+    get:
+      description: Get current version of ez2boot
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/util.VersionResponse'
+      security:
+      - BasicAuth: []
+      summary: Get version
+      tags:
+      - util
+produces:
+- application/json
+securityDefinitions:
+  BasicAuth:
+    type: basic
+swagger: "2.0"

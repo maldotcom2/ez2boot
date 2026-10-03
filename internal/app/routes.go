@@ -8,7 +8,10 @@ import (
 
 	_ "embed"
 
+	_ "ez2boot/docs"
+
 	"github.com/gorilla/mux"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 func SetupBackendRoutes(
@@ -94,6 +97,14 @@ func SetupBackendRoutes(
 
 	// Version
 	uiRouter.HandleFunc("/version", handlers.UtilHandler.GetVersion()).Methods("GET")
+
+	///////////////////////////////// Swagger ////////////////////////////////////////////
+
+	swaggerRouter := router.PathPrefix("/swagger").Subrouter()
+	swaggerRouter.Use(mw.PrivateLimitMiddleware)
+	swaggerRouter.Use(mw.JsonContentTypeMiddleware)
+	swaggerRouter.Use(mw.SessionAuthMiddleware()) // This pattern allows passing in params, can be simplified.
+	swaggerRouter.PathPrefix("/").Handler(httpSwagger.WrapHandler).Methods("GET")
 
 	/////////////////////////// Admin API subrouter and routes ///////////////////////////
 
