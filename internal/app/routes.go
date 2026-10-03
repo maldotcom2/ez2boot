@@ -100,7 +100,10 @@ func SetupBackendRoutes(
 
 	///////////////////////////////// Swagger ////////////////////////////////////////////
 
-	uiRouter.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler).Methods("GET")
+	swaggerRouter := router.PathPrefix("/swagger").Subrouter()
+	swaggerRouter.Use(mw.PrivateLimitMiddleware)
+	swaggerRouter.Use(mw.SessionAuthMiddleware()) // This pattern allows passing in params, can be simplified.
+	swaggerRouter.PathPrefix("/").Handler(httpSwagger.WrapHandler).Methods("GET")
 
 	/////////////////////////// Admin API subrouter and routes ///////////////////////////
 
