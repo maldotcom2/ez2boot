@@ -1,7 +1,10 @@
 ## Development
-- CD to project root and run the Go backend 
+Development is done by running the backend within one terminal session, which will create the server on localhost port 8000 by default. The frontend is developed using Vite in a second terminal session, with the UI displayed on localhost port 5173 by default. The commands below will allow you to run the development environment after cloning the repo.
+
+- CD to project root and run the Go backend (Go required)
     - ```go run ./cmd/api/```
-- CD to /web/app and run the Vite web server 
+- CD to /web/app and run the Vite web server (npm required)
+    - ```npm install```
     - ```npm run dev```
 
 NOTE: To build/run on windows, requires C compiler on path
