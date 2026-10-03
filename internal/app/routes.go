@@ -8,7 +8,10 @@ import (
 
 	_ "embed"
 
+	_ "ez2boot/docs"
+
 	"github.com/gorilla/mux"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 func SetupBackendRoutes(
@@ -147,6 +150,10 @@ func SetupBackendRoutes(
 	apiRouter.HandleFunc("/notification/types", handlers.NotificationHandler.GetNotificationTypes()).Methods("GET")
 	// Version
 	apiRouter.HandleFunc("/version", handlers.UtilHandler.GetVersion()).Methods("GET")
+
+	///////////////////////////////// Swagger ////////////////////////////////////////////
+
+	router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler).Methods("GET")
 }
 
 func SetupFrontendRoutes(router *mux.Router) {

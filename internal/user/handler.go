@@ -11,6 +11,12 @@ import (
 	"time"
 )
 
+// @Summary 		Get all users
+// @Description 	Allows an administrator to retrieve all users in the system including attributes
+// @Tags 			users, admin
+// @Success 		200 {object} []GetUsersResponse
+// @Router       	/users [get]
+// @Security 		BasicAuth
 func (h *Handler) GetUsers() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -28,7 +34,12 @@ func (h *Handler) GetUsers() http.HandlerFunc {
 	}
 }
 
-// Get user authorisation for logged in user
+// @Summary 		Get user auth
+// @Description 	Get authorisation for current user
+// @Tags 			user
+// @Success 		200 {object} UserAuthResponse
+// @Router       	/user/auth [get]
+// @Security 		BasicAuth
 func (h *Handler) GetUserAuthorisation() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -46,6 +57,15 @@ func (h *Handler) GetUserAuthorisation() http.HandlerFunc {
 	}
 }
 
+// @Summary 		Update user auth
+// @Description 	Update authorisation for all target users. All changes must succeed otherwise change is rolled back and error is raised.
+// @Tags 			user, admin
+// @Accept 			json
+// @Param			request body []UpdateUserRequest true "Request body"
+// @Success 		200 {object} bool
+// @Failure      	400 {object} string
+// @Router       	/user/auth [put]
+// @Security 		BasicAuth
 func (h *Handler) UpdateUserAuthorisation() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -118,7 +138,16 @@ func (h *Handler) CheckSession() http.HandlerFunc {
 	}
 }
 
-// Handler to create new user
+// @Summary 		Create new user
+// @Description 	Create new user
+// @Tags 			user, admin
+// @Accept 			json
+// @Param			request body CreateUserRequest true "Request body"
+// @Success 		201 {object} bool
+// @Failure      	409 {object} string
+// @Failure      	400 {object} string
+// @Router       	/user [post]
+// @Security 		BasicAuth
 func (h *Handler) CreateUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -191,6 +220,16 @@ func (h *Handler) CreateUser() http.HandlerFunc {
 	}
 }
 
+// @Summary 		Delete target user
+// @Description 	Delete target user. Will return conflict if there are active server sessions. End the sessions before deleting.
+// @Tags 			user, admin
+// @Accept 			json
+// @Param			request body DeleteUserRequest true "Request body"
+// @Success 		200 {object} bool
+// @Failure      	409 {object} string
+// @Failure      	400 {object} string
+// @Router       	/user [delete]
+// @Security 		BasicAuth
 func (h *Handler) DeleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -247,7 +286,15 @@ func (h *Handler) DeleteUser() http.HandlerFunc {
 	}
 }
 
-// Handler to bootstrap initial user creation - username and password input
+// @Summary 		Creating first time user
+// @Description 	Oneshot endpoint allowing the creation of initial admin user when starting the app for the first time or when all users have been deleted from the database.
+// @Tags 			user
+// @Accept 			json
+// @Param			request body CreateUserRequest true "Request body"
+// @Success 		201 {object} bool
+// @Failure      	403 {object} string
+// @Failure      	400 {object} string
+// @Router       	/setup [post]
 func (h *Handler) CreateFirstTimeUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -324,6 +371,16 @@ func (h *Handler) CreateFirstTimeUser() http.HandlerFunc {
 	}
 }
 
+// @Summary 		Change own password
+// @Description 	Allows local user to change their own password
+// @Tags 			user
+// @Accept 			json
+// @Param			request body ChangePasswordRequest true "Request body"
+// @Success 		200 {object} bool
+// @Failure      	403 {object} string
+// @Failure      	400 {object} string
+// @Router       	/user/password [put]
+// @Security 		BasicAuth
 func (h *Handler) ChangePassword() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

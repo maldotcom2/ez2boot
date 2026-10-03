@@ -8,6 +8,13 @@ import (
 	"net/http"
 )
 
+// @Summary 		Get LDAP config
+// @Description 	Allow an administrator to get the current LDAP config
+// @Tags 			ldap, admin
+// @Success 		200 {object} LdapConfigResponse
+// @Failure      	400 {object} string
+// @Router       	/auth/ldap [get]
+// @Security 		BasicAuth
 func (h *Handler) GetLdapConfig() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -41,6 +48,15 @@ func (h *Handler) GetLdapConfig() http.HandlerFunc {
 	}
 }
 
+// @Summary 		Set LDAP config
+// @Description 	Allow an administrator to set an LDAP config
+// @Tags 			ldap, admin
+// @Accept 			json
+// @Param			request body LdapConfigRequest true "Request body"
+// @Success 		200 {object} bool
+// @Failure      	400 {object} string
+// @Router       	/auth/ldap [post]
+// @Security 		BasicAuth
 func (h *Handler) SetLdapConfig() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -66,6 +82,12 @@ func (h *Handler) SetLdapConfig() http.HandlerFunc {
 	}
 }
 
+// @Summary 		Delete LDAP config
+// @Description 	Allow an administrator to delete an LDAP config. No payload or selector, as there can be only one configuration.
+// @Tags 			ldap, admin
+// @Success 		200 {object} bool
+// @Router       	/auth/ldap [delete]
+// @Security 		BasicAuth
 func (h *Handler) DeleteLdapConfig() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -85,6 +107,17 @@ func (h *Handler) DeleteLdapConfig() http.HandlerFunc {
 	}
 }
 
+// @Summary 		Search for LDAP user
+// @Description 	Allow an administrator to search the LDAP service for a user during provisioning. Matches where UPN starts with query and returns one match only.
+// @Tags 			ldap, admin
+// @Accept 			json
+// @Param			request body LdapSearchRequest true "Request body"
+// @Success 		200 {object} LdapSearchResponse
+// @Failure      	400 {object} string
+// @Failure      	404 {object} string
+// @Failure      	503 {object} string
+// @Router       	/auth/ldap/users/search [post]
+// @Security 		BasicAuth
 func (h *Handler) SearchUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -134,6 +167,17 @@ func (h *Handler) SearchUser() http.HandlerFunc {
 	}
 }
 
+// @Summary 		Create LDAP user
+// @Description 	Allow an administrator to create an LDAP user. Assumes an LDAP config is present.
+// @Tags 			ldap, admin
+// @Accept 			json
+// @Param			request body CreateLdapUserRequest true "Request body"
+// @Success 		201 {object} bool
+// @Failure      	400 {object} string
+// @Failure      	404 {object} string
+// @Failure      	409 {object} string
+// @Router       	/user/ldap [post]
+// @Security 		BasicAuth
 func (h *Handler) CreateLdapUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

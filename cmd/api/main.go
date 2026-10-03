@@ -14,6 +14,11 @@ import (
 var version = "0.0.0-dev"
 var buildDate = "unknown"
 
+// @title 		ez2boot API
+// @version 	1.0
+// @description All endpoints return responses wrapped in a standard envelope: {"success": bool, "data": (schema shown per endpoint), "error": string}. All protected endpoints can return 401.
+// @securityDefinitions.basic BasicAuth
+// @BasePath	/api/v1
 func main() {
 	// Load env vars
 	cfg, err := config.GetEnvVars()

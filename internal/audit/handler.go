@@ -9,6 +9,13 @@ import (
 	"github.com/gorilla/schema"
 )
 
+// @Summary 		Get audit events
+// @Description 	Allows an administrator to retrieve audit events
+// @Tags 			audit, admin
+// @Success 		200 {object} AuditLogResponse
+// @Failure      	400 {object} string
+// @Router       	/audit/events [get]
+// @Security 		BasicAuth
 func (h *Handler) GetAuditEvents() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

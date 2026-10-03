@@ -8,6 +8,15 @@ import (
 	"net/http"
 )
 
+// @Summary 		Rotate encryption phrase
+// @Description 	Allows an administrator to trigger an automated decrypt and re-encrypt of sensitive data fields within the database. Requires updating env var after.
+// @Tags 			encryption, admin
+// @Accept 			json
+// @Param			request body RotateEncryptionPhraseRequest true "Request body"
+// @Success 		200 {object} bool
+// @Failure      	400 {object} string
+// @Router       	/encryption/passphrase [put]
+// @Security 		BasicAuth
 func (h *Handler) RotateEncryptionPhrase() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

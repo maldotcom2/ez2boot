@@ -8,7 +8,12 @@ import (
 	"net/http"
 )
 
-// Retrieves all supported notification types, used to list available options
+// @Summary 		Get notification types
+// @Description 	Get all supported notification types
+// @Tags 			notification
+// @Success 		200 {object} []NotificationTypeResponse
+// @Router       	/notification/types [get]
+// @Security 		BasicAuth
 func (h *Handler) GetNotificationTypes() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		list := h.Service.getNotificationTypes()
@@ -16,6 +21,12 @@ func (h *Handler) GetNotificationTypes() http.HandlerFunc {
 	}
 }
 
+// @Summary 		Get notification config
+// @Description 	Get notification config for current user
+// @Tags 			notification
+// @Success 		200 {object} NotificationConfigResponse
+// @Router       	/user/notification [get]
+// @Security 		BasicAuth
 func (h *Handler) GetUserNotificationSettings() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -34,6 +45,15 @@ func (h *Handler) GetUserNotificationSettings() http.HandlerFunc {
 	}
 }
 
+// @Summary 		Set notification config
+// @Description 	Allows authenticated user to set notification config
+// @Tags 			notification
+// @Accept 			json
+// @Param			request body NotificationConfigRequest true "Request body"
+// @Success 		200 {object} bool
+// @Failure      	400 {object} string
+// @Router       	/user/notification [post]
+// @Security 		BasicAuth
 func (h *Handler) SetUserNotificationSettings() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -87,6 +107,12 @@ func (h *Handler) SetUserNotificationSettings() http.HandlerFunc {
 	}
 }
 
+// @Summary 		Delete notification config
+// @Description 	Allows authenticated user to delete notification config
+// @Tags 			notification
+// @Success 		200 {object} bool
+// @Router       	/user/notification [delete]
+// @Security 		BasicAuth
 func (h *Handler) DeleteUserNotificationSettings() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -104,6 +130,12 @@ func (h *Handler) DeleteUserNotificationSettings() http.HandlerFunc {
 	}
 }
 
+// @Summary 		Test notification config
+// @Description 	Allows authenticated user to test notification config and receive a message
+// @Tags 			notification
+// @Success 		200 {object} bool
+// @Router       	/user/notification/test [post]
+// @Security 		BasicAuth
 func (h *Handler) QueueTestNotification() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
