@@ -229,7 +229,7 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "[Admin] delete an LDAP config. No payload or selector, as there can be only one configuration.",
+                "description": "[Admin] delete an LDAP config. No payload or selector, as there can be only one configuration. Currently this is idempotent and will return successful even if there is no config.",
                 "tags": [
                     "ldap"
                 ],
@@ -277,12 +277,6 @@ const docTemplate = `{
                             "$ref": "#/definitions/ldap.LdapSearchResponse"
                         }
                     },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -299,7 +293,7 @@ const docTemplate = `{
             }
         },
         "/auth/oidc": {
-            "put": {
+            "get": {
                 "security": [
                     {
                         "BasicAuth": []
@@ -371,7 +365,7 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "[Admin] delete an OIDC config. No payload or selector, as there can be only one configuration.",
+                "description": "[Admin] delete an OIDC config. No payload or selector, as there can be only one configuration. Currently this is idempotent and will return successful even if there is no config.",
                 "tags": [
                     "oidc"
                 ],
@@ -556,55 +550,6 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/setup": {
-            "post": {
-                "description": "Oneshot endpoint allowing the creation of initial admin user when starting the app for the first time or when all users have been deleted from the database. Endpoint is inaccessible during normal operation.",
-                "consumes": [
-                    "application/json"
-                ],
-                "tags": [
-                    "user"
-                ],
-                "summary": "Creating first time user",
-                "parameters": [
-                    {
-                        "description": "Request body",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/user.CreateUserRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "type": "boolean"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
                         "schema": {
                             "type": "string"
                         }
@@ -892,7 +837,7 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "Delete own notification config",
+                "description": "Delete own notification config. Currently this is idempotent and will return successful even if there is no config.",
                 "tags": [
                     "notification"
                 ],
@@ -964,12 +909,6 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
                         "schema": {
                             "type": "string"
                         }

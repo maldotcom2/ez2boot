@@ -353,7 +353,8 @@ paths:
   /auth/ldap:
     delete:
       description: '[Admin] delete an LDAP config. No payload or selector, as there
-        can be only one configuration.'
+        can be only one configuration. Currently this is idempotent and will return
+        successful even if there is no config.'
       responses:
         "200":
           description: OK
@@ -419,10 +420,6 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/ldap.LdapSearchResponse'
-        "400":
-          description: Bad Request
-          schema:
-            type: string
         "404":
           description: Not Found
           schema:
@@ -439,7 +436,8 @@ paths:
   /auth/oidc:
     delete:
       description: '[Admin] delete an OIDC config. No payload or selector, as there
-        can be only one configuration.'
+        can be only one configuration. Currently this is idempotent and will return
+        successful even if there is no config.'
       responses:
         "200":
           description: OK
@@ -448,6 +446,22 @@ paths:
       security:
       - BasicAuth: []
       summary: Delete OIDC config
+      tags:
+      - oidc
+    get:
+      description: '[Admin] get the current OIDC config'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/oidc.OidcConfigResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      security:
+      - BasicAuth: []
+      summary: Get OIDC config
       tags:
       - oidc
     post:
@@ -473,22 +487,6 @@ paths:
       security:
       - BasicAuth: []
       summary: Set OIDC config
-      tags:
-      - oidc
-    put:
-      description: '[Admin] get the current OIDC config'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/oidc.OidcConfigResponse'
-        "400":
-          description: Bad Request
-          schema:
-            type: string
-      security:
-      - BasicAuth: []
-      summary: Get OIDC config
       tags:
       - oidc
   /auth/oidc/test:
@@ -602,40 +600,6 @@ paths:
       summary: Update server session
       tags:
       - session
-  /setup:
-    post:
-      consumes:
-      - application/json
-      description: Oneshot endpoint allowing the creation of initial admin user when
-        starting the app for the first time or when all users have been deleted from
-        the database. Endpoint is inaccessible during normal operation.
-      parameters:
-      - description: Request body
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/user.CreateUserRequest'
-      responses:
-        "201":
-          description: Created
-          schema:
-            type: boolean
-        "400":
-          description: Bad Request
-          schema:
-            type: string
-        "403":
-          description: Forbidden
-          schema:
-            type: string
-        "404":
-          description: Not Found
-          schema:
-            type: string
-      summary: Creating first time user
-      tags:
-      - user
   /user:
     delete:
       consumes:
@@ -774,7 +738,8 @@ paths:
       - ldap
   /user/notification:
     delete:
-      description: Delete own notification config
+      description: Delete own notification config. Currently this is idempotent and
+        will return successful even if there is no config.
       responses:
         "200":
           description: OK
@@ -854,10 +819,6 @@ paths:
             type: boolean
         "400":
           description: Bad Request
-          schema:
-            type: string
-        "403":
-          description: Forbidden
           schema:
             type: string
       security:
