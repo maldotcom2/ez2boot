@@ -108,7 +108,7 @@ func (h *Handler) SetUserNotificationSettings() http.HandlerFunc {
 }
 
 // @Summary 		Delete notification config
-// @Description 	Delete own notification config
+// @Description 	Delete own notification config. Currently this is idempotent and will return successful even if there is no config.
 // @Tags 			notification
 // @Success 		200 {object} bool
 // @Router       	/user/notification [delete]

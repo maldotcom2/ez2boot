@@ -5,6 +5,9 @@ import "github.com/swaggo/swag"
 
 const docTemplate = `{
     "schemes": {{ marshal .Schemes }},
+    "produces": [
+        "application/json"
+    ],
     "swagger": "2.0",
     "info": {
         "description": "{{escape .Description}}",
@@ -22,7 +25,7 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "[Admin] modify a server session.",
+                "description": "[Admin] Override and modify an existing server session for any user.",
                 "consumes": [
                     "application/json"
                 ],
@@ -64,11 +67,85 @@ const docTemplate = `{
                         "BasicAuth": []
                     }
                 ],
-                "description": "[Admin] retrieve audit events",
+                "description": "[Admin] retrieve paginated list of audit events, filtered by actors, actions or time",
                 "tags": [
                     "audit"
                 ],
                 "summary": "Get audit events",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "Number of records to return",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "Cursor pagination token represented as a Unix timestamp",
+                        "name": "before",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "email",
+                        "description": "Filter logs by the email of the actor",
+                        "name": "actor_email",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "email",
+                        "description": "Filter logs by the email of the target user",
+                        "name": "target_email",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by action type (e.g., login, server_start)",
+                        "name": "action",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by impacted cloud resource ID",
+                        "name": "resource",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Filter by event execution status (true/false)",
+                        "name": "success",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by failure reasons or details",
+                        "name": "reason",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search text within metadata payloads",
+                        "name": "metadata",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "Fetch events after this Unix timestamp",
+                        "name": "from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "Fetch events before this Unix timestamp",
+                        "name": "to",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -102,12 +179,6 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/ldap.LdapConfigResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "string"
                         }
                     }
                 }
@@ -1341,7 +1412,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/api/v1",
 	Schemes:          []string{},
 	Title:            "ez2boot API",
-	Description:      "All endpoints return responses wrapped in a standard envelope: {\"success\": bool, \"data\": (schema shown per endpoint), \"error\": string}. All protected endpoints can return 401.",
+	Description:      "All endpoints return responses wrapped in a standard envelope: {\"success\": bool, \"data\": (schema shown per endpoint), \"error\": string}. All protected endpoints can return 401 and most endpoints can return 500. These are not documented per endpoint. Be sure to \"Authorize\" within Swagger with a user which has API permissions within ez2boot - browser auth is only to view Swagger but it does not get passed in the basic auth header. Additionally, to access admin endpoints the user needs both API and Admin permissions.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

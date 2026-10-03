@@ -246,7 +246,11 @@ info:
   contact: {}
   description: 'All endpoints return responses wrapped in a standard envelope: {"success":
     bool, "data": (schema shown per endpoint), "error": string}. All protected endpoints
-    can return 401.'
+    can return 401 and most endpoints can return 500. These are not documented per
+    endpoint. Be sure to "Authorize" within Swagger with a user which has API permissions
+    within ez2boot - browser auth is only to view Swagger but it does not get passed
+    in the basic auth header. Additionally, to access admin endpoints the user needs
+    both API and Admin permissions.'
   title: ez2boot API
   version: "1.0"
 paths:
@@ -254,7 +258,8 @@ paths:
     put:
       consumes:
       - application/json
-      description: '[Admin] modify a server session.'
+      description: '[Admin] Override and modify an existing server session for any
+        user.'
       parameters:
       - description: Request body
         in: body
@@ -278,7 +283,59 @@ paths:
       - session
   /audit/events:
     get:
-      description: '[Admin] retrieve audit events'
+      description: '[Admin] retrieve paginated list of audit events, filtered by actors,
+        actions or time'
+      parameters:
+      - default: 50
+        description: Number of records to return
+        in: query
+        name: limit
+        type: integer
+      - description: Cursor pagination token represented as a Unix timestamp
+        format: int64
+        in: query
+        name: before
+        type: integer
+      - description: Filter logs by the email of the actor
+        format: email
+        in: query
+        name: actor_email
+        type: string
+      - description: Filter logs by the email of the target user
+        format: email
+        in: query
+        name: target_email
+        type: string
+      - description: Filter by action type (e.g., login, server_start)
+        in: query
+        name: action
+        type: string
+      - description: Filter by impacted cloud resource ID
+        in: query
+        name: resource
+        type: string
+      - description: Filter by event execution status (true/false)
+        in: query
+        name: success
+        type: boolean
+      - description: Filter by failure reasons or details
+        in: query
+        name: reason
+        type: string
+      - description: Search text within metadata payloads
+        in: query
+        name: metadata
+        type: string
+      - description: Fetch events after this Unix timestamp
+        format: int64
+        in: query
+        name: from
+        type: integer
+      - description: Fetch events before this Unix timestamp
+        format: int64
+        in: query
+        name: to
+        type: integer
       responses:
         "200":
           description: OK
@@ -314,10 +371,6 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/ldap.LdapConfigResponse'
-        "400":
-          description: Bad Request
-          schema:
-            type: string
       security:
       - BasicAuth: []
       summary: Get LDAP config
@@ -840,6 +893,8 @@ paths:
       summary: Get version
       tags:
       - util
+produces:
+- application/json
 securityDefinitions:
   BasicAuth:
     type: basic

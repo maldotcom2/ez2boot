@@ -286,16 +286,8 @@ func (h *Handler) DeleteUser() http.HandlerFunc {
 	}
 }
 
-// @Summary 		Creating first time user
-// @Description 	Oneshot endpoint allowing the creation of initial admin user when starting the app for the first time or when all users have been deleted from the database. Endpoint is inaccessible during normal operation.
-// @Tags 			user
-// @Accept 			json
-// @Param			request body CreateUserRequest true "Request body"
-// @Success 		201 {object} bool
-// @Failure      	403 {object} string
-// @Failure      	404 {object} string
-// @Failure      	400 {object} string
-// @Router       	/setup [post]
+// Oneshot endpoint allowing the creation of initial admin user when starting the app for the first time or when all users have been deleted from the database.
+// Endpoint is inaccessible during normal operation.
 func (h *Handler) CreateFirstTimeUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -378,7 +370,6 @@ func (h *Handler) CreateFirstTimeUser() http.HandlerFunc {
 // @Accept 			json
 // @Param			request body ChangePasswordRequest true "Request body"
 // @Success 		200 {object} bool
-// @Failure      	403 {object} string
 // @Failure      	400 {object} string
 // @Router       	/user/password [put]
 // @Security 		BasicAuth

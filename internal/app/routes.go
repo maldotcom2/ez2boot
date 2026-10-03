@@ -102,6 +102,7 @@ func SetupBackendRoutes(
 
 	swaggerRouter := router.PathPrefix("/swagger").Subrouter()
 	swaggerRouter.Use(mw.PrivateLimitMiddleware)
+	swaggerRouter.Use(mw.JsonContentTypeMiddleware)
 	swaggerRouter.Use(mw.SessionAuthMiddleware()) // This pattern allows passing in params, can be simplified.
 	swaggerRouter.PathPrefix("/").Handler(httpSwagger.WrapHandler).Methods("GET")
 

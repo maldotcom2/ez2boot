@@ -12,7 +12,6 @@ import (
 // @Description 	[Admin] get the current LDAP config
 // @Tags 			ldap
 // @Success 		200 {object} LdapConfigResponse
-// @Failure      	400 {object} string
 // @Router       	/auth/ldap [get]
 // @Security 		BasicAuth
 func (h *Handler) GetLdapConfig() http.HandlerFunc {
@@ -83,7 +82,7 @@ func (h *Handler) SetLdapConfig() http.HandlerFunc {
 }
 
 // @Summary 		Delete LDAP config
-// @Description 	[Admin] delete an LDAP config. No payload or selector, as there can be only one configuration.
+// @Description 	[Admin] delete an LDAP config. No payload or selector, as there can be only one configuration. Currently this is idempotent and will return successful even if there is no config.
 // @Tags 			ldap
 // @Success 		200 {object} bool
 // @Router       	/auth/ldap [delete]
@@ -113,7 +112,6 @@ func (h *Handler) DeleteLdapConfig() http.HandlerFunc {
 // @Accept 			json
 // @Param			request body LdapSearchRequest true "Request body"
 // @Success 		200 {object} LdapSearchResponse
-// @Failure      	400 {object} string
 // @Failure      	404 {object} string
 // @Failure      	503 {object} string
 // @Router       	/auth/ldap/users/search [post]
