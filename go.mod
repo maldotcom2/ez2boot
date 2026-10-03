@@ -2,7 +2,7 @@ module ez2boot
 
 go 1.26.0
 
-require github.com/mattn/go-sqlite3 v1.14.32 // Requires C compiler gcc.exe on path
+require github.com/mattn/go-sqlite3 v1.14.52 // Requires C compiler gcc.exe on path
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.21.0
