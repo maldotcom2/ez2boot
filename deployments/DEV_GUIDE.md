@@ -6,6 +6,8 @@ Development is done by running the backend within one terminal session, which wi
 - CD to /web/app and run the Vite web server (npm required)
     - ```npm install```
     - ```npm run dev```
+- Running tests
+    - ``` go test ./...```
 
 NOTE: To build/run on windows, requires C compiler on path
 
