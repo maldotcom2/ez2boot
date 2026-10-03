@@ -98,6 +98,10 @@ func SetupBackendRoutes(
 	// Version
 	uiRouter.HandleFunc("/version", handlers.UtilHandler.GetVersion()).Methods("GET")
 
+	///////////////////////////////// Swagger ////////////////////////////////////////////
+
+	uiRouter.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler).Methods("GET")
+
 	/////////////////////////// Admin API subrouter and routes ///////////////////////////
 
 	adminAPIRouter := router.PathPrefix("/api/v1").Subrouter()
@@ -150,10 +154,6 @@ func SetupBackendRoutes(
 	apiRouter.HandleFunc("/notification/types", handlers.NotificationHandler.GetNotificationTypes()).Methods("GET")
 	// Version
 	apiRouter.HandleFunc("/version", handlers.UtilHandler.GetVersion()).Methods("GET")
-
-	///////////////////////////////// Swagger ////////////////////////////////////////////
-
-	router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler).Methods("GET")
 }
 
 func SetupFrontendRoutes(router *mux.Router) {
