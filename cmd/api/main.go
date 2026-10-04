@@ -14,6 +14,12 @@ import (
 var version = "0.0.0-dev"
 var buildDate = "unknown"
 
+// @title 		ez2boot API
+// @version 	1.0
+// @description All endpoints return responses wrapped in a standard envelope: {"success": bool, "data": (schema shown per endpoint), "error": string}. All protected endpoints can return 401 and most endpoints can return 500. These are not documented per endpoint. Be sure to "Authorize" within Swagger with a user which has API permissions within ez2boot - browser auth is only to view Swagger but it does not get passed in the basic auth header. Additionally, to access admin endpoints the user needs both API and Admin permissions.
+// @produce     json
+// @securityDefinitions.basic BasicAuth
+// @BasePath	/api/v1
 func main() {
 	// Load env vars
 	cfg, err := config.GetEnvVars()

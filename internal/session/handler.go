@@ -26,6 +26,15 @@ func (h *Handler) GetServerSessionSummary() http.HandlerFunc {
 	}
 }
 
+// @Summary 		New server session
+// @Description 	Create a new server session
+// @Tags 			session
+// @Accept 			json
+// @Param			request body ServerSessionRequest true "Request body"
+// @Success 		200 {object} ServerSessionResponse
+// @Failure      	400 {object} string
+// @Router       	/session [post]
+// @Security 		BasicAuth
 func (h *Handler) NewServerSession() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -78,6 +87,15 @@ func (h *Handler) NewServerSession() http.HandlerFunc {
 	}
 }
 
+// @Summary 		Update server session
+// @Description 	Modify own server session.
+// @Tags 			session
+// @Accept 			json
+// @Param			request body ServerSessionRequest true "Request body"
+// @Success 		200 {object} ServerSessionResponse
+// @Failure      	400 {object} string
+// @Router       	/session [put]
+// @Security 		BasicAuth
 func (h *Handler) UpdateServerSession() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -136,6 +154,15 @@ func (h *Handler) UpdateServerSession() http.HandlerFunc {
 	}
 }
 
+// @Summary 		Update server session admin
+// @Description 	[Admin] Override and modify an existing server session for any user.
+// @Tags 			session
+// @Accept 			json
+// @Param			request body ServerSessionRequest true "Request body"
+// @Success 		200 {object} ServerSessionResponse
+// @Failure      	400 {object} string
+// @Router       	/admin/session [put]
+// @Security 		BasicAuth
 func (h *Handler) UpdateServerSessionAdmin() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

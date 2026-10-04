@@ -149,6 +149,13 @@ func (h *Handler) Callback() http.HandlerFunc {
 	}
 }
 
+// @Summary 		Test OIDC connection
+// @Description 	[Admin] test the OIDC connection
+// @Tags 			oidc
+// @Success 		200 {object} bool
+// @Failure      	404 {object} string
+// @Router       	/auth/oidc/test [post]
+// @Security 		BasicAuth
 func (h *Handler) TestOidcConnection() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -182,6 +189,13 @@ func (h *Handler) TestOidcConnection() http.HandlerFunc {
 	}
 }
 
+// @Summary 		Get OIDC config
+// @Description 	[Admin] get the current OIDC config
+// @Tags 			oidc
+// @Success 		200 {object} OidcConfigResponse
+// @Failure      	400 {object} string
+// @Router       	/auth/oidc [get]
+// @Security 		BasicAuth
 func (h *Handler) GetOidcConfig() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -215,6 +229,15 @@ func (h *Handler) GetOidcConfig() http.HandlerFunc {
 	}
 }
 
+// @Summary 		Set OIDC config
+// @Description 	[Admin] set an OIDC config
+// @Tags 			oidc
+// @Accept 			json
+// @Param			request body OidcConfigRequest true "Request body"
+// @Success 		200 {object} bool
+// @Failure      	400 {object} string
+// @Router       	/auth/oidc [post]
+// @Security 		BasicAuth
 func (h *Handler) SetOidcConfig() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -241,6 +264,12 @@ func (h *Handler) SetOidcConfig() http.HandlerFunc {
 	}
 }
 
+// @Summary 		Delete OIDC config
+// @Description 	[Admin] delete an OIDC config. No payload or selector, as there can be only one configuration. Currently this is idempotent and will return successful even if there is no config.
+// @Tags 			oidc
+// @Success 		200 {object} bool
+// @Router       	/auth/oidc [delete]
+// @Security 		BasicAuth
 func (h *Handler) DeleteOidcConfig() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
