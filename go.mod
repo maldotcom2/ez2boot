@@ -1,6 +1,6 @@
 module ez2boot
 
-go 1.26.0
+go 1.26.8
 
 require github.com/mattn/go-sqlite3 v1.14.52 // Requires C compiler gcc.exe on path
 
